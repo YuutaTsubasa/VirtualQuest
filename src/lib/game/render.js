@@ -203,8 +203,9 @@ function drawFrame(g, sheet, frame, x, y, h, facing, { fallback = 'idle', flash 
   let i = sheet.frames.indexOf(frame);
   if (i < 0) i = Math.max(0, sheet.frames.indexOf(fallback));
   const c = sheet.cell;
-  // 寬姿勢（高踢）交件時縮小了：以腳底為中心放大回來（scripts/import-quest-art.py 算的倍數）
-  h *= sheet.fix?.[sheet.frames[i]] ?? 1;
+  // 寬姿勢（高踢）交件時縮小了、或整張圖集偏小（長吻、大鉗子）：以腳底為中心放大回來
+  // （倍數是 scripts/import-quest-art.py 依交件的實測高度算的）
+  h *= (sheet.fix?.[sheet.frames[i]] ?? 1) * (sheet.scale ?? 1);
   g.save();
   g.translate(x, y);
   if (facing < 0) g.scale(-1, 1);

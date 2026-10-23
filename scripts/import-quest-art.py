@@ -47,9 +47,13 @@ BOSS_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'slam', 'hurt', 'fall', 'down
 CELL = 400
 # 哪些格子要依實際高度放大回來：目標高度＝這張圖集 idle 的高度 × 比例；最多放大幾倍
 FIX_CHARACTER = {'kick': 0.925}
-FIX_ENEMY = {'attack': 0.9, 'windup': 0.95, 'charge': 0.88}
+FIX_ENEMY = {'attack': 0.9, 'windup': 0.95, 'charge': 0.88, 'walk1': 0.95, 'walk2': 0.95}
 # 魔王的 slam／cast 常常是故意蹲低的姿勢（例如森林巨熊雙掌觸地），不能照 idle 高度放大，只補 charge
-FIX_BOSS = {'charge': 0.88}
+FIX_BOSS = {'charge': 0.88, 'walk1': 0.95, 'walk2': 0.95}
+# 整張圖集太小（長吻、大鉗子、披風為了塞進格子而縮小）：站立 idle 應該有的大小
+# 人形用高度比；大隻的（brute）用面積比，免得很寬的大螃蟹被放到比格子還大
+IDLE_HEIGHT = {'character': 400, 'enemy': 380, 'boss': 650}
+BRUTE_IDLE = (460, 381)
 FIX_MAX = 1.45
 BOSS_CELL = 600
 
@@ -96,6 +100,21 @@ def fixes(names, hs, table):
     return out
 
 
+def sheet_scale(metrics, prefix, kind):
+    info = (metrics.get('assets') or {}).get(prefix + 'idle.png') or {}
+    b = info.get('visibleBounds') or {}
+    h = info.get('actualSilhouetteHeight') or b.get('height')
+    w = b.get('width')
+    if not h:
+        return 1.0
+    if kind == 'brute' and w:
+        k = ((BRUTE_IDLE[0] * BRUTE_IDLE[1]) / (h * w)) ** 0.5
+    else:
+        k = IDLE_HEIGHT['boss' if kind == 'boss' else 'character' if kind == 'character' else 'enemy'] / h
+    k = min(FIX_MAX, max(1.0, k))
+    return round(k, 3) if k > 1.03 else 1.0
+
+
 def strip(frames, folder, cell, cols=None):
     """把有的格子排成圖集；回傳（圖, 實際有的格子名, 欄數）"""
     names = [f for f in frames if os.path.exists(os.path.join(folder, f + '.png'))]
@@ -139,6 +158,9 @@ def main(src):
             fix = fixes(names, heights(metrics, f'characters/{cid}/sprites/'), FIX_CHARACTER)
             if fix:
                 sheets['characters'][cid]['fix'] = fix
+            k = sheet_scale(metrics, f'characters/{cid}/sprites/', 'character')
+            if k > 1:
+                sheets['characters'][cid]['scale'] = k
 
     enemies = os.path.join(src, 'enemies')
     for world in sorted(os.listdir(enemies)) if os.path.isdir(enemies) else []:
@@ -151,6 +173,9 @@ def main(src):
                 fix = fixes(names, heights(metrics, f'enemies/{world}/{kind}/'), FIX_ENEMY)
                 if fix:
                     sheets['enemies'][f'{world}/{kind}']['fix'] = fix
+                k = sheet_scale(metrics, f'enemies/{world}/{kind}/', kind)
+                if k > 1:
+                    sheets['enemies'][f'{world}/{kind}']['scale'] = k
 
     bosses = os.path.join(src, 'bosses')
     for world in sorted(os.listdir(bosses)) if os.path.isdir(bosses) else []:
@@ -162,6 +187,9 @@ def main(src):
             fix = fixes(names, heights(metrics, f'bosses/{world}/'), FIX_BOSS)
             if fix:
                 sheets['bosses'][world]['fix'] = fix
+            k = sheet_scale(metrics, f'bosses/{world}/', 'boss')
+            if k > 1:
+                sheets['bosses'][world]['scale'] = k
 
     env = os.path.join(src, 'environment')
     for stage in sorted(os.listdir(env)) if os.path.isdir(env) else []:

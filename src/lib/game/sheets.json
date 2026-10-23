@@ -377,7 +377,8 @@
       "cell": 400,
       "fix": {
         "attack": 1.258
-      }
+      },
+      "scale": 1.048
     },
     "forest/knife": {
       "src": "enemies/forest/knife.webp",
@@ -426,6 +427,82 @@
       ],
       "cols": 8,
       "cell": 400
+    },
+    "sea/brute": {
+      "src": "enemies/sea/brute.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down",
+        "charge"
+      ],
+      "cols": 9,
+      "cell": 400,
+      "fix": {
+        "attack": 1.266,
+        "walk2": 1.087
+      },
+      "scale": 1.225
+    },
+    "sea/knife": {
+      "src": "enemies/sea/knife.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "attack": 1.266
+      },
+      "scale": 1.145
+    },
+    "sea/thrower": {
+      "src": "enemies/sea/thrower.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "attack": 1.027
+      }
+    },
+    "sea/thug": {
+      "src": "enemies/sea/thug.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "attack": 1.036
+      }
     }
   },
   "bosses": {
@@ -463,6 +540,27 @@
       ],
       "cols": 6,
       "cell": 600
+    },
+    "sea": {
+      "src": "bosses/sea.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "slam",
+        "hurt",
+        "fall",
+        "down",
+        "charge",
+        "cast"
+      ],
+      "cols": 6,
+      "cell": 600,
+      "fix": {
+        "walk1": 1.09
+      },
+      "scale": 1.071
     }
   },
   "stages": [
@@ -471,11 +569,15 @@
     "city-3",
     "forest-1",
     "forest-2",
-    "forest-3"
+    "forest-3",
+    "sea-1",
+    "sea-2",
+    "sea-3"
   ],
   "props": [
     "city-crate",
-    "forest-crate"
+    "forest-crate",
+    "sea-crate"
   ],
   "items": [
     "apple",
@@ -485,6 +587,8 @@
   ],
   "shots": [
     "bottle",
+    "bubble",
+    "ink",
     "stone"
   ]
 }
