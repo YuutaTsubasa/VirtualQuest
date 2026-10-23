@@ -44,11 +44,12 @@ fn pool(world: usize, sub: usize) -> Vec<Kind> {
     if world > 0 || sub > 0 {
         p.push(Kind::Knife);
     }
-    if world >= 1 {
-        p.push(Kind::Brute);
-    }
-    if world >= 2 || (world == 1 && sub == 2) {
+    // 白色都市：1-2 開始有投擲手、1-3 有大隻佬（每一大關的四種敵人都會出場）
+    if world >= 1 || sub >= 1 {
         p.push(Kind::Thrower);
+    }
+    if world >= 1 || sub >= 2 {
+        p.push(Kind::Brute);
     }
     if world >= 4 {
         p.push(Kind::Knife);
@@ -97,7 +98,7 @@ pub fn build_stage(world: usize, sub: usize, players: usize, difficulty: Difficu
             }
             if last {
                 // 小頭目：大隻佬或刀手的強化版
-                let kind = if world >= 1 && sub == 1 { Kind::Brute } else { Kind::Knife };
+                let kind = if sub == 1 { Kind::Brute } else { Kind::Knife };
                 spawns.push(Spawn { kind, elite: true, from_right: true, delay: count as i32 * 45 + 30, z: (Z_TOP + Z_BOTTOM) / 2.0 });
             }
         }

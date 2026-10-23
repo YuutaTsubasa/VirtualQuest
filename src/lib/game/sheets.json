@@ -302,6 +302,63 @@
       ],
       "cols": 8,
       "cell": 400
+    },
+    "city/brute": {
+      "src": "enemies/city/brute.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down",
+        "charge"
+      ],
+      "cols": 9,
+      "cell": 400,
+      "fix": {
+        "attack": 1.331,
+        "windup": 1.05,
+        "charge": 1.1
+      }
+    },
+    "city/knife": {
+      "src": "enemies/city/knife.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "attack": 1.1
+      }
+    },
+    "city/thrower": {
+      "src": "enemies/city/thrower.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "attack": 1.171
+      }
     }
   },
   "bosses": {
@@ -319,11 +376,17 @@
         "charge"
       ],
       "cols": 6,
-      "cell": 600
+      "cell": 600,
+      "fix": {
+        "slam": 1.083,
+        "charge": 1.126
+      }
     }
   },
   "stages": [
-    "city-1"
+    "city-1",
+    "city-2",
+    "city-3"
   ],
   "props": [
     "city-crate"

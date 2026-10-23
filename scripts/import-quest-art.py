@@ -21,8 +21,8 @@
 
 圖的 alpha：生圖工具交的人物大多是 253/255，接的時候把 ≥240 的拉成全不透明，免得角色微微透光。
 
-寬的姿勢（高踢）為了塞進 512 的格子會整個縮小（站著 400px、踢腿只剩 280～350px）。
-交件包的 layout-metrics.json 有每格的實際人物高度：kick 這格記一個放大倍數（fix），
+寬的姿勢（高踢、敵人出手、衝撞）為了塞進格子會整個縮小（站著 400px、踢腿只剩 280～350px）。
+交件包的 layout-metrics.json 有每格的實際人物高度：這些格子記一個放大倍數（fix），
 畫面會以腳底為中心放大回來，踢腿時人不會突然變小。
 """
 
@@ -45,8 +45,10 @@ CHARACTER_FRAMES = ['idle', 'walk1', 'walk2', 'punch1', 'punch2', 'kick', 'jump'
 ENEMY_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'attack', 'hurt', 'fall', 'down', 'charge']
 BOSS_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'slam', 'hurt', 'fall', 'down', 'charge', 'leap', 'cast', 'vanish']
 CELL = 400
-# 哪些格子要依實際高度放大回來、目標高度（px，以 512 格子計）、最多放大幾倍
-FIX_FRAMES = {'kick': 370}
+# 哪些格子要依實際高度放大回來：目標高度＝這張圖集 idle 的高度 × 比例；最多放大幾倍
+FIX_CHARACTER = {'kick': 0.925}
+FIX_ENEMY = {'attack': 0.9, 'windup': 0.95, 'charge': 0.88}
+FIX_BOSS = {'slam': 0.9, 'windup': 0.95, 'charge': 0.88, 'cast': 0.92}
 FIX_MAX = 1.45
 BOSS_CELL = 600
 
@@ -80,11 +82,14 @@ def heights(metrics, prefix):
     return out
 
 
-def fixes(names, hs):
+def fixes(names, hs, table):
     out = {}
-    for name, target in FIX_FRAMES.items():
+    idle = hs.get('idle')
+    if not idle:
+        return out
+    for name, ratio in table.items():
         if name in names and hs.get(name):
-            k = min(FIX_MAX, max(1.0, target / hs[name]))
+            k = min(FIX_MAX, max(1.0, idle * ratio / hs[name]))
             if k > 1.02:
                 out[name] = round(k, 3)
     return out
@@ -130,7 +135,7 @@ def main(src):
         if sheet:
             written.append(save(sheet, f'sprites/{cid}.webp'))
             sheets['characters'][cid] = {'src': f'sprites/{cid}.webp', 'frames': names, 'cols': cols, 'cell': CELL}
-            fix = fixes(names, heights(metrics, f'characters/{cid}/sprites/'))
+            fix = fixes(names, heights(metrics, f'characters/{cid}/sprites/'), FIX_CHARACTER)
             if fix:
                 sheets['characters'][cid]['fix'] = fix
 
@@ -142,6 +147,9 @@ def main(src):
                 rel = f'enemies/{world}/{kind}.webp'
                 written.append(save(sheet, rel))
                 sheets['enemies'][f'{world}/{kind}'] = {'src': rel, 'frames': names, 'cols': cols, 'cell': CELL}
+                fix = fixes(names, heights(metrics, f'enemies/{world}/{kind}/'), FIX_ENEMY)
+                if fix:
+                    sheets['enemies'][f'{world}/{kind}']['fix'] = fix
 
     bosses = os.path.join(src, 'bosses')
     for world in sorted(os.listdir(bosses)) if os.path.isdir(bosses) else []:
@@ -150,6 +158,9 @@ def main(src):
             rel = f'bosses/{world}.webp'
             written.append(save(sheet, rel))
             sheets['bosses'][world] = {'src': rel, 'frames': names, 'cols': cols, 'cell': BOSS_CELL}
+            fix = fixes(names, heights(metrics, f'bosses/{world}/'), FIX_BOSS)
+            if fix:
+                sheets['bosses'][world]['fix'] = fix
 
     env = os.path.join(src, 'environment')
     for stage in sorted(os.listdir(env)) if os.path.isdir(env) else []:
