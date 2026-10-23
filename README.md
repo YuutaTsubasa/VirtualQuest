@@ -123,6 +123,7 @@ src/
 
 ## 美術
 
-- 角色半身像與動作圖目前**借用排球王的 90 年代圖**（動作是排球的 8 格：扣殺那格當攻擊、飛撲那格當倒地）。
-- 敵人、魔王、關卡背景、箱子、道具、Logo 都還**沒有圖**，先用程式畫。
-- 之後照 TaiwanMahjong 的流程（art-inbox）請 ChatGPT 畫清版動作專用的圖集、敵人與背景，先做 90 年代，再做其他五種風格。
+- 介面照 [UI Concept v1](art-work/ui-concept-v1/DESIGN.md)：墨黑＋暖白＋朱紅＋青綠、直角實色陰影、毛筆大標題。Logo 是那裡的 `logo-transparent.png`。
+- 角色半身像沿用虛擬台麻館的（麻將館的衣服）。
+- 動作圖、敵人、魔王、背景由 ChatGPT 透過 `art-inbox/` 交件，用 `python scripts/import-quest-art.py art-inbox/<包>` 接進遊戲（產生圖集與 `src/lib/game/sheets.json`）。還沒交的部分程式會用替代畫法（角色借排球王的 8 格動作圖、敵人與背景用程式畫）。
+- 已接：小春 16 格、白色都市的混混與白銀幫老大、1-1 背景、箱子與道具。其他在 `art-inbox/requests/` 排隊中。
