@@ -344,7 +344,8 @@ function enemyPose(e) {
     case 'walk':
       return Math.floor(e.t / 9) % 2 ? 'walk1' : 'walk2';
     case 'attack': {
-      if (e.mv === 'none') return 'idle';
+      // 魔王跳起來落地後的硬直（沒有招式）：用蹲低的 slam 那格當落地的衝擊
+      if (e.mv === 'none') return e.kind === 'boss' ? 'slam' : 'idle';
       const windup = e.t < (e.mv === 'slam' || e.mv === 'bossSlam' ? 15 : e.mv === 'shoot' ? 12 : 6);
       if (windup) return 'windup';
       return e.kind === 'boss' ? 'slam' : 'attack';

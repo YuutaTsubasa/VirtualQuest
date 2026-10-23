@@ -48,7 +48,8 @@ CELL = 400
 # 哪些格子要依實際高度放大回來：目標高度＝這張圖集 idle 的高度 × 比例；最多放大幾倍
 FIX_CHARACTER = {'kick': 0.925}
 FIX_ENEMY = {'attack': 0.9, 'windup': 0.95, 'charge': 0.88}
-FIX_BOSS = {'slam': 0.9, 'windup': 0.95, 'charge': 0.88, 'cast': 0.92}
+# 魔王的 slam／cast 常常是故意蹲低的姿勢（例如森林巨熊雙掌觸地），不能照 idle 高度放大，只補 charge
+FIX_BOSS = {'charge': 0.88}
 FIX_MAX = 1.45
 BOSS_CELL = 600
 

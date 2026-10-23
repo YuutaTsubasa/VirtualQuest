@@ -359,6 +359,73 @@
       "fix": {
         "attack": 1.171
       }
+    },
+    "forest/brute": {
+      "src": "enemies/forest/brute.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down",
+        "charge"
+      ],
+      "cols": 9,
+      "cell": 400,
+      "fix": {
+        "attack": 1.258
+      }
+    },
+    "forest/knife": {
+      "src": "enemies/forest/knife.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "attack": 1.024
+      }
+    },
+    "forest/thrower": {
+      "src": "enemies/forest/thrower.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400
+    },
+    "forest/thug": {
+      "src": "enemies/forest/thug.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400
     }
   },
   "bosses": {
@@ -378,18 +445,37 @@
       "cols": 6,
       "cell": 600,
       "fix": {
-        "slam": 1.083,
         "charge": 1.126
       }
+    },
+    "forest": {
+      "src": "bosses/forest.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "slam",
+        "hurt",
+        "fall",
+        "down",
+        "leap"
+      ],
+      "cols": 6,
+      "cell": 600
     }
   },
   "stages": [
     "city-1",
     "city-2",
-    "city-3"
+    "city-3",
+    "forest-1",
+    "forest-2",
+    "forest-3"
   ],
   "props": [
-    "city-crate"
+    "city-crate",
+    "forest-crate"
   ],
   "items": [
     "apple",
@@ -398,6 +484,7 @@
     "meat"
   ],
   "shots": [
-    "bottle"
+    "bottle",
+    "stone"
   ]
 }
