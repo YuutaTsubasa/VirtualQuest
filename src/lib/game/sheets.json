@@ -114,6 +114,52 @@
       ],
       "cols": 8,
       "cell": 400
+    },
+    "cangya": {
+      "src": "sprites/cangya.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "punch1",
+        "punch2",
+        "kick",
+        "jump",
+        "jumpkick",
+        "special",
+        "grab",
+        "knee",
+        "throw",
+        "hurt",
+        "fall",
+        "down",
+        "win"
+      ],
+      "cols": 8,
+      "cell": 400
+    },
+    "lanjie": {
+      "src": "sprites/lanjie.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "punch1",
+        "punch2",
+        "kick",
+        "jump",
+        "jumpkick",
+        "special",
+        "grab",
+        "knee",
+        "throw",
+        "hurt",
+        "fall",
+        "down",
+        "win"
+      ],
+      "cols": 8,
+      "cell": 400
     }
   },
   "enemies": {
