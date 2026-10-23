@@ -1,0 +1,77 @@
+{
+  "characters": {
+    "xiaochun": {
+      "src": "sprites/xiaochun.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "punch1",
+        "punch2",
+        "kick",
+        "jump",
+        "jumpkick",
+        "special",
+        "grab",
+        "knee",
+        "throw",
+        "hurt",
+        "fall",
+        "down",
+        "win"
+      ],
+      "cols": 8,
+      "cell": 400
+    }
+  },
+  "enemies": {
+    "city/thug": {
+      "src": "enemies/city/thug.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400
+    }
+  },
+  "bosses": {
+    "city": {
+      "src": "bosses/city.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "slam",
+        "hurt",
+        "fall",
+        "down",
+        "charge"
+      ],
+      "cols": 6,
+      "cell": 600
+    }
+  },
+  "stages": [
+    "city-1"
+  ],
+  "props": [
+    "city-crate"
+  ],
+  "items": [
+    "apple",
+    "feast",
+    "gem",
+    "meat"
+  ],
+  "shots": [
+    "bottle"
+  ]
+}

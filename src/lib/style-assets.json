@@ -2,6 +2,7 @@
   "styles": {
     "anime90": {
       "files": [
+        "bosses/city.webp",
         "characters/alie/happy.webp",
         "characters/alie/normal.webp",
         "characters/alie/sad.webp",
@@ -60,6 +61,13 @@
         "effects/hit-spark.webp",
         "effects/sand-puff.webp",
         "effects/score-burst.webp",
+        "enemies/city/thug.webp",
+        "props/city-crate.webp",
+        "props/items/apple.webp",
+        "props/items/feast.webp",
+        "props/items/gem.webp",
+        "props/items/meat.webp",
+        "props/shots/bottle.webp",
         "sprites/alie.webp",
         "sprites/aming.webp",
         "sprites/ayi.webp",
@@ -71,6 +79,9 @@
         "sprites/xiaochun.webp",
         "sprites/xiaocui.webp",
         "sprites/yuehua.webp",
+        "stages/city-1/far.webp",
+        "stages/city-1/ground.webp",
+        "stages/city-1/mid.webp",
         "ui/icons/back.webp",
         "ui/icons/gamepad.webp",
         "ui/icons/keyboard.webp",

@@ -4,6 +4,9 @@
 
 import { W, H, Z_TOP } from './constants.js';
 import { WORLDS } from './stages.js';
+import SHEETS from './sheets.json' with { type: 'json' };
+import { asset } from '../art-style.svelte.js';
+import { loadImage } from '../preload.svelte.js';
 
 const TILE = W;
 const SPEED = { far: 0.18, mid: 0.5, ground: 1 };
@@ -434,8 +437,17 @@ function drawLayer(g, img, offset) {
   g.drawImage(img, x + TILE, 0, TILE, H);
 }
 
+// 交件的背景（public/stages/<大關>-<小關>/{far,mid,ground}.webp）：三張都載好才用，不然先畫程式版
+function artLayers(world, sub) {
+  const key = `${WORLDS[world].id}-${sub + 1}`;
+  if (!SHEETS.stages?.includes(key)) return null;
+  const imgs = ['far', 'mid', 'ground'].map((l) => loadImage(asset(`stages/${key}/${l}.webp`)));
+  return imgs.every((i) => i.complete && i.naturalWidth > 0) ? imgs : null;
+}
+
 export function drawScenery(g, world, sub, camera, scale) {
-  for (const which of ['far', 'mid', 'ground']) drawLayer(g, layer(world, sub, which, scale), camera * SPEED[which]);
+  const art = artLayers(world, sub);
+  ['far', 'mid', 'ground'].forEach((which, i) => drawLayer(g, art ? art[i] : layer(world, sub, which, scale), camera * SPEED[which]));
 }
 
 // ---------- 會動的東西 ----------

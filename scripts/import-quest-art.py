@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""把 ChatGPT 交的 90 年代美術包（art-inbox/<主題>/ 或 .zip）接進遊戲。
+
+用法：python scripts/import-quest-art.py art-inbox/anime90-trial
+
+交件的結構見 art-inbox/README.md：
+  characters/<id>/sprites/<動作>.png        512×512，腳底 (256, 496)
+  enemies/<大關>/<種類>/<動作>.png           512×512，腳底 (256, 496)
+  bosses/<大關>/<動作>.png                   768×768，腳底 (384, 744)
+  environment/<大關>-<小關>/{far,mid,ground}.png   1920×1080
+  props/<大關>-crate.png、props/items/*.png、props/shots/*.png
+  ui/*.png（Logo 不接：介面改用 UI Concept v1 的 Logo）
+
+產出（都是 WebP）：
+  public/sprites/<id>.webp                   8×2 圖集（每格 400），格子順序見 src/lib/game/sheets.json
+  public/enemies/<大關>/<種類>.webp          橫排（每格 400）
+  public/bosses/<大關>.webp                  橫排（每格 600，跟角色同比例尺）
+  public/stages/<大關>-<小關>/{far,mid,ground}.webp
+  public/props/...
+並更新 src/lib/game/sheets.json（畫面用）與 src/lib/style-assets.json（預先載入用）。
+
+圖的 alpha：生圖工具交的人物大多是 253/255，接的時候把 ≥240 的拉成全不透明，免得角色微微透光。
+"""
+
+import json
+import os
+import shutil
+import sys
+import tempfile
+import zipfile
+
+from PIL import Image
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PUBLIC = os.path.join(ROOT, 'public')
+SHEETS = os.path.join(ROOT, 'src', 'lib', 'game', 'sheets.json')
+MANIFEST = os.path.join(ROOT, 'src', 'lib', 'style-assets.json')
+
+CHARACTER_FRAMES = ['idle', 'walk1', 'walk2', 'punch1', 'punch2', 'kick', 'jump', 'jumpkick',
+                    'special', 'grab', 'knee', 'throw', 'hurt', 'fall', 'down', 'win']
+ENEMY_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'attack', 'hurt', 'fall', 'down', 'charge']
+BOSS_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'slam', 'hurt', 'fall', 'down', 'charge', 'leap', 'cast', 'vanish']
+CELL = 400
+BOSS_CELL = 600
+
+
+def load(path):
+    im = Image.open(path).convert('RGBA')
+    a = im.getchannel('A').point(lambda v: 255 if v >= 240 else v)
+    im.putalpha(a)
+    return im
+
+
+def save(im, rel, lossless=False):
+    out = os.path.join(PUBLIC, rel)
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    if lossless:
+        im.save(out, 'WEBP', lossless=True, method=6)
+    else:
+        im.save(out, 'WEBP', quality=90, method=6, alpha_quality=95)
+    print('  ', rel, im.size)
+    return rel.replace(os.sep, '/')
+
+
+def strip(frames, folder, cell, cols=None):
+    """把有的格子排成圖集；回傳（圖, 實際有的格子名, 欄數）"""
+    names = [f for f in frames if os.path.exists(os.path.join(folder, f + '.png'))]
+    if not names:
+        return None, [], 0
+    cols = cols or len(names)
+    rows = (len(names) + cols - 1) // cols
+    sheet = Image.new('RGBA', (cell * cols, cell * rows), (0, 0, 0, 0))
+    for i, name in enumerate(names):
+        im = load(os.path.join(folder, name + '.png')).resize((cell, cell), Image.LANCZOS)
+        sheet.paste(im, ((i % cols) * cell, (i // cols) * cell))
+    return sheet, names, cols
+
+
+def main(src):
+    tmp = None
+    if src.endswith('.zip'):
+        tmp = tempfile.mkdtemp()
+        with zipfile.ZipFile(src) as z:
+            for n in z.namelist():
+                if n.startswith('/') or '..' in n.split('/'):
+                    sys.exit(f'壓縮檔路徑不安全：{n}')
+            z.extractall(tmp)
+        entries = os.listdir(tmp)
+        src = os.path.join(tmp, entries[0]) if len(entries) == 1 and os.path.isdir(os.path.join(tmp, entries[0])) else tmp
+
+    sheets = json.load(open(SHEETS, encoding='utf-8')) if os.path.exists(SHEETS) else {}
+    for k in ['characters', 'enemies', 'bosses', 'stages', 'props', 'items', 'shots']:
+        sheets.setdefault(k, {} if k in ('characters', 'enemies', 'bosses') else [])
+    written = []
+
+    chars = os.path.join(src, 'characters')
+    for cid in sorted(os.listdir(chars)) if os.path.isdir(chars) else []:
+        folder = os.path.join(chars, cid, 'sprites')
+        sheet, names, cols = strip(CHARACTER_FRAMES, folder, CELL, cols=8)
+        if sheet:
+            written.append(save(sheet, f'sprites/{cid}.webp'))
+            sheets['characters'][cid] = {'src': f'sprites/{cid}.webp', 'frames': names, 'cols': cols, 'cell': CELL}
+
+    enemies = os.path.join(src, 'enemies')
+    for world in sorted(os.listdir(enemies)) if os.path.isdir(enemies) else []:
+        for kind in sorted(os.listdir(os.path.join(enemies, world))):
+            sheet, names, cols = strip(ENEMY_FRAMES, os.path.join(enemies, world, kind), CELL)
+            if sheet:
+                rel = f'enemies/{world}/{kind}.webp'
+                written.append(save(sheet, rel))
+                sheets['enemies'][f'{world}/{kind}'] = {'src': rel, 'frames': names, 'cols': cols, 'cell': CELL}
+
+    bosses = os.path.join(src, 'bosses')
+    for world in sorted(os.listdir(bosses)) if os.path.isdir(bosses) else []:
+        sheet, names, cols = strip(BOSS_FRAMES, os.path.join(bosses, world), BOSS_CELL, cols=6)
+        if sheet:
+            rel = f'bosses/{world}.webp'
+            written.append(save(sheet, rel))
+            sheets['bosses'][world] = {'src': rel, 'frames': names, 'cols': cols, 'cell': BOSS_CELL}
+
+    env = os.path.join(src, 'environment')
+    for stage in sorted(os.listdir(env)) if os.path.isdir(env) else []:
+        layers = [l for l in ('far', 'mid', 'ground') if os.path.exists(os.path.join(env, stage, l + '.png'))]
+        if len(layers) < 3:
+            print(f'  ！{stage} 只有 {layers}，三層都到了才接')
+            continue
+        for layer in layers:
+            im = Image.open(os.path.join(env, stage, layer + '.png'))
+            im = im.convert('RGB') if layer == 'far' else load(os.path.join(env, stage, layer + '.png'))
+            written.append(save(im, f'stages/{stage}/{layer}.webp'))
+        if stage not in sheets['stages']:
+            sheets['stages'].append(stage)
+
+    props = os.path.join(src, 'props')
+    if os.path.isdir(props):
+        for f in sorted(os.listdir(props)):
+            if f.endswith('.png'):
+                name = f[:-4]
+                written.append(save(load(os.path.join(props, f)), f'props/{name}.webp'))
+                if name not in sheets['props']:
+                    sheets['props'].append(name)
+        for sub, key in (('items', 'items'), ('shots', 'shots')):
+            d = os.path.join(props, sub)
+            for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+                if f.endswith('.png'):
+                    name = f[:-4]
+                    written.append(save(load(os.path.join(d, f)), f'props/{sub}/{name}.webp'))
+                    if name not in sheets[key]:
+                        sheets[key].append(name)
+
+    for k in ('stages', 'props', 'items', 'shots'):
+        sheets[k].sort()
+    json.dump(sheets, open(SHEETS, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+
+    manifest = json.load(open(MANIFEST, encoding='utf-8'))
+    files = set(manifest['styles']['anime90']['files'])
+    files.update(written)
+    manifest['styles']['anime90']['files'] = sorted(files)
+    json.dump(manifest, open(MANIFEST, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+    print(f'接了 {len(written)} 張圖，sheets.json 與 style-assets.json 已更新')
+    if tmp:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        sys.exit(__doc__)
+    main(sys.argv[1])

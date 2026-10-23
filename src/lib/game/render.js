@@ -7,6 +7,7 @@ import { W, H, Z_TOP, Z_BOTTOM, SLOT_COLORS } from './constants.js';
 import { pickLine } from './characters.js';
 import { WORLDS, stageLabel } from './stages.js';
 import { drawScenery, drawAmbient } from './scenery.js';
+import SHEETS from './sheets.json' with { type: 'json' };
 import { asset, currentConfig } from '../art-style.svelte.js';
 import { loadImage } from '../preload.svelte.js';
 import { t, displayName } from '../i18n.svelte.js';
@@ -187,11 +188,64 @@ const blinking = (b, frame) => b.inv > 0 && Math.floor(frame / 3) % 2 === 0;
 
 // ---------- 玩家 ----------
 
-// 角色圖集：8 格橫排（借用排球王的動作圖）
-const SPRITE_FRAMES = ['idle', 'run1', 'run2', 'jump', 'spike', 'dive', 'win', 'lose'];
-const SPRITE_H = 150;
+// 動作圖集（scripts/import-quest-art.py 產生，格子清單在 sheets.json）：
+// 角色／敵人每格在遊戲裡畫 CELL_H 高、魔王 BOSS_H 高；腳底在格子的 496/512（= 744/768）。
+const CELL_H = 200;
+const BOSS_H = 300;
+const ANCHOR = 496 / 512;
+// 人物大約多高（頭上標記、對話泡泡的位置用）
+const FIG_H = 160;
 
+/** 從圖集畫一格。frame 沒有就用 fallback（再沒有就第一格）；回傳有沒有畫到 */
+function drawFrame(g, sheet, frame, x, y, h, facing, { fallback = 'idle', flash = 0, rotate = 0, alpha = 1 } = {}) {
+  const img = loadImage(asset(sheet.src));
+  if (!ready(img)) return false;
+  let i = sheet.frames.indexOf(frame);
+  if (i < 0) i = Math.max(0, sheet.frames.indexOf(fallback));
+  const c = sheet.cell;
+  g.save();
+  g.translate(x, y);
+  if (facing < 0) g.scale(-1, 1);
+  if (rotate) g.rotate(rotate);
+  if (alpha < 1) g.globalAlpha = alpha;
+  if (flash > 0) g.filter = 'brightness(2.2)';
+  g.drawImage(img, (i % sheet.cols) * c, Math.floor(i / sheet.cols) * c, c, c, -h / 2, -h * ANCHOR, h, h);
+  g.restore();
+  return true;
+}
+
+// 清版動作專用圖集（16 格）的動作
 function poseOf(p) {
+  switch (p.act) {
+    case 'walk':
+      return Math.floor(p.t / 9) % 2 ? 'walk1' : 'walk2';
+    case 'attack':
+      return { jab: 'punch1', jab2: 'punch2', kick: 'kick', special: 'special', throw: 'throw' }[p.mv] ?? 'idle';
+    case 'grab':
+      return p.mv === 'knee' ? 'knee' : 'grab';
+    case 'jump':
+      return p.mv === 'jumpKick' ? 'jumpkick' : 'jump';
+    case 'enter':
+      return 'jump';
+    case 'hurt':
+    case 'rise':
+      return 'hurt';
+    case 'fall':
+      return 'fall';
+    case 'down':
+    case 'dead':
+      return 'down';
+    case 'win':
+      return 'win';
+    default:
+      return 'idle';
+  }
+}
+
+// 還沒有清版圖集的角色：借用排球王的 8 格（idle run1 run2 jump spike dive win lose）
+const LEGACY_FRAMES = ['idle', 'run1', 'run2', 'jump', 'spike', 'dive', 'win', 'lose'];
+const LEGACY_H = 190;
+function legacyPose(p) {
   switch (p.act) {
     case 'walk':
       return Math.floor(p.t / 9) % 2 ? 'run1' : 'run2';
@@ -204,13 +258,12 @@ function poseOf(p) {
     case 'enter':
       return 'jump';
     case 'hurt':
+    case 'rise':
       return 'lose';
     case 'fall':
     case 'down':
     case 'dead':
       return 'dive';
-    case 'rise':
-      return 'lose';
     case 'win':
       return 'win';
     default:
@@ -221,29 +274,33 @@ function poseOf(p) {
 function drawPlayer(g, match, p, cam) {
   if (p.out) return;
   const x = p.x - cam;
-  shadow(g, x, p.z, p.y, 38);
+  shadow(g, x, p.z, p.y, 40);
   if (p.act === 'dead' && Math.floor(p.t / 4) % 2 === 0) return;
   if (blinking(p, match.frame)) return;
+  const sheet = SHEETS.characters?.[p.character.id];
+  if (sheet) {
+    // 出拳時往前一點點、被打時往後退一點
+    let lunge = 0;
+    if (p.act === 'attack' && p.mv !== 'none') lunge = Math.min(p.t, 4) * 1.2;
+    if (p.act === 'hurt') lunge = -Math.max(0, 6 - p.t) * 1.5;
+    drawFrame(g, sheet, poseOf(p), x + lunge * p.facing, p.z - p.y, CELL_H, p.facing, { flash: p.flash });
+    return;
+  }
   const img = p.character.sprite ? loadImage(p.character.spriteSrc) : null;
   // 圖還沒載入就先不畫（進遊戲前會先載好，見 preload.svelte.js）
   if (!ready(img)) return;
-  const pose = poseOf(p);
-  const i = SPRITE_FRAMES.indexOf(pose);
-  const fw = img.naturalWidth / SPRITE_FRAMES.length;
+  const i = LEGACY_FRAMES.indexOf(legacyPose(p));
+  const fw = img.naturalWidth / LEGACY_FRAMES.length;
   const fh = img.naturalHeight;
-  const drawH = SPRITE_H;
+  const drawH = LEGACY_H;
   const drawW = drawH * (fw / fh);
   g.save();
-  // 攻擊時往前衝一點、被打時往後仰
   let lunge = 0;
   if (p.act === 'attack' && p.mv !== 'none') lunge = Math.min(p.t, 6) * 2;
   if (p.act === 'hurt') lunge = -Math.max(0, 6 - p.t) * 2;
   g.translate(x + lunge * p.facing, p.z - p.y);
   if (p.facing < 0) g.scale(-1, 1);
-  if (p.act === 'attack' && p.mv === 'special') {
-    // 必殺技：原地轉圈（左右翻）
-    g.scale(Math.cos(p.t * 0.6) >= 0 ? 1 : -1, 1);
-  }
+  if (p.act === 'attack' && p.mv === 'special') g.scale(Math.cos(p.t * 0.6) >= 0 ? 1 : -1, 1);
   if (p.act === 'fall') g.rotate(-0.3);
   if (p.act === 'down' || p.act === 'dead') g.translate(0, 18);
   if (p.act === 'rise') g.scale(1.05, 0.9);
@@ -257,7 +314,7 @@ function drawPlayer(g, match, p, cam) {
 function drawSlotMarker(g, p, cam, you, cpu) {
   if (p.out || p.act === 'dead') return;
   const x = p.x - cam;
-  const y = p.z - p.y - SPRITE_H - 6;
+  const y = p.z - p.y - FIG_H - 6;
   const color = SLOT_COLORS[p.slot];
   g.fillStyle = color;
   g.beginPath();
@@ -272,15 +329,83 @@ function drawSlotMarker(g, p, cam, you, cpu) {
 
 function enemyLook(match, e) {
   const w = WORLDS[match.world];
-  if (e.kind === 'boss') return { cloth: w.boss.color, pants: w.boss.accent, head: w.boss.color, accent: w.boss.accent, scale: 1.75 };
+  // 沒有圖時程式畫的 Q 版人形：比例放大 1.25 倍，跟交件的動作圖差不多高
+  if (e.kind === 'boss') return { cloth: w.boss.color, pants: w.boss.accent, head: w.boss.color, accent: w.boss.accent, scale: 1.75 * 1.25 };
   const c = w.enemy;
-  const scale = (e.kind === 'brute' ? 1.3 : e.kind === 'knife' ? 0.95 : 1) * (e.elite ? 1.25 : 1);
+  const scale = (e.kind === 'brute' ? 1.3 : e.kind === 'knife' ? 0.95 : 1) * (e.elite ? 1.25 : 1) * 1.25;
   return { ...c, scale };
+}
+
+// 敵人的動作 → 圖集格子
+function enemyPose(e) {
+  switch (e.act) {
+    case 'walk':
+      return Math.floor(e.t / 9) % 2 ? 'walk1' : 'walk2';
+    case 'attack': {
+      if (e.mv === 'none') return 'idle';
+      const windup = e.t < (e.mv === 'slam' || e.mv === 'bossSlam' ? 15 : e.mv === 'shoot' ? 12 : 6);
+      if (windup) return 'windup';
+      return e.kind === 'boss' ? 'slam' : 'attack';
+    }
+    case 'charge':
+      return 'charge';
+    case 'leap':
+      return 'leap';
+    case 'cast':
+      return 'cast';
+    case 'vanish':
+      return 'vanish';
+    case 'hurt':
+    case 'held':
+    case 'rise':
+      return 'hurt';
+    case 'fall':
+    case 'thrown':
+      return 'fall';
+    case 'down':
+    case 'dead':
+      return 'down';
+    default:
+      return 'idle';
+  }
+}
+
+// 用交件的圖畫敵人；這一大關這種敵人還沒圖就回傳 false（改用程式畫的）
+function drawEnemySprite(g, match, e, x) {
+  const world = WORLDS[match.world].id;
+  const boss = e.kind === 'boss';
+  const sheet = boss ? SHEETS.bosses?.[world] : SHEETS.enemies?.[`${world}/${e.kind}`];
+  if (!sheet) return false;
+  const pose = enemyPose(e);
+  const h = (boss ? BOSS_H : CELL_H) * (e.elite ? 1.25 : 1);
+  const fallback = pose === 'charge' || pose === 'leap' ? 'walk1' : pose === 'cast' ? 'windup' : 'idle';
+  const vanish = pose === 'vanish' && !sheet.frames.includes('vanish');
+  if (vanish && e.t > 6 && e.t < 34) return true;
+  const lift = e.act === 'thrown' ? e.t * 0.35 : 0;
+  if (e.elite) {
+    // 小頭目：外圈杏黃光
+    g.save();
+    g.filter = 'drop-shadow(0 0 3px #e9b85e) drop-shadow(0 0 3px #e9b85e)';
+    drawFrame(g, sheet, pose, x, e.z - e.y, h, e.facing, { fallback, flash: e.flash, rotate: lift });
+    g.restore();
+  } else {
+    drawFrame(g, sheet, pose, x, e.z - e.y, h, e.facing, { fallback, flash: e.flash, rotate: lift });
+  }
+  if (e.act === 'attack' && pose === 'windup' && (boss || e.kind === 'brute' || e.elite)) {
+    outlinedText(g, '!', x, e.z - e.y - h * 0.82, 26, pal.flash);
+  }
+  return true;
 }
 
 function drawEnemy(g, match, e, cam) {
   const x = e.x - cam;
   const look = enemyLook(match, e);
+  const sheetScale = e.kind === 'boss' ? 1.6 : e.elite ? 1.25 : 1;
+  if (SHEETS.enemies?.[`${WORLDS[match.world].id}/${e.kind}`] || (e.kind === 'boss' && SHEETS.bosses?.[WORLDS[match.world].id])) {
+    shadow(g, x, e.z, e.y, 34 * sheetScale);
+    if (e.act === 'dead' && Math.floor(e.t / 4) % 2 === 0) return;
+    if (drawEnemySprite(g, match, e, x)) return;
+  }
   const s = look.scale;
   shadow(g, x, e.z, e.y, 30 * s);
   if (e.act === 'dead' && Math.floor(e.t / 4) % 2 === 0) return;
@@ -440,10 +565,36 @@ const PROP_LOOK = {
   castle: ['#8a6a4a', '#5a3a2a'], // 木桶
 };
 
+// 有交件的圖就畫圖（sheets.json 的 props／items／shots），沒有就用程式畫的
+function drawImageProp(g, src, x, y, w, h, { flip = false, shake = 0 } = {}) {
+  const img = loadImage(asset(src));
+  if (!ready(img)) return false;
+  g.save();
+  g.translate(x + shake, y);
+  if (flip) g.scale(-1, 1);
+  g.drawImage(img, -w / 2, -h, w, h);
+  g.restore();
+  return true;
+}
+
 function drawProp(g, match, pr, cam) {
   const x = pr.x - cam;
-  const [a, b] = PROP_LOOK[WORLDS[match.world].id];
+  const world = WORLDS[match.world].id;
+  const [a, b] = PROP_LOOK[world];
   shadow(g, x, pr.z, 0, 30);
+  if (SHEETS.props?.includes(`${world}-crate`)) {
+    // 256×256 的圖，底部中心在 (128, 244)：遊戲裡畫 84 高
+    const shake = pr.flash > 0 ? (Math.random() - 0.5) * 4 : 0;
+    const img = loadImage(asset(`props/${world}-crate.webp`));
+    if (ready(img)) {
+      g.save();
+      g.translate(x + shake, pr.z);
+      if (pr.hp < 2) g.filter = 'brightness(0.85)';
+      g.drawImage(img, -42, -84 * (244 / 256), 84, 84);
+      g.restore();
+      return;
+    }
+  }
   g.save();
   g.translate(x + (pr.flash > 0 ? (Math.random() - 0.5) * 4 : 0), pr.z);
   g.fillStyle = a;
@@ -472,6 +623,7 @@ function drawItem(g, it, cam, frame) {
   const x = it.x - cam;
   const bob = Math.sin(frame * 0.12 + it.id) * 3;
   shadow(g, x, it.z, it.y, 16);
+  if (SHEETS.items?.includes(it.kind) && drawImageProp(g, `props/items/${it.kind}.webp`, x, it.z - it.y - 2 + bob, 44, 44)) return;
   g.save();
   g.translate(x, it.z - it.y - 16 + bob);
   if (it.kind === 'apple') {
@@ -512,10 +664,26 @@ function drawItem(g, it, cam, frame) {
 }
 
 const SHOT_COLORS = { rock: '#8a8478', bubble: 'rgba(180,240,255,0.7)', ice: '#bfe9ff', fire: '#ff8a2e', dark: '#b03aff' };
-function drawShot(g, s, cam, frame) {
+// 雜兵丟的東西每一大關不一樣（白色都市丟瓶子…）；魔王的泡泡、冰柱、火球、暗黑球
+const THROWN = ['bottle', 'stone', 'ink', 'snowball', 'bomb', 'magic'];
+function drawShot(g, s, cam, frame, world) {
   const x = s.x - cam;
   const y = s.z - s.y;
   shadow(g, x, s.z, s.y, 12);
+  const name = s.kind === 'rock' ? THROWN[world] : s.kind;
+  if (SHEETS.shots?.includes(name)) {
+    const img = loadImage(asset(`props/shots/${name}.webp`));
+    if (ready(img)) {
+      g.save();
+      g.translate(x, y);
+      if (s.vx < 0) g.scale(-1, 1);
+      // 丟出去的東西會轉，魔王的彈不轉
+      if (s.kind === 'rock') g.rotate(frame * 0.3);
+      g.drawImage(img, -24, -24, 48, 48);
+      g.restore();
+      return;
+    }
+  }
   g.save();
   g.translate(x, y);
   g.fillStyle = SHOT_COLORS[s.kind];
@@ -736,7 +904,7 @@ function drawBubbles(g, match, cam) {
     const w = tw + 26;
     const h = 36;
     const x = Math.max(10, Math.min(W - w - 10, px - w / 2));
-    const y = Math.max(100, p.z - p.y - SPRITE_H - 70);
+    const y = Math.max(100, p.z - p.y - FIG_H - 70);
     g.fillStyle = pal.paper;
     g.strokeStyle = pal.ink;
     g.lineWidth = 3;
@@ -829,7 +997,7 @@ export function draw(canvas, match, opts = {}) {
   for (const it of match.items) things.push([it.z - 1, () => drawItem(g, it, cam, match.frame)]);
   for (const e of match.enemies) things.push([e.z + (e.act === 'held' ? 0.5 : 0), () => drawEnemy(g, match, e, cam)]);
   for (const p of match.players) things.push([p.z, () => drawPlayer(g, match, p, cam)]);
-  for (const s of match.shots) things.push([s.z + 0.2, () => drawShot(g, s, cam, match.frame)]);
+  for (const s of match.shots) things.push([s.z + 0.2, () => drawShot(g, s, cam, match.frame, match.world)]);
   things.sort((a, b) => a[0] - b[0]);
   for (const [, fn] of things) fn();
 
