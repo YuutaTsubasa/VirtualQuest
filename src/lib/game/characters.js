@@ -4,9 +4,10 @@
 //   crates/quest-core/src/characters.rs，改的話兩邊要一起改。
 // lines：go 出發、ko 打倒敵人、hurt 被打倒、boss 魔王出現、win 過關、lose 全軍覆沒。
 //
-// 圖：characters/<id>/<表情>.webp（半身像）、sprites/<id>.webp（動作圖集），
+// 圖：characters/<id>/<表情>.webp（半身像，直接沿用 TaiwanMahjong origin/master 的，衣服是麻將館那套）、sprites/<id>.webp（動作圖集），
 //   依目前畫風取圖（見 src/lib/style-assets.js），該風格沒有的圖會用 90 年代版。
-//   動作圖目前借用排球王的 8 格（idle run1 run2 jump spike dive win lose），清版動作專用的圖集還在請美術畫。
+//   動作圖目前借用排球王的 8 格（idle run1 run2 jump spike dive win lose）；清版動作專用的 16 格圖集
+//   （衣服跟半身像一樣）請美術畫中，見 art-inbox/requests/。
 
 import { asset } from '../art-style.svelte.js';
 import { t } from '../i18n.svelte.js';
