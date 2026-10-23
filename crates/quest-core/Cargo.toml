@@ -1,0 +1,15 @@
+[package]
+name = "quest-core"
+version = "0.1.0"
+description = "虛擬闖天下的遊戲引擎：清版動作的規則、敵人、電腦隊友與房間狀態"
+edition = "2021"
+rust-version = "1.89"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rand = { version = "0.8", features = ["small_rng"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# 讓 rand 在瀏覽器裡用 crypto.getRandomValues
+getrandom = { version = "0.2", features = ["js"] }

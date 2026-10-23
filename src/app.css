@@ -1,0 +1,518 @@
+/* 虛擬闖天下：90 年代運動遊戲風介面（深藍＋米白＋金黃）。
+   尺寸一律用 cqh／cqw（16:9 舞台的高／寬百分比），任何視窗大小比例都一樣。 */
+
+:root {
+  --navy: #142a63;
+  --navy-deep: #0c1d4b;
+  --navy-soft: #2b4a8f;
+  --cream: #fbf4e0;
+  --cream-deep: #efe2bd;
+  --gold: #ffd43b;
+  --gold-deep: #f2a900;
+  --gold-line: #f7c52b;
+  --stripe: #b7c2d8;
+  --ink: var(--navy);
+  --paper: var(--cream);
+  --accent: #e8455b;
+  --accent2: var(--gold);
+  --sea: #1f5fbf;
+  --ok: #1fa35b;
+  /* 深色底上的字、白色底（輸入框、表格），以及比賽畫面的頭像底色：Game Boy 這類限色風格會換掉 */
+  --on-dark: #fff;
+  --paper-white: #fff;
+  --hud-portrait: #5aa9ec;
+  --font: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', 'Heiti TC', sans-serif;
+  /* 手把鍵盤（從 TaiwanMahjong 搬來的 ControlsKeyboard）用的顏色 */
+  --text: var(--navy);
+  --panel-solid: var(--cream);
+  --muted: #5a6788;
+  --red: #c1121f;
+  font-family: var(--font);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #0b1430;
+  color: var(--navy);
+  overflow: hidden;
+}
+
+/* 16:9 舞台，維持比例塞滿視窗 */
+#stage {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: min(100vw, calc(100vh * 16 / 9));
+  height: min(100vh, calc(100vw * 9 / 16));
+  container-type: size;
+  overflow: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#stage input, #stage textarea { user-select: text; -webkit-user-select: text; }
+#stage canvas { width: 100%; height: 100%; display: block; }
+
+/* 選單背景圖（public/ui/anime90/bg.png，沒有就露出後面的示範賽） */
+.menu-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.4cqh;
+  font-size: 2.6cqh;
+}
+/* 疊在比賽畫面上的視窗（暫停、結果）：壓暗背景 */
+.screen.overlay { background: rgba(8, 18, 48, 0.55); }
+
+/* ---------- 共用：版面 ---------- */
+
+.frame {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 21cqh 1fr 9cqh;
+  padding: 2.4cqh 3.4cqw 2.6cqh;
+  gap: 1.6cqh;
+}
+.frame-main { min-height: 0; display: flex; gap: 2cqw; }
+.frame-foot {
+  display: grid;
+  /* 中間的提示放不下就換行，兩邊的按鈕不要被擠成兩行 */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2cqw;
+}
+
+/* 金色分隔線 */
+.gold-rule {
+  height: 0.7cqh;
+  background: linear-gradient(var(--gold-line), var(--gold-deep));
+  border-top: 0.25cqh solid var(--navy);
+  border-bottom: 0.25cqh solid var(--navy);
+}
+
+/* ---------- 共用：按鈕 ---------- */
+
+button, select {
+  font: inherit;
+  color: var(--navy);
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+
+/* 切角按鈕：外層深藍是邊框，::before 是米白（或金色）的面，兩端各有一組斜線 */
+.vbtn {
+  --face: var(--cream);
+  --cut: 1.4cqh;
+  position: relative;
+  border: 0;
+  background: var(--navy);
+  padding: 1.2cqh 5cqh;
+  min-height: 7cqh;
+  font-size: 3.3cqh;
+  font-weight: 900;
+  letter-spacing: 0.25em;
+  text-indent: 0.25em;
+  white-space: nowrap;
+  clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% 50%, calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 50%);
+  isolation: isolate;
+  transition: transform 0.08s, filter 0.08s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4cqh;
+}
+.vbtn::before {
+  content: '';
+  position: absolute;
+  inset: 0.45cqh 0.6cqh;
+  z-index: -1;
+  background:
+    repeating-linear-gradient(115deg, transparent 0 0.5cqh, var(--stripe) 0.5cqh 0.95cqh) left 1.8cqh center / 3cqh 70% no-repeat,
+    repeating-linear-gradient(115deg, transparent 0 0.5cqh, var(--stripe) 0.5cqh 0.95cqh) right 1.8cqh center / 3cqh 70% no-repeat,
+    var(--face);
+  clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% 50%, calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 50%);
+}
+.vbtn.gold,
+.vbtn.active,
+.vbtn:hover:not(:disabled) {
+  --face: linear-gradient(#ffe56b, var(--gold) 55%, var(--gold-deep));
+  --stripe: rgba(20, 42, 99, 0.25);
+}
+.vbtn:active:not(:disabled) { transform: translateY(0.3cqh); filter: brightness(0.95); }
+/* 選單：目前選到的那顆前面有 ▶ */
+.vbtn.arrow:is(:hover, :focus-visible, .active)::after,
+[data-input='pad'] .vbtn.arrow:focus::after {
+  content: '';
+  position: absolute;
+  left: 2.6cqh;
+  top: 50%;
+  translate: 0 -50%;
+  border-left: 2.2cqh solid var(--navy);
+  border-top: 1.4cqh solid transparent;
+  border-bottom: 1.4cqh solid transparent;
+}
+.vbtn.small { min-height: 5.4cqh; padding: 0.6cqh 3cqh; font-size: 2.4cqh; letter-spacing: 0.1em; text-indent: 0.1em; --cut: 1cqh; }
+.vbtn.small::before { background: var(--face); }
+.vbtn.plain::before { background: var(--face); }
+
+/* 右下角的大按鈕（開設房間、開始比賽…） */
+.vbtn.primary {
+  --face: linear-gradient(#ffe56b, var(--gold) 55%, var(--gold-deep));
+  --stripe: rgba(20, 42, 99, 0.3);
+  min-height: 9cqh;
+  padding: 1cqh 6cqh 1cqh 7cqh;
+  font-size: 4.4cqh;
+  letter-spacing: 0.15em;
+}
+.vbtn.primary::after {
+  content: '';
+  border-left: 2.4cqh solid var(--navy);
+  border-top: 1.6cqh solid transparent;
+  border-bottom: 1.6cqh solid transparent;
+  margin-left: 1.4cqh;
+}
+.vbtn.primary:hover:not(:disabled) { filter: brightness(1.06); }
+
+/* 左下角的返回 */
+.vbtn.back { padding: 1cqh 4cqh 1cqh 3cqh; font-size: 3cqh; min-height: 7cqh; letter-spacing: 0.2em; }
+.vbtn.back::before { background: var(--face); }
+.vbtn.back::after { content: none; }
+.vbtn.back > .tri {
+  border-right: 2cqh solid var(--navy);
+  border-top: 1.3cqh solid transparent;
+  border-bottom: 1.3cqh solid transparent;
+}
+
+/* ---------- 共用：面板 ---------- */
+
+.panel {
+  background: var(--cream);
+  border: 0.55cqh solid var(--navy);
+  border-radius: 1cqh;
+  box-shadow: inset 0 0 0 0.35cqh #fffaf0, 0 0.6cqh 0 rgba(12, 29, 75, 0.35);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.panel.gold-frame { border-color: var(--gold-deep); box-shadow: inset 0 0 0 0.35cqh var(--gold), 0 0.6cqh 0 rgba(12, 29, 75, 0.35); }
+.panel-head {
+  position: relative;
+  margin: 1cqh 1cqh 0;
+  padding: 0.6cqh 4cqh;
+  background: var(--navy);
+  color: var(--on-dark);
+  font-weight: 900;
+  font-size: 3cqh;
+  letter-spacing: 0.2em;
+  text-align: center;
+  clip-path: polygon(1.4cqh 0, calc(100% - 1.4cqh) 0, 100% 100%, 0 100%);
+}
+.panel-head::before,
+.panel-head::after {
+  content: '';
+  position: absolute;
+  top: 15%;
+  bottom: 15%;
+  width: 3.4cqh;
+  background: repeating-linear-gradient(115deg, transparent 0 0.45cqh, #dfe6f5 0.45cqh 0.9cqh);
+}
+.panel-head::before { left: 2.4cqh; }
+.panel-head::after { right: 2.4cqh; }
+.panel-head.left { text-align: left; padding-left: 7cqh; }
+.panel-body { padding: 1.6cqh 2cqh; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 1.2cqh; }
+
+/* 提示列（底部中間） */
+.hint-bar {
+  justify-self: center;
+  position: relative;
+  padding: 1cqh 6cqh;
+  background: rgba(251, 244, 224, 0.88);
+  font-weight: 800;
+  font-size: 2.3cqh;
+  letter-spacing: 0.12em;
+  clip-path: polygon(1.6cqh 0, 100% 0, calc(100% - 1.6cqh) 100%, 0 100%);
+  display: flex;
+  align-items: center;
+  gap: 1.2cqh;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-wrap: balance;
+}
+.hint-bar::before,
+.hint-bar::after {
+  content: '';
+  position: absolute;
+  top: 18%;
+  bottom: 18%;
+  width: 2.6cqh;
+  background: repeating-linear-gradient(115deg, transparent 0 0.45cqh, var(--stripe) 0.45cqh 0.9cqh);
+}
+.hint-bar::before { left: 1.6cqh; }
+.hint-bar::after { right: 1.6cqh; }
+
+/* ---------- 共用：表單 ---------- */
+
+.field { display: flex; flex-direction: column; gap: 0.5cqh; font-weight: 900; font-size: 2.5cqh; }
+.field small { font-weight: 700; font-size: 1.9cqh; color: var(--muted); }
+input, select.vsel {
+  font: inherit;
+  font-weight: 700;
+  color: var(--navy);
+  background: var(--paper-white);
+  border: 0.4cqh solid var(--navy);
+  border-radius: 0.8cqh;
+  padding: 0.7cqh 1.4cqh;
+}
+select.vsel { padding-right: 3cqh; }
+input::placeholder { color: #9aa3ba; }
+
+/* ---------- 角色頭像卡（選角、開房、大廳換角色） ---------- */
+
+.card {
+  position: relative;
+  padding: 0;
+  border: 0.45cqh solid var(--navy);
+  border-radius: 0.6cqh;
+  overflow: hidden;
+  background: linear-gradient(#5aa9ec, #9fd3ff);
+  aspect-ratio: 1 / 1.08;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.08s;
+}
+.card img { width: 100%; flex: 1; min-height: 0; object-fit: cover; object-position: center 12%; display: block; }
+.card span {
+  background: var(--navy);
+  color: var(--on-dark);
+  font-weight: 900;
+  font-size: 2.1cqh;
+  letter-spacing: 0.1em;
+  padding: 0.3cqh 0;
+  text-align: center;
+}
+.card:hover:not(:disabled) { transform: translateY(-0.3cqh); }
+.card.selected { border-color: var(--gold-deep); box-shadow: 0 0 0 0.5cqh var(--gold); }
+.card.selected::after {
+  content: '✔';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4.2cqh;
+  height: 4.2cqh;
+  display: grid;
+  place-items: center;
+  background: var(--gold);
+  color: var(--navy);
+  font-size: 2.6cqh;
+  font-weight: 900;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  padding: 0 0 1.4cqh 1.4cqh;
+}
+.card.locked img { filter: brightness(0) opacity(0.55); }
+.card .tags {
+  position: absolute;
+  top: 0.5cqh;
+  left: 0.5cqh;
+  display: flex;
+  gap: 0.4cqh;
+}
+.card .tag {
+  background: var(--accent);
+  color: var(--on-dark);
+  border-radius: 0.6cqh;
+  padding: 0 0.8cqh;
+  font-size: 1.8cqh;
+}
+
+/* 能力值條 */
+.stat { display: grid; grid-template-columns: minmax(6cqh, max-content) 1fr; column-gap: 1cqh; align-items: center; font-size: 2.1cqh; font-weight: 900; }
+.stat .bar { display: flex; gap: 0.5cqh; }
+.stat .bar i { flex: 1; height: 1.6cqh; background: #e1d6b6; border: 0.25cqh solid var(--navy); transform: skewX(-20deg); }
+.stat .bar i.on { background: linear-gradient(var(--gold), var(--gold-deep)); }
+
+/* ---------- 提示訊息、連線狀態 ---------- */
+
+.toasts {
+  position: absolute;
+  top: 2cqh;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1cqh;
+  z-index: 10;
+  pointer-events: none;
+}
+.toast {
+  background: var(--red);
+  color: var(--on-dark);
+  font-weight: 800;
+  padding: 1cqh 2.4cqh;
+  border-radius: 1cqh;
+  border: 0.35cqh solid var(--navy);
+  font-size: 2.4cqh;
+}
+.toast.ok { background: var(--ok); }
+.net-banner {
+  position: absolute;
+  left: 0; right: 0; bottom: 3cqh;
+  margin: auto;
+  width: fit-content;
+  background: rgba(12, 29, 75, 0.88);
+  color: var(--on-dark);
+  padding: 1cqh 3cqh;
+  border-radius: 1cqh;
+  font-weight: 800;
+}
+
+/* ---------- 焦點框：鍵盤或手把操作時才顯示 ---------- */
+
+button:focus, select:focus, input:focus { outline: none; }
+[data-input='key'] :is(button, select, input, a):focus-visible,
+[data-input='pad'] :is(button, select, input, a):focus {
+  outline: 0.6cqh solid var(--accent);
+  outline-offset: 0.3cqh;
+}
+/* 切角按鈕的 outline 會被裁掉，改用變色表示 */
+[data-input='key'] .vbtn:focus-visible,
+[data-input='pad'] .vbtn:focus {
+  outline: none;
+  --face: linear-gradient(#ffe56b, var(--gold) 55%, var(--gold-deep));
+  --stripe: rgba(20, 42, 99, 0.25);
+}
+[data-input='key'] .card:focus-visible,
+[data-input='pad'] .card:focus { outline: 0.6cqh solid var(--accent); }
+input:focus { border-color: var(--gold-deep); box-shadow: 0 0 0 0.4cqh var(--gold); }
+/* 觸控：沒有滑鼠停留，hover 效果會黏住 */
+[data-input='touch'] .vbtn:hover:not(:focus):not(.gold):not(.primary):not(.active) {
+  --face: var(--cream);
+  --stripe: #b7c2d8;
+}
+[data-input='touch'] .card:hover { transform: none; }
+
+/* 手機直放時提示轉橫向 */
+.rotate-hint { display: none; }
+@media (orientation: portrait) and (pointer: coarse) {
+  .rotate-hint {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    align-items: center;
+    justify-content: center;
+    background: var(--navy-deep);
+    color: var(--on-dark);
+    font-size: 22px;
+    font-weight: 800;
+  }
+}
+
+/* ---------- 畫風：介面配色與字體 ----------
+   主色來自各風格圖素包的交件留言（art-inbox/messages）；還沒交的先參考 TaiwanMahjong 的 themes.css。
+   --navy 是深色（框線、標題條、文字），--cream 是面板底，--gold 是強調色。 */
+
+:root[data-style='pc98'] {
+  --ribbon-y: 0.356;
+  /* 背景 #111329、面板 #24203e、文字 #fae8cd、選取 #ffd69a、邊框 #9b80b4 */
+  --navy: #24203e;
+  --navy-deep: #111329;
+  --navy-soft: #5b4f86;
+  --cream: #fae8cd;
+  --gold: #ffd69a;
+  --gold-deep: #d9a05a;
+  --gold-line: #9b80b4;
+  --stripe: #9b80b4;
+  --accent: #6fd3c1;
+  --font: 'MingLiU', '細明體', 'MS Gothic', 'Cascadia Mono', monospace;
+}
+:root[data-style='msdos'] {
+  --ribbon-y: 0.306;
+  /* 背景 #101828、面板 #243c7a、文字 #f6f1d8、選取 #ffd23f、邊框 #9ca8b8 */
+  --navy: #243c7a;
+  --navy-deep: #101828;
+  --navy-soft: #4a62a8;
+  --cream: #f6f1d8;
+  --gold: #ffd23f;
+  --gold-deep: #d9a800;
+  --gold-line: #9ca8b8;
+  --stripe: #9ca8b8;
+  --accent: #ff5555;
+  --font: 'Cascadia Mono', 'Consolas', 'MingLiU', '細明體', monospace;
+}
+:root[data-style='taiwan-print'] {
+  --ribbon-y: 0.319;
+  /* 墨藍 #102044、青綠 #128C96、朱紅 #E94B32、暖紙 #FFF1C2、金黃 #F6C334 */
+  --navy: #102044;
+  --navy-deep: #0a1530;
+  --navy-soft: #128c96;
+  --cream: #fff1c2;
+  --gold: #f6c334;
+  --gold-deep: #e94b32;
+  --gold-line: #f6c334;
+  --stripe: #128c96;
+  --accent: #e94b32;
+  --sea: #128c96;
+  --font: 'DFKai-SB', '標楷體', 'Kaiti TC', 'Microsoft JhengHei', serif;
+}
+:root[data-style='gameboy'] {
+  --ribbon-y: 0.315;
+  /* 最深 #0f380f、深 #306230、中亮 #8bac0f、最亮 #9bbc0f（只用這四色） */
+  --navy: #0f380f;
+  --navy-deep: #0f380f;
+  --navy-soft: #306230;
+  --cream: #9bbc0f;
+  --gold: #8bac0f;
+  --gold-deep: #306230;
+  --gold-line: #8bac0f;
+  --stripe: #306230;
+  --accent: #0f380f;
+  --sea: #0f380f;
+  --ok: #306230;
+  --red: #0f380f;
+  --on-dark: #9bbc0f;
+  --paper-white: #9bbc0f;
+  --hud-portrait: #8bac0f;
+  --font: 'MingLiU', '細明體', monospace;
+}
+:root[data-style='modern-paint'] {
+  --ribbon-y: 0.383;
+  /* 深藍 #15458F、天空藍 #3EA8EF、奶油 #FFF3D6、金色 #F4C558、墨色 #173351 */
+  --navy: #15458f;
+  --navy-deep: #173351;
+  --navy-soft: #3ea8ef;
+  --cream: #fff3d6;
+  --gold: #f4c558;
+  --gold-deep: #e0a83a;
+  --gold-line: #3ea8ef;
+  --stripe: #bfe3fa;
+  --accent: #ff8fa3;
+}
+/* 像素風格：直角、不要圓角與模糊陰影 */
+:root:is([data-style='pc98'], [data-style='msdos'], [data-style='gameboy']) :is(.panel, .card, input, select.vsel, .toast) {
+  border-radius: 0;
+}
+:root:is([data-style='pc98'], [data-style='msdos'], [data-style='gameboy']) img {
+  image-rendering: pixelated;
+}
+
+/* 英文、日文：中文排版用的寬字距拿掉（按鈕、標題原本用 letter-spacing＋text-indent 撐開） */
+:root:not(:lang(zh)) :is(*, *::before, *::after) {
+  letter-spacing: 0.02em !important;
+  text-indent: 0 !important;
+}

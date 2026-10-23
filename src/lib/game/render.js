@@ -1,0 +1,773 @@
+// 畫面：背景、角色、敵人、箱子、道具、特效、HUD。只讀取遊戲狀態，不改它。
+//
+// 狀態格式見 crates/quest-core/src/game.rs（Match 序列化的 JSON）。畫面位置 = (x − 鏡頭, z − y)。
+// 敵人與魔王還沒有圖：先用程式畫 Q 版人形（顏色照 stages.js 每一大關換），美術交件後換成動作圖。
+
+import { W, H, Z_TOP, Z_BOTTOM, SLOT_COLORS } from './constants.js';
+import { pickLine } from './characters.js';
+import { WORLDS, stageLabel } from './stages.js';
+import { drawScenery, drawAmbient } from './scenery.js';
+import { asset, currentConfig } from '../art-style.svelte.js';
+import { loadImage } from '../preload.svelte.js';
+import { t, displayName } from '../i18n.svelte.js';
+
+// 內部解析度：一般風格 2 倍（1920×1080）比較銳利；像素風格用較低的倍數再放大（見 style-assets.js）
+let SCALE = 2;
+
+const ART_PATHS = {
+  spark: 'effects/hit-spark.webp',
+  dust: 'effects/sand-puff.webp',
+  burst: 'effects/score-burst.webp',
+};
+const art = (key) => loadImage(asset(ART_PATHS[key]));
+let cfg = currentConfig();
+
+// HUD 的字、框、對話泡泡的顏色：跟介面用同一組 CSS 變數，限色風格也一致
+const pal = { text: '#fff', ink: '#142a63', flash: '#ffe066', paper: '#fff', accent: '#ff5d8f', hp: '#ffd23f', hpLow: '#ff4d5e' };
+let palStyle = null;
+function updatePalette() {
+  const style = document.documentElement.dataset.style ?? 'anime90';
+  if (style === palStyle) return;
+  palStyle = style;
+  const css = getComputedStyle(document.documentElement);
+  const v = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
+  pal.text = v('--on-dark', '#fff');
+  pal.ink = v('--navy', '#142a63');
+  pal.flash = v('--gold', '#ffe066');
+  pal.paper = v('--paper-white', '#fff');
+  pal.accent = v('--accent', '#ff5d8f');
+}
+
+const ready = (img) => img && img.complete && img.naturalWidth > 0;
+const FONT = '"Noto Sans TC", "Microsoft JhengHei", sans-serif';
+
+// ---------- 特效 ----------
+
+const particles = [];
+const effects = [];
+const bubbles = [];
+const floaters = []; // 「+100」之類往上飄的字
+let shake = 0;
+let flashScreen = 0;
+
+function effect(key, x, y, w, life, { rot = 0, grow = 0.3, alpha = 1, flip = false } = {}) {
+  effects.push({ key, x, y, w, life, max: life, rot, grow, alpha, flip });
+}
+
+function burst(x, y, color, n, speed, life = 30, gravity = 0.25) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const s = speed * (0.4 + Math.random() * 0.6);
+    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, life, max: life, color, gravity, size: 2 + Math.random() * 3 });
+  }
+}
+
+function say(slot, text, frames = 110) {
+  if (!text) return;
+  bubbles.splice(0, bubbles.length, ...bubbles.filter((b) => b.slot !== slot));
+  bubbles.push({ slot, text, timer: frames, max: frames });
+}
+
+export function resetEffects() {
+  particles.length = 0;
+  effects.length = 0;
+  bubbles.length = 0;
+  floaters.length = 0;
+  shake = 0;
+  flashScreen = 0;
+}
+
+const playerOf = (match, slot) => match.players.find((p) => p.slot === slot);
+const randomPlayer = (match) => {
+  const alive = match.players.filter((p) => !p.out);
+  return alive[Math.floor(Math.random() * alive.length)];
+};
+
+// 依遊戲事件產生特效與台詞（座標是關卡座標，畫的時候再減鏡頭）
+export function handleEvents(match) {
+  for (const e of match.events) {
+    switch (e.type) {
+      case 'hit':
+        effect('spark', e.x, e.y, e.big ? 120 : 70, e.big ? 16 : 10, { rot: Math.random() * Math.PI });
+        burst(e.x, e.y, '#fff3a0', e.big ? 10 : 5, e.big ? 7 : 5, 16, 0);
+        if (e.big) shake = Math.max(shake, 6);
+        break;
+      case 'hurt':
+        effect('spark', e.x, e.y, e.big ? 110 : 64, 10, { rot: Math.random() * Math.PI, alpha: 0.8 });
+        burst(e.x, e.y, '#ff8a8a', 6, 5, 16, 0);
+        if (e.big) shake = Math.max(shake, 8);
+        break;
+      case 'land':
+        effect('dust', e.x, e.z - 10, 110, 22, { alpha: 0.6, flip: Math.random() < 0.5 });
+        break;
+      case 'quake':
+        effect('dust', e.x, e.z - 14, 320, 34, { grow: 0.5 });
+        shake = Math.max(shake, 16);
+        break;
+      case 'ko':
+        effect('burst', e.x, e.z - 60, e.boss ? 320 : 150, e.boss ? 60 : 30, { grow: 0.5 });
+        if (e.boss) {
+          shake = Math.max(shake, 20);
+          flashScreen = 18;
+        }
+        if (e.by != null && Math.random() < (e.boss ? 1 : 0.25)) {
+          const p = playerOf(match, e.by);
+          if (p) say(p.slot, pickLine(p.character, e.boss ? 'win' : 'ko'));
+        }
+        break;
+      case 'break':
+        burst(e.x, e.z - 30, '#c08a4a', 14, 6, 30);
+        break;
+      case 'pickup': {
+        const p = playerOf(match, e.slot);
+        if (p) floaters.push({ x: p.x, y: p.z - 150, text: e.kind === 'gem' ? '+2000' : t('回復！'), life: 50, max: 50, color: e.kind === 'gem' ? '#7ff0ff' : '#7dff8a' });
+        break;
+      }
+      case 'special': {
+        const p = playerOf(match, e.slot);
+        if (p) effect('burst', p.x, p.z - 60, 220, 22, { grow: 0.4, alpha: 0.75 });
+        break;
+      }
+      case 'stage': {
+        const p = randomPlayer(match);
+        if (p) say(p.slot, pickLine(p.character, 'go'), 140);
+        break;
+      }
+      case 'boss': {
+        const p = randomPlayer(match);
+        if (p) say(p.slot, pickLine(p.character, 'boss'));
+        break;
+      }
+      case 'down': {
+        const p = playerOf(match, e.slot);
+        if (p) say(p.slot, pickLine(p.character, 'hurt'));
+        break;
+      }
+      case 'clear': {
+        const p = randomPlayer(match);
+        if (p) say(p.slot, pickLine(p.character, 'win'), 160);
+        break;
+      }
+    }
+  }
+}
+
+// ---------- 小工具 ----------
+
+function rr(g, x, y, w, h, r) {
+  g.beginPath();
+  g.roundRect(x, y, w, h, r);
+}
+
+function outlinedText(g, text, x, y, size, fill = pal.text, align = 'center') {
+  g.font = `900 ${size}px ${FONT}`;
+  g.textAlign = align;
+  g.textBaseline = 'middle';
+  g.lineJoin = 'round';
+  g.lineWidth = size / 5;
+  g.strokeStyle = pal.ink;
+  g.strokeText(text, x, y);
+  g.fillStyle = fill;
+  g.fillText(text, x, y);
+}
+
+function shadow(g, x, z, y, w) {
+  g.fillStyle = `rgba(20,20,40,${Math.max(0.08, 0.28 - y / 900)})`;
+  g.beginPath();
+  g.ellipse(x, z + 2, w * Math.max(0.45, 1 - y / 500), 8, 0, 0, Math.PI * 2);
+  g.fill();
+}
+
+// 無敵中閃爍
+const blinking = (b, frame) => b.inv > 0 && Math.floor(frame / 3) % 2 === 0;
+
+// ---------- 玩家 ----------
+
+// 角色圖集：8 格橫排（借用排球王的動作圖）
+const SPRITE_FRAMES = ['idle', 'run1', 'run2', 'jump', 'spike', 'dive', 'win', 'lose'];
+const SPRITE_H = 150;
+
+function poseOf(p) {
+  switch (p.act) {
+    case 'walk':
+      return Math.floor(p.t / 9) % 2 ? 'run1' : 'run2';
+    case 'attack':
+      return p.mv === 'none' ? 'idle' : 'spike';
+    case 'grab':
+      return p.mv === 'knee' ? 'spike' : 'idle';
+    case 'jump':
+      return p.mv === 'jumpKick' ? 'spike' : 'jump';
+    case 'enter':
+      return 'jump';
+    case 'hurt':
+      return 'lose';
+    case 'fall':
+    case 'down':
+    case 'dead':
+      return 'dive';
+    case 'rise':
+      return 'lose';
+    case 'win':
+      return 'win';
+    default:
+      return 'idle';
+  }
+}
+
+function drawPlayer(g, match, p, cam) {
+  if (p.out) return;
+  const x = p.x - cam;
+  shadow(g, x, p.z, p.y, 38);
+  if (p.act === 'dead' && Math.floor(p.t / 4) % 2 === 0) return;
+  if (blinking(p, match.frame)) return;
+  const img = p.character.sprite ? loadImage(p.character.spriteSrc) : null;
+  // 圖還沒載入就先不畫（進遊戲前會先載好，見 preload.svelte.js）
+  if (!ready(img)) return;
+  const pose = poseOf(p);
+  const i = SPRITE_FRAMES.indexOf(pose);
+  const fw = img.naturalWidth / SPRITE_FRAMES.length;
+  const fh = img.naturalHeight;
+  const drawH = SPRITE_H;
+  const drawW = drawH * (fw / fh);
+  g.save();
+  // 攻擊時往前衝一點、被打時往後仰
+  let lunge = 0;
+  if (p.act === 'attack' && p.mv !== 'none') lunge = Math.min(p.t, 6) * 2;
+  if (p.act === 'hurt') lunge = -Math.max(0, 6 - p.t) * 2;
+  g.translate(x + lunge * p.facing, p.z - p.y);
+  if (p.facing < 0) g.scale(-1, 1);
+  if (p.act === 'attack' && p.mv === 'special') {
+    // 必殺技：原地轉圈（左右翻）
+    g.scale(Math.cos(p.t * 0.6) >= 0 ? 1 : -1, 1);
+  }
+  if (p.act === 'fall') g.rotate(-0.3);
+  if (p.act === 'down' || p.act === 'dead') g.translate(0, 18);
+  if (p.act === 'rise') g.scale(1.05, 0.9);
+  if (p.mv === 'jumpKick' && p.act === 'jump') g.rotate(0.25);
+  if (p.flash > 0) g.filter = 'brightness(2.2)';
+  g.drawImage(img, i * fw, 0, fw, fh, -drawW / 2, -drawH * cfg.spriteAnchorY, drawW, drawH);
+  g.restore();
+}
+
+// 頭上的 1P／2P 標記
+function drawSlotMarker(g, p, cam, you, cpu) {
+  if (p.out || p.act === 'dead') return;
+  const x = p.x - cam;
+  const y = p.z - p.y - SPRITE_H - 6;
+  const color = SLOT_COLORS[p.slot];
+  g.fillStyle = color;
+  g.beginPath();
+  g.moveTo(x - 9, y - 8);
+  g.lineTo(x + 9, y - 8);
+  g.lineTo(x, y + 4);
+  g.fill();
+  outlinedText(g, you ? t('你') : cpu ? 'CPU' : `${p.slot + 1}P`, x, y - 18, 15, color);
+}
+
+// ---------- 敵人（程式畫的 Q 版人形） ----------
+
+function enemyLook(match, e) {
+  const w = WORLDS[match.world];
+  if (e.kind === 'boss') return { cloth: w.boss.color, pants: w.boss.accent, head: w.boss.color, accent: w.boss.accent, scale: 1.75 };
+  const c = w.enemy;
+  const scale = (e.kind === 'brute' ? 1.3 : e.kind === 'knife' ? 0.95 : 1) * (e.elite ? 1.25 : 1);
+  return { ...c, scale };
+}
+
+function drawEnemy(g, match, e, cam) {
+  const x = e.x - cam;
+  const look = enemyLook(match, e);
+  const s = look.scale;
+  shadow(g, x, e.z, e.y, 30 * s);
+  if (e.act === 'dead' && Math.floor(e.t / 4) % 2 === 0) return;
+  if (e.act === 'vanish' && e.t > 6 && e.t < 34) {
+    // 瞬移中：只剩紫色的煙
+    g.fillStyle = 'rgba(160,60,255,0.35)';
+    g.beginPath();
+    g.ellipse(x, e.z - 60, 40, 70, 0, 0, Math.PI * 2);
+    g.fill();
+    return;
+  }
+  g.save();
+  g.translate(x, e.z - e.y);
+  if (e.facing < 0) g.scale(-1, 1);
+  g.scale(s, s);
+  const lying = e.act === 'down' || e.act === 'dead';
+  if (lying) {
+    g.rotate(-Math.PI / 2);
+    g.translate(-18, -20);
+  } else if (e.act === 'fall' || e.act === 'thrown') {
+    g.rotate(e.act === 'thrown' ? e.t * 0.35 : -0.6);
+  } else if (e.act === 'hurt' || e.act === 'held') {
+    g.rotate(-0.15);
+  } else if (e.act === 'charge') {
+    g.rotate(0.25);
+  }
+  if (e.flash > 0) g.filter = 'brightness(2.4)';
+
+  const walk = e.act === 'walk' || e.act === 'charge' ? Math.sin(e.t * 0.35) : 0;
+  // 招式前搖：往後縮；出手：手伸長
+  const attacking = e.act === 'attack' && e.mv !== 'none';
+  const windup = attacking && e.t < (e.mv === 'slam' || e.mv === 'bossSlam' ? 15 : 6);
+  const reach = attacking && !windup ? 26 : windup ? -6 : 0;
+
+  // 腿
+  g.fillStyle = look.pants;
+  g.fillRect(-12 + walk * 6, -34, 10, 34);
+  g.fillRect(3 - walk * 6, -34, 10, 34);
+  // 身體
+  g.fillStyle = look.cloth;
+  rr(g, -18, -78, 36, 48, 10);
+  g.fill();
+  g.strokeStyle = 'rgba(20,20,40,0.55)';
+  g.lineWidth = 2.5;
+  g.stroke();
+  // 手
+  g.fillStyle = look.head;
+  g.beginPath();
+  g.arc(16 + reach, -56 + (windup ? -6 : 0), 7, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  // 武器／特徵
+  if (e.kind === 'knife') {
+    g.fillStyle = '#e8eef8';
+    g.fillRect(20 + reach, -60, 24, 5);
+  }
+  if (e.kind === 'thrower') {
+    g.fillStyle = look.accent;
+    g.beginPath();
+    g.arc(-16, -64, 10, 0, Math.PI * 2);
+    g.fill();
+  }
+  // 頭
+  g.fillStyle = look.head;
+  g.beginPath();
+  g.arc(2, -96, 22, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  // 眼睛：凶狠的眉毛
+  g.fillStyle = '#1a1a2a';
+  g.fillRect(8, -100, 5, 7);
+  g.fillRect(-4, -100, 5, 7);
+  g.strokeStyle = '#1a1a2a';
+  g.lineWidth = 2.5;
+  g.beginPath();
+  g.moveTo(-6, -108);
+  g.lineTo(2, -104);
+  g.moveTo(16, -108);
+  g.lineTo(8, -104);
+  g.stroke();
+  if (e.act === 'hurt' || e.act === 'fall' || lying) {
+    // 被打：眼睛變成 ×
+    g.fillStyle = look.head;
+    g.fillRect(-6, -102, 22, 10);
+    g.strokeStyle = '#1a1a2a';
+    for (const ex of [-2, 10]) {
+      g.beginPath();
+      g.moveTo(ex - 3, -100);
+      g.lineTo(ex + 3, -94);
+      g.moveTo(ex + 3, -100);
+      g.lineTo(ex - 3, -94);
+      g.stroke();
+    }
+  }
+  // 頭上的配件
+  g.fillStyle = look.accent;
+  if (e.kind === 'boss') drawBossCrown(g, match.world);
+  else if (e.kind === 'brute') g.fillRect(-18, -118, 40, 7);
+  else g.fillRect(-14, -120, 32, 8);
+  if (e.elite) {
+    g.strokeStyle = pal.flash;
+    g.lineWidth = 3;
+    g.beginPath();
+    g.arc(2, -96, 27, 0, Math.PI * 2);
+    g.stroke();
+  }
+  g.restore();
+  // 招式快出手時的「！」提示
+  if (windup && (e.kind === 'boss' || e.kind === 'brute' || e.elite)) outlinedText(g, '!', x, e.z - e.y - 130 * s, 26, pal.flash);
+}
+
+function drawBossCrown(g, world) {
+  switch (WORLDS[world].id) {
+    case 'city':
+      g.fillRect(-20, -122, 44, 9); // 墨鏡帶
+      break;
+    case 'forest':
+      for (const dx of [-14, 18]) {
+        g.beginPath();
+        g.arc(dx, -116, 9, 0, Math.PI * 2);
+        g.fill();
+      }
+      break;
+    case 'sea':
+      g.beginPath();
+      g.moveTo(-6, -116);
+      g.lineTo(8, -146);
+      g.lineTo(18, -114);
+      g.fill();
+      break;
+    case 'ice':
+    case 'castle':
+      for (const dx of [-14, 2, 18]) {
+        g.beginPath();
+        g.moveTo(dx - 6, -114);
+        g.lineTo(dx, -138);
+        g.lineTo(dx + 6, -114);
+        g.fill();
+      }
+      break;
+    case 'mine':
+      g.fillRect(-20, -124, 44, 12);
+      g.fillStyle = '#ff9a2e';
+      g.fillRect(-4, -134, 10, 10);
+      break;
+  }
+}
+
+// ---------- 箱子、道具、飛行道具 ----------
+
+const PROP_LOOK = {
+  city: ['#9aa3b5', '#6c768a'], // 垃圾桶
+  forest: ['#8a5a32', '#5e3a1e'], // 樹樁
+  sea: ['#e0a4c6', '#a8638a'], // 大貝殼
+  ice: ['#e4f4ff', '#9cc6e6'], // 雪塊
+  mine: ['#6a6a76', '#3a3a44'], // 礦車
+  castle: ['#8a6a4a', '#5a3a2a'], // 木桶
+};
+
+function drawProp(g, match, pr, cam) {
+  const x = pr.x - cam;
+  const [a, b] = PROP_LOOK[WORLDS[match.world].id];
+  shadow(g, x, pr.z, 0, 30);
+  g.save();
+  g.translate(x + (pr.flash > 0 ? (Math.random() - 0.5) * 4 : 0), pr.z);
+  g.fillStyle = a;
+  rr(g, -26, -58, 52, 58, 6);
+  g.fill();
+  g.strokeStyle = b;
+  g.lineWidth = 4;
+  g.stroke();
+  g.beginPath();
+  g.moveTo(-26, -30);
+  g.lineTo(26, -30);
+  g.stroke();
+  if (pr.hp < 2) {
+    g.strokeStyle = 'rgba(0,0,0,0.5)';
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(-10, -58);
+    g.lineTo(2, -36);
+    g.lineTo(-6, -18);
+    g.stroke();
+  }
+  g.restore();
+}
+
+function drawItem(g, it, cam, frame) {
+  const x = it.x - cam;
+  const bob = Math.sin(frame * 0.12 + it.id) * 3;
+  shadow(g, x, it.z, it.y, 16);
+  g.save();
+  g.translate(x, it.z - it.y - 16 + bob);
+  if (it.kind === 'apple') {
+    g.fillStyle = '#ff3b4a';
+    g.beginPath();
+    g.arc(0, 0, 12, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#3fbf4a';
+    g.fillRect(1, -18, 8, 6);
+  } else if (it.kind === 'meat') {
+    g.fillStyle = '#b5652a';
+    g.beginPath();
+    g.ellipse(-4, 0, 16, 11, -0.3, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#fff3e0';
+    g.fillRect(10, -4, 12, 6);
+  } else if (it.kind === 'feast') {
+    g.fillStyle = '#ffffff';
+    g.beginPath();
+    g.ellipse(0, 6, 26, 8, 0, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#d0803a';
+    g.beginPath();
+    g.arc(0, -4, 16, Math.PI, 0);
+    g.fill();
+  } else {
+    g.fillStyle = '#5fe3ff';
+    g.beginPath();
+    g.moveTo(0, -14);
+    g.lineTo(12, 0);
+    g.lineTo(0, 14);
+    g.lineTo(-12, 0);
+    g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.7)';
+    g.fillRect(-3, -8, 4, 6);
+  }
+  g.restore();
+}
+
+const SHOT_COLORS = { rock: '#8a8478', bubble: 'rgba(180,240,255,0.7)', ice: '#bfe9ff', fire: '#ff8a2e', dark: '#b03aff' };
+function drawShot(g, s, cam, frame) {
+  const x = s.x - cam;
+  const y = s.z - s.y;
+  shadow(g, x, s.z, s.y, 12);
+  g.save();
+  g.translate(x, y);
+  g.fillStyle = SHOT_COLORS[s.kind];
+  if (s.kind === 'ice') {
+    g.rotate(s.vx > 0 ? 0 : Math.PI);
+    g.beginPath();
+    g.moveTo(18, 0);
+    g.lineTo(-12, -7);
+    g.lineTo(-12, 7);
+    g.fill();
+  } else {
+    const r = s.kind === 'rock' ? 9 : 14 + Math.sin(frame * 0.4) * 2;
+    if (s.kind === 'fire' || s.kind === 'dark') {
+      g.globalAlpha = 0.4;
+      g.beginPath();
+      g.arc(0, 0, r * 1.6, 0, Math.PI * 2);
+      g.fill();
+      g.globalAlpha = 1;
+    }
+    g.beginPath();
+    g.arc(0, 0, r, 0, Math.PI * 2);
+    g.fill();
+    if (s.kind === 'bubble') {
+      g.strokeStyle = '#ffffff';
+      g.lineWidth = 2;
+      g.stroke();
+    }
+  }
+  g.restore();
+}
+
+// ---------- HUD ----------
+
+function hpBar(g, x, y, w, h, hp, max) {
+  g.fillStyle = 'rgba(0,0,0,0.55)';
+  g.fillRect(x - 2, y - 2, w + 4, h + 4);
+  const r = Math.max(0, hp / max);
+  g.fillStyle = r < 0.3 ? pal.hpLow : pal.hp;
+  g.fillRect(x, y, w * r, h);
+  g.fillStyle = 'rgba(255,255,255,0.35)';
+  g.fillRect(x, y, w * r, h / 3);
+}
+
+function drawPlayerPanel(g, p, names, cpu) {
+  const x = 10 + p.slot * 237;
+  const y = 8;
+  g.fillStyle = 'rgba(10,20,50,0.55)';
+  rr(g, x, y, 226, 58, 8);
+  g.fill();
+  g.strokeStyle = SLOT_COLORS[p.slot];
+  g.lineWidth = 3;
+  g.stroke();
+  const face = loadImage(p.character.portraits[p.act === 'hurt' || p.act === 'fall' || p.act === 'down' ? 'surprised' : p.act === 'win' ? 'happy' : 'normal']);
+  if (ready(face)) {
+    g.save();
+    rr(g, x + 5, y + 5, 48, 48, 6);
+    g.clip();
+    g.fillStyle = SLOT_COLORS[p.slot];
+    g.fillRect(x + 5, y + 5, 48, 48);
+    if (p.out) g.filter = 'grayscale(1) brightness(0.6)';
+    g.drawImage(face, x + 5, y + 5, 48, 48);
+    g.restore();
+  }
+  const name = names?.[p.slot] ? displayName(names[p.slot]) : p.character.name;
+  g.font = `800 15px ${FONT}`;
+  g.textAlign = 'left';
+  g.textBaseline = 'middle';
+  g.fillStyle = pal.text;
+  g.fillText(`${cpu ? 'CPU' : `${p.slot + 1}P`} ${name}`.slice(0, 14), x + 60, y + 15);
+  if (p.out) {
+    outlinedText(g, 'GAME OVER', x + 140, y + 38, 15, '#ff8a8a');
+    return;
+  }
+  hpBar(g, x + 60, y + 29, 158, 10, p.hp, p.maxHp);
+  g.font = `800 13px ${FONT}`;
+  g.fillStyle = pal.text;
+  g.fillText(`♥×${Math.max(0, p.lives)}`, x + 60, y + 50);
+  g.textAlign = 'right';
+  g.fillText(String(p.score).padStart(7, '0'), x + 218, y + 50);
+}
+
+function drawBossBar(g, match) {
+  const boss = match.enemies.find((e) => e.id === match.boss);
+  if (!boss) return;
+  const w = 460;
+  const x = (W - w) / 2;
+  const y = H - 34;
+  g.fillStyle = 'rgba(10,10,30,0.6)';
+  rr(g, x - 10, y - 22, w + 20, 40, 8);
+  g.fill();
+  g.font = `900 15px ${FONT}`;
+  g.textAlign = 'left';
+  g.textBaseline = 'middle';
+  g.fillStyle = '#ff9aa8';
+  g.fillText(t(WORLDS[match.world].boss.name), x, y - 10);
+  hpBar(g, x, y + 2, w, 10, boss.hp, boss.maxHp);
+}
+
+function drawBanner(g, title, sub, alpha) {
+  g.save();
+  g.globalAlpha = alpha;
+  g.fillStyle = 'rgba(10,20,50,0.7)';
+  g.fillRect(0, H / 2 - 70, W, 140);
+  g.fillStyle = pal.flash;
+  g.fillRect(0, H / 2 - 70, W, 4);
+  g.fillRect(0, H / 2 + 66, W, 4);
+  outlinedText(g, title, W / 2, H / 2 - 22, 52, pal.flash);
+  if (sub) outlinedText(g, sub, W / 2, H / 2 + 34, 26);
+  g.restore();
+}
+
+function drawBubbles(g, match, cam) {
+  for (const b of bubbles) {
+    const p = playerOf(match, b.slot);
+    if (!p || p.out) continue;
+    const px = p.x - cam;
+    const alpha = Math.min(1, b.timer / 15, (b.max - b.timer) / 6);
+    g.save();
+    g.globalAlpha = alpha;
+    g.font = `700 18px ${FONT}`;
+    const tw = g.measureText(b.text).width;
+    const w = tw + 26;
+    const h = 36;
+    const x = Math.max(10, Math.min(W - w - 10, px - w / 2));
+    const y = Math.max(76, p.z - p.y - SPRITE_H - 70);
+    g.fillStyle = pal.paper;
+    g.strokeStyle = pal.ink;
+    g.lineWidth = 3;
+    rr(g, x, y, w, h, 12);
+    g.fill();
+    g.stroke();
+    g.beginPath();
+    g.moveTo(px - 7, y + h - 1.5);
+    g.lineTo(px, y + h + 12);
+    g.lineTo(px + 7, y + h - 1.5);
+    g.fill();
+    g.stroke();
+    g.fillStyle = pal.ink;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(b.text, x + w / 2, y + h / 2 + 1);
+    g.restore();
+  }
+}
+
+function drawHud(g, match, opts) {
+  match.players.forEach((p) => drawPlayerPanel(g, p, opts.names, opts.cpu?.[p.slot]));
+  drawBossBar(g, match);
+  const w = WORLDS[match.world];
+  if (match.go && Math.floor(match.frame / 20) % 2 === 0) {
+    outlinedText(g, 'GO ▶', W - 90, H / 2 - 40, 46, pal.flash);
+  }
+  if (match.phase === 'intro') {
+    const k = 140 - match.timer;
+    const alpha = Math.min(1, k / 12, match.timer / 18);
+    drawBanner(g, `STAGE ${stageLabel(match.world, match.sub)}`, `${t(w.name)} · ${t(w.subs[match.sub])}`, alpha);
+  } else if (match.phase === 'clear') {
+    drawBanner(g, 'STAGE CLEAR!', `${t(w.name)} · ${t(w.subs[match.sub])}`, Math.min(1, (200 - match.timer) / 12));
+  } else if (match.phase === 'over') {
+    drawBanner(g, 'GAME OVER', null, Math.min(1, match.timer / 30));
+  } else if (match.phase === 'ending') {
+    drawBanner(g, 'CONGRATULATIONS!', t('六大關全部突破！'), Math.min(1, match.timer / 30));
+  }
+}
+
+// ---------- 主畫面 ----------
+
+// opts：{ you: 自己的座位（連線時）, names: 各座位的玩家名稱（連線時）, cpu: 各座位是不是電腦 }
+export function draw(canvas, match, opts = {}) {
+  cfg = currentConfig();
+  updatePalette();
+  if (SCALE !== cfg.canvasScale || canvas.width !== Math.round(W * cfg.canvasScale)) {
+    SCALE = cfg.canvasScale;
+    resize(canvas);
+  }
+  const g = canvas.getContext('2d');
+  g.imageSmoothingEnabled = !cfg.pixelated;
+  g.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  if (!match) {
+    g.fillStyle = '#0c1d4b';
+    g.fillRect(0, 0, W, H);
+    return;
+  }
+  if (shake > 0) {
+    g.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+    shake *= 0.85;
+    if (shake < 0.5) shake = 0;
+  }
+  const cam = match.camera;
+  drawScenery(g, match.world, match.sub, cam, SCALE);
+
+  // 依前後（z）排序：靠後的先畫
+  const things = [];
+  for (const pr of match.props) things.push([pr.z, () => drawProp(g, match, pr, cam)]);
+  for (const it of match.items) things.push([it.z - 1, () => drawItem(g, it, cam, match.frame)]);
+  for (const e of match.enemies) things.push([e.z + (e.act === 'held' ? 0.5 : 0), () => drawEnemy(g, match, e, cam)]);
+  for (const p of match.players) things.push([p.z, () => drawPlayer(g, match, p, cam)]);
+  for (const s of match.shots) things.push([s.z + 0.2, () => drawShot(g, s, cam, match.frame)]);
+  things.sort((a, b) => a[0] - b[0]);
+  for (const [, fn] of things) fn();
+
+  for (const fx of effects) {
+    const img = art(fx.key);
+    if (!ready(img)) continue;
+    const k = 1 - fx.life / fx.max;
+    const w = fx.w * (1 + fx.grow * k);
+    const h = w * (img.naturalHeight / img.naturalWidth);
+    g.save();
+    g.globalAlpha = fx.alpha * Math.min(1, (fx.life / fx.max) * 1.6);
+    g.translate(fx.x - cam, fx.y);
+    g.rotate(fx.rot);
+    if (fx.flip) g.scale(-1, 1);
+    g.drawImage(img, -w / 2, -h / 2, w, h);
+    g.restore();
+  }
+  for (const pt of particles) {
+    g.globalAlpha = pt.life / pt.max;
+    g.fillStyle = pt.color;
+    g.fillRect(pt.x - cam - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size);
+  }
+  g.globalAlpha = 1;
+  for (const f of floaters) {
+    g.globalAlpha = Math.min(1, f.life / 15);
+    outlinedText(g, f.text, f.x - cam, f.y - (f.max - f.life) * 0.8, 20, f.color);
+  }
+  g.globalAlpha = 1;
+  drawAmbient(g, match.world, match.sub, match.frame);
+  if (flashScreen > 0) {
+    g.fillStyle = `rgba(255,255,255,${flashScreen / 24})`;
+    g.fillRect(0, 0, W, H);
+  }
+
+  for (const p of match.players) drawSlotMarker(g, p, cam, opts.you === p.slot, opts.cpu?.[p.slot]);
+  drawBubbles(g, match, cam);
+  drawHud(g, match, opts);
+}
+
+// 跟模擬同步，每個影格呼叫一次
+export function tick() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.x += pt.vx;
+    pt.y += pt.vy;
+    pt.vy += pt.gravity;
+    if (--pt.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = effects.length - 1; i >= 0; i--) if (--effects[i].life <= 0) effects.splice(i, 1);
+  for (let i = bubbles.length - 1; i >= 0; i--) if (--bubbles[i].timer <= 0) bubbles.splice(i, 1);
+  for (let i = floaters.length - 1; i >= 0; i--) if (--floaters[i].life <= 0) floaters.splice(i, 1);
+  if (flashScreen > 0) flashScreen--;
+}
+
+export function resize(canvas) {
+  canvas.width = Math.round(W * SCALE);
+  canvas.height = Math.round(H * SCALE);
+  canvas.style.imageRendering = cfg.pixelated ? 'pixelated' : 'auto';
+}
+
+export { Z_TOP, Z_BOTTOM };

@@ -1,0 +1,8 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "quest", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 1422 },
+    { "name": "quest-alt", "runtimeExecutable": "npx", "runtimeArgs": ["vite", "--port", "1432", "--strictPort"], "port": 1432 },
+    { "name": "signal", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "workers/signal", "run", "dev"], "port": 8787 }
+  ]
+}

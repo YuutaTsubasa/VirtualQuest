@@ -1,0 +1,98 @@
+// 角色名字、介紹（英文，跟 TaiwanMahjong 一樣）與比賽台詞。
+export default {
+  // 名字
+  小翠: 'Xiaocui',
+  月華: 'Yuehua',
+  阿明: 'Ah-Ming',
+  糖糖: 'Tangtang',
+  小春: 'Xiaochun',
+  蘭姐: 'Sister Lan',
+  蒼牙: 'Cangya',
+  金爺: 'Uncle Jin',
+  雷歐: 'Leo',
+  阿烈: 'Ah-Lieh',
+  阿翼: 'Tsubasa',
+
+  // 介紹
+  綠色雙馬尾的元氣少女: 'A bubbly girl with green twin tails',
+  銀髮的冷靜大小姐: 'A cool-headed young lady with silver hair',
+  熱血的刺蝟頭少年: 'A hot-blooded boy with spiky hair',
+  愛撒嬌的粉紅包包頭: 'A sweet-talking girl with pink buns',
+  橘色馬尾的運動少女: 'A sporty girl with an orange ponytail',
+  戴眼鏡的麻將館老闆娘: 'The bespectacled owner of the mahjong parlor',
+  '銀髮狼耳、鼻子靈又好勝的狼族少年': 'A competitive wolf boy with silver hair and a sharp nose',
+  '鬍子帥氣、見過大風大浪的老牌賭客': 'A seasoned gambler with a dashing beard who has seen it all',
+  '戴著王冠、一本正經的異國王子騎士': 'An earnest knight-prince from abroad who wears a crown',
+  '紅髮刀疤、豪爽愛冒險的傭兵': 'A bold red-haired mercenary with a scar and a taste for adventure',
+  '棕髮藍眼、穿著銀色盔甲的隱藏來客': 'A secret guest with brown hair, blue eyes and silver armor',
+
+  // 小翠
+  '耶～得分！': 'Yay~ a point!',
+  '小翠出擊～！': 'Xiaocui, go~!',
+  '啊啊啊沒接到啦！': 'Aaah, I missed it!',
+  '嗚…剛剛那球好快…': 'Ugh… that ball was so fast…',
+  '贏了～！今天運氣超好！': 'I won~! Lucky day!',
+  '嗚…下次一定贏回來！': "Ugh… I'll win it back next time!",
+  // 月華
+  '軌跡，完全在計算之中。': 'The trajectory was entirely as calculated.',
+  '失禮了。': 'Pardon me.',
+  '……失算了。': '…A miscalculation.',
+  '勝負，早已注定。': 'The outcome was decided from the start.',
+  '真是不甘心……再一局。': 'How frustrating… One more game.',
+  // 阿明
+  '燃起來了——！': "I'm fired up——!",
+  '一擊必殺！': 'One-hit KO!',
+  '可惡——！': 'Dammit——!',
+  '我、我只是不小心！': 'I-I just slipped!',
+  '這就是熱血的力量！！': 'That is the power of passion!!',
+  '我還沒燃燒完啊——！': "I haven't burned out yet——!",
+  // 糖糖
+  '得分了～♡': 'A point~♡',
+  '糖糖好厲害吧♪': 'Tangtang is amazing, right♪',
+  '嗚嗚…欺負人家…': "Waah… you're so mean…",
+  '贏了～大家要給糖糖糖果喔♡': 'I won~ Everyone owes Tangtang candy♡',
+  '不算不算！再來一次嘛～': "That doesn't count! One more time~",
+  // 小春
+  '好球！': 'Nice one!',
+  '漂亮扣殺！': 'Beautiful spike!',
+  '失誤了！下一球扳回來！': "My mistake! I'll get the next one!",
+  '比賽結束～！大家辛苦了！': 'Game over~! Good game, everyone!',
+  '被逆轉了…再練一百球！': 'They came back on me… A hundred more practice serves!',
+  // 蘭姐
+  '年輕人，球要看清楚。': 'Keep your eye on the ball, kid.',
+  '開店三十年不是開假的。': "Thirty years running a parlor wasn't for nothing.",
+  '哎呀，姐也有失手的時候。': 'Oh my, even I slip up sometimes.',
+  '呵呵，喝杯茶再走吧。': 'Hoho, stay for a cup of tea.',
+  '算你厲害。': "You've got skills.",
+  // 蒼牙
+  '嗷嗚——咬住了！': 'Awoo——got it in my jaws!',
+  '獵物到手！': 'Prey caught!',
+  '嗚……居然聞漏了。': "Grr… I didn't sniff that one out.",
+  '可惡，被反咬一口！': 'Dammit, it bit back!',
+  '今天的獵物，全被我叼走啦！': "Today's prey is all mine!",
+  '下一場一定咬住你。': "Next match, I'm sinking my teeth in.",
+  // 金爺
+  '呵，這球我早就看好了。': 'Heh, I saw this one coming.',
+  '年輕人，承讓了。': 'Thanks for going easy on me, kid.',
+  '輸得起，才贏得起。': 'You have to lose well to win well.',
+  '各位，付錢吧。': 'Pay up, everyone.',
+  '這場算你的，下場再說。': "This one's yours. We'll see about the next.",
+  // 雷歐
+  '以王冠之名——得分！': 'In the name of the crown——a point!',
+  '勝利屬於堂堂正正之人。': 'Victory belongs to the honorable.',
+  '……是我大意了。': '…I was careless.',
+  '這是王者的勝利。': 'A victory worthy of a king.',
+  '騎士也有失手的時候。下一場見真章。': 'Even knights falter. The next match will tell.',
+  // 阿烈
+  '痛快！': 'Now that felt good!',
+  '哈哈，搶到手才算數！': "Haha, it only counts once it's in your hands!",
+  '這點小傷，不算什麼！': "Just a scratch, it's nothing!",
+  '寶藏到手啦！今晚我請客！': "Treasure's mine! Drinks are on me tonight!",
+  '下一場冒險再說！': "We'll settle it on the next adventure!",
+  // 阿翼
+  '剛好！': 'Just right!',
+  '這球拿下了！': 'Got this one!',
+  '哎呀，被看穿了。': 'Oops, you read me.',
+  '今天手感不錯！謝謝大家！': 'Felt good today! Thanks, everyone!',
+  '再戰一場吧！': "Let's play another!",
+};
