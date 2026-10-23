@@ -21,14 +21,13 @@
 
 <style>
   .settings-btn {
-    width: 9cqh;
-    height: 9cqh;
+    width: 8cqh;
+    height: 8cqh;
     flex: none;
-    padding: 0.9cqh;
-    border: 0.45cqh solid var(--navy);
-    border-radius: 50%;
+    padding: 0.8cqh;
+    border: var(--line) solid var(--navy);
     background: var(--cream);
-    box-shadow: 0 0.5cqh 0 rgba(12, 29, 75, 0.35);
+    box-shadow: 0.5cqh 0.5cqh 0 var(--navy);
     transition: transform 0.15s;
   }
   .settings-btn:hover {

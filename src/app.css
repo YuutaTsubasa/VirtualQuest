@@ -1,32 +1,38 @@
-/* 虛擬闖天下：90 年代運動遊戲風介面（深藍＋米白＋金黃）。
-   尺寸一律用 cqh／cqw（16:9 舞台的高／寬百分比），任何視窗大小比例都一樣。 */
+/* 虛擬闖天下：90 年代熱血冒險動畫 × 四人街機闖關（art-work/ui-concept-v1/DESIGN.md）。
+   墨黑框線＋暖白紙＋朱紅主行動＋青綠次要互動，直角矩形、短距離實色陰影、毛筆感的大標題。
+   尺寸一律用 cqh／cqw（16:9 舞台的高／寬百分比），任何視窗大小比例都一樣。
+   顏色變數沿用舊名（--navy＝墨、--cream＝紙、--accent＝朱紅、--gold＝杏黃），其他畫風（下面）只要覆寫這幾個。 */
 
 :root {
-  --navy: #142a63;
-  --navy-deep: #0c1d4b;
-  --navy-soft: #2b4a8f;
-  --cream: #fbf4e0;
-  --cream-deep: #efe2bd;
-  --gold: #ffd43b;
-  --gold-deep: #f2a900;
-  --gold-line: #f7c52b;
-  --stripe: #b7c2d8;
+  --navy: #202329;
+  --navy-deep: #16181d;
+  --navy-soft: #4a4f5a;
+  --cream: #f5efdf;
+  --cream-deep: #e8dfc8;
+  --gold: #e9b85e;
+  --gold-deep: #c9913a;
+  --gold-line: #287f78;
+  --stripe: rgba(32, 35, 41, 0.14);
+  --accent: #d94b3d;
+  --accent2: #287f78;
+  --teal: #287f78;
+  --teal-soft: #d7e8e2;
+  --sea: #287f78;
+  --ok: #287f78;
+  --on-dark: #f5efdf;
+  --paper-white: #fffbf1;
+  --hud-portrait: #287f78;
+  --font: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', 'Heiti TC', sans-serif;
+  /* 墨線粗細與實色陰影距離（1920×1080 設計稿的 3 px／6 px） */
+  --line: 0.32cqh;
+  --drop: 0.6cqh;
   --ink: var(--navy);
   --paper: var(--cream);
-  --accent: #e8455b;
-  --accent2: var(--gold);
-  --sea: #1f5fbf;
-  --ok: #1fa35b;
-  /* 深色底上的字、白色底（輸入框、表格），以及比賽畫面的頭像底色：Game Boy 這類限色風格會換掉 */
-  --on-dark: #fff;
-  --paper-white: #fff;
-  --hud-portrait: #5aa9ec;
-  --font: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', 'Heiti TC', sans-serif;
   /* 手把鍵盤（從 TaiwanMahjong 搬來的 ControlsKeyboard）用的顏色 */
   --text: var(--navy);
   --panel-solid: var(--cream);
-  --muted: #5a6788;
-  --red: #c1121f;
+  --muted: #6b6a66;
+  --red: var(--accent);
   font-family: var(--font);
 }
 
@@ -35,7 +41,7 @@
 html, body {
   margin: 0;
   height: 100%;
-  background: #0b1430;
+  background: var(--navy-deep);
   color: var(--navy);
   overflow: hidden;
 }
@@ -57,13 +63,27 @@ html, body {
 #stage input, #stage textarea { user-select: text; -webkit-user-select: text; }
 #stage canvas { width: 100%; height: 100%; display: block; }
 
-/* 選單背景圖（public/ui/anime90/bg.png，沒有就露出後面的示範賽） */
 .menu-bg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* 紙張底：暖白＋四角的網點（文字和數值底下保持平整，網點只在邊角） */
+.paper-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(rgba(32, 35, 41, 0.16) 22%, transparent 26%) 0 0 / 1.3cqh 1.3cqh,
+    var(--cream);
+}
+.paper-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 65% at 50% 52%, var(--cream) 62%, transparent 100%);
 }
 
 .screen {
@@ -76,8 +96,8 @@ html, body {
   gap: 2.4cqh;
   font-size: 2.6cqh;
 }
-/* 疊在比賽畫面上的視窗（暫停、結果）：壓暗背景 */
-.screen.overlay { background: rgba(8, 18, 48, 0.55); }
+/* 疊在遊戲畫面上的視窗（暫停、結果）：墨黑半透明遮罩 */
+.screen.overlay { background: rgba(22, 24, 29, 0.62); }
 
 /* ---------- 共用：版面 ---------- */
 
@@ -85,11 +105,11 @@ html, body {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-rows: 21cqh 1fr 9cqh;
-  padding: 2.4cqh 3.4cqw 2.6cqh;
+  grid-template-rows: 15cqh 1fr 8.4cqh;
+  padding: 2cqh 3cqw 2.2cqh;
   gap: 1.6cqh;
 }
-.frame-main { min-height: 0; display: flex; gap: 2cqw; }
+.frame-main { min-height: 0; display: flex; gap: 1.8cqw; }
 .frame-foot {
   display: grid;
   /* 中間的提示放不下就換行，兩邊的按鈕不要被擠成兩行 */
@@ -98,12 +118,10 @@ html, body {
   gap: 2cqw;
 }
 
-/* 金色分隔線 */
+/* 青綠分隔線 */
 .gold-rule {
-  height: 0.7cqh;
-  background: linear-gradient(var(--gold-line), var(--gold-deep));
-  border-top: 0.25cqh solid var(--navy);
-  border-bottom: 0.25cqh solid var(--navy);
+  height: 0.5cqh;
+  background: var(--teal);
 }
 
 /* ---------- 共用：按鈕 ---------- */
@@ -115,156 +133,140 @@ button, select {
 }
 button:disabled { opacity: 0.5; cursor: default; }
 
-/* 切角按鈕：外層深藍是邊框，::before 是米白（或金色）的面，兩端各有一組斜線 */
+/* 直角按鈕：墨框＋紙面＋右下實色陰影。按下時往陰影方向壓下去 */
 .vbtn {
   --face: var(--cream);
-  --cut: 1.4cqh;
+  --fg: var(--navy);
   position: relative;
-  border: 0;
-  background: var(--navy);
-  padding: 1.2cqh 5cqh;
+  border: var(--line) solid var(--navy);
+  background: var(--face);
+  color: var(--fg);
+  padding: 1cqh 4cqh;
   min-height: 7cqh;
-  font-size: 3.3cqh;
+  font-size: 3cqh;
   font-weight: 900;
-  letter-spacing: 0.25em;
-  text-indent: 0.25em;
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
   white-space: nowrap;
-  clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% 50%, calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 50%);
-  isolation: isolate;
-  transition: transform 0.08s, filter 0.08s;
+  box-shadow: var(--drop) var(--drop) 0 var(--navy);
+  transition: transform 0.06s, box-shadow 0.06s, background 0.08s;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 1.4cqh;
+  gap: 1.2cqh;
 }
-.vbtn::before {
-  content: '';
-  position: absolute;
-  inset: 0.45cqh 0.6cqh;
-  z-index: -1;
-  background:
-    repeating-linear-gradient(115deg, transparent 0 0.5cqh, var(--stripe) 0.5cqh 0.95cqh) left 1.8cqh center / 3cqh 70% no-repeat,
-    repeating-linear-gradient(115deg, transparent 0 0.5cqh, var(--stripe) 0.5cqh 0.95cqh) right 1.8cqh center / 3cqh 70% no-repeat,
-    var(--face);
-  clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% 50%, calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 50%);
-}
+.vbtn:hover:not(:disabled) { --face: #fff8e6; }
+.vbtn:active:not(:disabled) { transform: translate(var(--drop), var(--drop)); box-shadow: 0 0 0 var(--navy); }
+/* 次要的強調（複製、更換角色、加入電腦隊友…）：青綠 */
 .vbtn.gold,
-.vbtn.active,
-.vbtn:hover:not(:disabled) {
-  --face: linear-gradient(#ffe56b, var(--gold) 55%, var(--gold-deep));
-  --stripe: rgba(20, 42, 99, 0.25);
+.vbtn.active {
+  --face: var(--teal);
+  --fg: var(--on-dark);
 }
-.vbtn:active:not(:disabled) { transform: translateY(0.3cqh); filter: brightness(0.95); }
+.vbtn.gold:hover:not(:disabled),
+.vbtn.active:hover:not(:disabled) { --face: #2f938b; }
+.vbtn.small { min-height: 5.2cqh; padding: 0.5cqh 2.4cqh; font-size: 2.3cqh; letter-spacing: 0.1em; text-indent: 0.1em; box-shadow: 0.4cqh 0.4cqh 0 var(--navy); }
+.vbtn.small:active:not(:disabled) { transform: translate(0.4cqh, 0.4cqh); }
 /* 選單：目前選到的那顆前面有 ▶ */
 .vbtn.arrow:is(:hover, :focus-visible, .active)::after,
 [data-input='pad'] .vbtn.arrow:focus::after {
   content: '';
   position: absolute;
-  left: 2.6cqh;
+  left: 2cqh;
   top: 50%;
   translate: 0 -50%;
-  border-left: 2.2cqh solid var(--navy);
-  border-top: 1.4cqh solid transparent;
-  border-bottom: 1.4cqh solid transparent;
+  border-left: 1.8cqh solid currentColor;
+  border-top: 1.1cqh solid transparent;
+  border-bottom: 1.1cqh solid transparent;
 }
-.vbtn.small { min-height: 5.4cqh; padding: 0.6cqh 3cqh; font-size: 2.4cqh; letter-spacing: 0.1em; text-indent: 0.1em; --cut: 1cqh; }
-.vbtn.small::before { background: var(--face); }
-.vbtn.plain::before { background: var(--face); }
 
-/* 右下角的大按鈕（開設房間、開始比賽…） */
+/* 右下角的主要行動（出發！、開設房間、加入房間…）：朱紅、毛筆刷過的邊 */
 .vbtn.primary {
-  --face: linear-gradient(#ffe56b, var(--gold) 55%, var(--gold-deep));
-  --stripe: rgba(20, 42, 99, 0.3);
-  min-height: 9cqh;
-  padding: 1cqh 6cqh 1cqh 7cqh;
+  --face: var(--accent);
+  --fg: var(--on-dark);
+  min-height: 8.4cqh;
+  padding: 1cqh 7cqh;
   font-size: 4.4cqh;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.2em;
+  clip-path: polygon(0.8cqh 0, 100% 0.6cqh, calc(100% - 0.6cqh) 100%, 0 calc(100% - 0.4cqh));
+  box-shadow: none;
+  border-width: 0.45cqh;
+  filter: drop-shadow(var(--drop) var(--drop) 0 var(--navy));
 }
-.vbtn.primary::after {
-  content: '';
-  border-left: 2.4cqh solid var(--navy);
-  border-top: 1.6cqh solid transparent;
-  border-bottom: 1.6cqh solid transparent;
-  margin-left: 1.4cqh;
-}
-.vbtn.primary:hover:not(:disabled) { filter: brightness(1.06); }
+.vbtn.primary:hover:not(:disabled) { --face: #e65a4b; }
+.vbtn.primary:active:not(:disabled) { filter: none; }
 
 /* 左下角的返回 */
-.vbtn.back { padding: 1cqh 4cqh 1cqh 3cqh; font-size: 3cqh; min-height: 7cqh; letter-spacing: 0.2em; }
-.vbtn.back::before { background: var(--face); }
-.vbtn.back::after { content: none; }
-.vbtn.back > .tri {
-  border-right: 2cqh solid var(--navy);
-  border-top: 1.3cqh solid transparent;
-  border-bottom: 1.3cqh solid transparent;
-}
+.vbtn.back { padding: 0.8cqh 4cqh; font-size: 2.8cqh; min-height: 6.4cqh; letter-spacing: 0.2em; }
 
 /* ---------- 共用：面板 ---------- */
 
 .panel {
+  position: relative;
   background: var(--cream);
-  border: 0.55cqh solid var(--navy);
-  border-radius: 1cqh;
-  box-shadow: inset 0 0 0 0.35cqh #fffaf0, 0 0.6cqh 0 rgba(12, 29, 75, 0.35);
+  border: 0.42cqh solid var(--navy);
+  box-shadow: var(--drop) var(--drop) 0 rgba(32, 35, 41, 0.85);
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
-.panel.gold-frame { border-color: var(--gold-deep); box-shadow: inset 0 0 0 0.35cqh var(--gold), 0 0.6cqh 0 rgba(12, 29, 75, 0.35); }
+/* 自己的那一格：朱紅框 */
+.panel.gold-frame { border-color: var(--accent); box-shadow: var(--drop) var(--drop) 0 var(--navy), inset 0 0 0 0.3cqh var(--accent); }
+/* 面板標題：左上角的朱紅毛筆條，壓在框線上 */
 .panel-head {
   position: relative;
-  margin: 1cqh 1cqh 0;
-  padding: 0.6cqh 4cqh;
-  background: var(--navy);
+  align-self: flex-start;
+  margin: -1.6cqh 0 0 -1cqh;
+  padding: 0.6cqh 5cqh 0.6cqh 2.4cqh;
+  background: var(--accent);
   color: var(--on-dark);
   font-weight: 900;
   font-size: 3cqh;
-  letter-spacing: 0.2em;
-  text-align: center;
-  clip-path: polygon(1.4cqh 0, calc(100% - 1.4cqh) 0, 100% 100%, 0 100%);
+  letter-spacing: 0.25em;
+  line-height: 1.2;
+  white-space: nowrap;
+  clip-path: polygon(0 12%, 3% 0, 92% 4%, 100% 0, 96% 40%, 100% 62%, 94% 100%, 4% 92%, 0 100%);
+  z-index: 1;
 }
-.panel-head::before,
-.panel-head::after {
-  content: '';
-  position: absolute;
-  top: 15%;
-  bottom: 15%;
-  width: 3.4cqh;
-  background: repeating-linear-gradient(115deg, transparent 0 0.45cqh, #dfe6f5 0.45cqh 0.9cqh);
-}
-.panel-head::before { left: 2.4cqh; }
-.panel-head::after { right: 2.4cqh; }
-.panel-head.left { text-align: left; padding-left: 7cqh; }
-.panel-body { padding: 1.6cqh 2cqh; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 1.2cqh; }
+.panel-head.left { text-align: left; }
+.panel-body { padding: 1.4cqh 2cqh; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 1.2cqh; }
 
-/* 提示列（底部中間） */
+/* 提示列（底部中間）：兩邊細線、中間一行字 */
 .hint-bar {
   justify-self: center;
-  position: relative;
-  padding: 1cqh 6cqh;
-  background: rgba(251, 244, 224, 0.88);
-  font-weight: 800;
-  font-size: 2.3cqh;
-  letter-spacing: 0.12em;
-  clip-path: polygon(1.6cqh 0, 100% 0, calc(100% - 1.6cqh) 100%, 0 100%);
   display: flex;
   align-items: center;
-  gap: 1.2cqh;
+  gap: 1.4cqh;
   max-width: 100%;
-  box-sizing: border-box;
+  font-weight: 800;
+  font-size: 2.2cqh;
+  letter-spacing: 0.12em;
   text-wrap: balance;
+  white-space: nowrap;
 }
 .hint-bar::before,
 .hint-bar::after {
   content: '';
-  position: absolute;
-  top: 18%;
-  bottom: 18%;
-  width: 2.6cqh;
-  background: repeating-linear-gradient(115deg, transparent 0 0.45cqh, var(--stripe) 0.45cqh 0.9cqh);
+  flex: 1 1 4cqw;
+  min-width: 2cqw;
+  max-width: 8cqw;
+  height: 0.25cqh;
+  background: var(--navy);
 }
-.hint-bar::before { left: 1.6cqh; }
-.hint-bar::after { right: 1.6cqh; }
+
+/* 按鍵帽（Esc、Enter、↑↓）：提示列裡的小黑底字 */
+kbd {
+  display: inline-block;
+  min-width: 3.4cqh;
+  padding: 0.1cqh 0.9cqh;
+  background: var(--navy);
+  color: var(--on-dark);
+  font: inherit;
+  font-size: 0.9em;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0;
+}
 
 /* ---------- 共用：表單 ---------- */
 
@@ -275,76 +277,90 @@ input, select.vsel {
   font-weight: 700;
   color: var(--navy);
   background: var(--paper-white);
-  border: 0.4cqh solid var(--navy);
-  border-radius: 0.8cqh;
+  border: var(--line) solid var(--navy);
+  border-radius: 0;
   padding: 0.7cqh 1.4cqh;
 }
 select.vsel { padding-right: 3cqh; }
-input::placeholder { color: #9aa3ba; }
+input::placeholder { color: #a7a196; }
+
+/* 說明框：淡青綠底 */
+.note {
+  background: var(--teal-soft);
+  border: 0.25cqh solid rgba(40, 127, 120, 0.45);
+  color: #1d5d58;
+  font-weight: 800;
+  font-size: 2.1cqh;
+  text-align: center;
+  padding: 1cqh 1.6cqh;
+  line-height: 1.5;
+}
 
 /* ---------- 角色頭像卡（選角、開房、大廳換角色） ---------- */
 
 .card {
   position: relative;
   padding: 0;
-  border: 0.45cqh solid var(--navy);
-  border-radius: 0.6cqh;
-  overflow: hidden;
-  background: linear-gradient(#5aa9ec, #9fd3ff);
-  aspect-ratio: 1 / 1.08;
+  border: 0.3cqh solid var(--navy);
+  background: var(--paper-white);
+  aspect-ratio: 1 / 1.12;
   display: flex;
   flex-direction: column;
-  transition: transform 0.08s;
+  transition: transform 0.06s;
 }
-.card img { width: 100%; flex: 1; min-height: 0; object-fit: cover; object-position: center 12%; display: block; }
-.card span {
-  background: var(--navy);
-  color: var(--on-dark);
+.card img { width: 100%; flex: 1; min-height: 0; object-fit: cover; object-position: center 12%; display: block; background: #efe6cf; }
+.card > span:not(.tags):not(.lock) {
+  background: var(--paper-white);
+  border-top: 0.25cqh solid var(--navy);
+  color: var(--navy);
   font-weight: 900;
-  font-size: 2.1cqh;
+  font-size: 2cqh;
   letter-spacing: 0.1em;
-  padding: 0.3cqh 0;
+  padding: 0.2cqh 0;
   text-align: center;
 }
 .card:hover:not(:disabled) { transform: translateY(-0.3cqh); }
-.card.selected { border-color: var(--gold-deep); box-shadow: 0 0 0 0.5cqh var(--gold); }
-.card.selected::after {
-  content: '✔';
+/* 目前看的／選定的：朱紅框＋左上角的紅色游標 */
+.card.selected,
+.card.looking { border-color: var(--accent); box-shadow: 0 0 0 0.35cqh var(--accent); z-index: 1; }
+.card.looking::before,
+.card.selected::before {
+  content: '';
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 4.2cqh;
-  height: 4.2cqh;
-  display: grid;
-  place-items: center;
-  background: var(--gold);
-  color: var(--navy);
-  font-size: 2.6cqh;
-  font-weight: 900;
-  clip-path: polygon(0 0, 100% 0, 100% 100%);
-  padding: 0 0 1.4cqh 1.4cqh;
+  left: -1.4cqh;
+  top: -1.4cqh;
+  border-left: 2.6cqh solid var(--accent);
+  border-top: 1.4cqh solid transparent;
+  border-bottom: 1.4cqh solid transparent;
+  rotate: 30deg;
+  filter: drop-shadow(0.2cqh 0.2cqh 0 var(--navy));
+  z-index: 2;
 }
 .card.locked img { filter: brightness(0) opacity(0.55); }
 .card .tags {
   position: absolute;
-  top: 0.5cqh;
-  left: 0.5cqh;
+  top: 0;
+  right: 0;
   display: flex;
-  gap: 0.4cqh;
+  gap: 0.2cqh;
 }
 .card .tag {
-  background: var(--accent);
-  color: var(--on-dark);
-  border-radius: 0.6cqh;
-  padding: 0 0.8cqh;
-  font-size: 1.8cqh;
+  background: var(--slot, var(--accent));
+  color: #fff;
+  font-style: normal;
+  font-weight: 900;
+  padding: 0 0.7cqh;
+  font-size: 1.9cqh;
+  clip-path: polygon(0.6cqh 0, 100% 0, 100% 100%, 0 100%);
+  padding-left: 1.1cqh;
 }
 
-/* 能力值條 */
-.stat { display: grid; grid-template-columns: minmax(6cqh, max-content) 1fr; column-gap: 1cqh; align-items: center; font-size: 2.1cqh; font-weight: 900; }
-.stat .bar { display: flex; gap: 0.5cqh; }
-.stat .bar i { flex: 1; height: 1.6cqh; background: #e1d6b6; border: 0.25cqh solid var(--navy); transform: skewX(-20deg); }
-.stat .bar i.on { background: linear-gradient(var(--gold), var(--gold-deep)); }
+/* 能力值條：五格方塊，右邊數字 */
+.stat { display: grid; grid-template-columns: minmax(7cqh, max-content) 1fr 3cqh; column-gap: 1.2cqh; align-items: center; font-size: 2.4cqh; font-weight: 900; letter-spacing: 0.2em; }
+.stat .bar { display: flex; gap: 0.6cqh; }
+.stat .bar i { flex: 1; height: 2.6cqh; background: var(--paper-white); border: 0.25cqh solid var(--navy); }
+.stat .bar i.on { background: var(--accent); }
+.stat b { text-align: right; letter-spacing: 0; }
 
 /* ---------- 提示訊息、連線狀態 ---------- */
 
@@ -360,25 +376,47 @@ input::placeholder { color: #9aa3ba; }
   pointer-events: none;
 }
 .toast {
-  background: var(--red);
-  color: var(--on-dark);
+  background: var(--cream);
+  color: var(--navy);
   font-weight: 800;
-  padding: 1cqh 2.4cqh;
-  border-radius: 1cqh;
-  border: 0.35cqh solid var(--navy);
+  padding: 1cqh 2.4cqh 1cqh 2cqh;
+  border: var(--line) solid var(--navy);
+  border-left: 1.2cqh solid var(--accent);
+  box-shadow: 0.5cqh 0.5cqh 0 var(--navy);
   font-size: 2.4cqh;
 }
-.toast.ok { background: var(--ok); }
+.toast.ok { border-left-color: var(--teal); }
+/* 重新連線中：不遮住主要畫面的青綠條 */
 .net-banner {
   position: absolute;
   left: 0; right: 0; bottom: 3cqh;
   margin: auto;
   width: fit-content;
-  background: rgba(12, 29, 75, 0.88);
+  display: flex;
+  align-items: center;
+  gap: 1.6cqh;
+  background: var(--teal);
   color: var(--on-dark);
-  padding: 1cqh 3cqh;
-  border-radius: 1cqh;
+  padding: 1.2cqh 3cqh;
+  border: var(--line) solid var(--navy);
+  box-shadow: 0.5cqh 0.5cqh 0 var(--navy);
   font-weight: 800;
+  font-size: 2.6cqh;
+  letter-spacing: 0.1em;
+}
+.net-banner::before,
+.spin {
+  content: '';
+  width: 3.4cqh;
+  height: 3.4cqh;
+  border: 0.7cqh solid rgba(245, 239, 223, 0.35);
+  border-top-color: var(--on-dark);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  flex: none;
+}
+@keyframes spin {
+  to { rotate: 360deg; }
 }
 
 /* ---------- 焦點框：鍵盤或手把操作時才顯示 ---------- */
@@ -386,25 +424,20 @@ input::placeholder { color: #9aa3ba; }
 button:focus, select:focus, input:focus { outline: none; }
 [data-input='key'] :is(button, select, input, a):focus-visible,
 [data-input='pad'] :is(button, select, input, a):focus {
-  outline: 0.6cqh solid var(--accent);
-  outline-offset: 0.3cqh;
-}
-/* 切角按鈕的 outline 會被裁掉，改用變色表示 */
-[data-input='key'] .vbtn:focus-visible,
-[data-input='pad'] .vbtn:focus {
-  outline: none;
-  --face: linear-gradient(#ffe56b, var(--gold) 55%, var(--gold-deep));
-  --stripe: rgba(20, 42, 99, 0.25);
+  outline: 0.5cqh solid var(--accent);
+  outline-offset: 0.4cqh;
 }
 [data-input='key'] .card:focus-visible,
-[data-input='pad'] .card:focus { outline: 0.6cqh solid var(--accent); }
-input:focus { border-color: var(--gold-deep); box-shadow: 0 0 0 0.4cqh var(--gold); }
+[data-input='pad'] .card:focus { outline: none; }
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 0.3cqh var(--accent); }
 /* 觸控：沒有滑鼠停留，hover 效果會黏住 */
-[data-input='touch'] .vbtn:hover:not(:focus):not(.gold):not(.primary):not(.active) {
-  --face: var(--cream);
-  --stripe: #b7c2d8;
-}
+[data-input='touch'] .vbtn:hover:not(.gold):not(.primary):not(.active) { --face: var(--cream); }
 [data-input='touch'] .card:hover { transform: none; }
+
+/* 減少動態效果 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
 
 /* 手機直放時提示轉橫向 */
 .rotate-hint { display: none; }
@@ -425,7 +458,7 @@ input:focus { border-color: var(--gold-deep); box-shadow: 0 0 0 0.4cqh var(--gol
 
 /* ---------- 畫風：介面配色與字體 ----------
    主色來自各風格圖素包的交件留言（art-inbox/messages）；還沒交的先參考 TaiwanMahjong 的 themes.css。
-   --navy 是深色（框線、標題條、文字），--cream 是面板底，--gold 是強調色。 */
+   --navy 是墨色（框線、文字），--cream 是紙／面板底，--accent 是主要行動色，--gold 是少量提示色。 */
 
 :root[data-style='pc98'] {
   --ribbon-y: 0.356;

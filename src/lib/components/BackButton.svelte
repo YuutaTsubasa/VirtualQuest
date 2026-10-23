@@ -1,5 +1,5 @@
 <script>
-  // 左下角的「◀ 返回」
+  // 左下角的「返回」
   import { play } from '../game/audio.js';
   import { t } from '../i18n.svelte.js';
 
@@ -8,9 +8,9 @@
 
 <button
   type="button"
-  class="vbtn back plain"
+  class="vbtn back"
   onclick={() => {
     play('back');
     onclick();
   }}
-><span class="tri"></span>{label ?? t('返回')}</button>
+>{label ?? t('返回')}</button>

@@ -5,12 +5,15 @@
   import { play } from '../game/audio.js';
   import { ui } from '../ui.svelte.js';
   import { t } from '../i18n.svelte.js';
+  import { SLOT_COLORS } from '../game/constants.js';
 
   // cursor：目前看的角色（索引）；selected：已選定的角色 id（打勾）；tags：{ id: ['1P'] } 角標
-  let { cursor = $bindable(0), selected = null, tags = {}, showLocked = true, onpick = () => {} } = $props();
+  let { cursor = $bindable(0), selected = null, tags = {}, showLocked = true, columns = null, onpick = () => {} } = $props();
+  // 「1P」～「4P」的角標用那個座位的代表色
+  const tagColor = (tag) => SLOT_COLORS[Number(/^(\d)P/.exec(tag)?.[1]) - 1] ?? 'var(--accent)';
 
   const list = $derived(CHARACTERS.filter((c) => showLocked || isUnlocked(c)));
-  const columns = $derived(Math.ceil(list.length / 2));
+  const cols = $derived(columns ?? Math.ceil(list.length / 2));
   let root;
 
   export function focusIndex(i) {
@@ -33,7 +36,7 @@
   }
 </script>
 
-<div class="grid" bind:this={root} style="--cols: {columns}">
+<div class="grid" bind:this={root} style="--cols: {cols}">
   {#each list as c (c.id)}
     {@const open = isUnlocked(c)}
     <button
@@ -56,7 +59,7 @@
         <span class="lock"><img src="{asset('ui/icons/lock.webp')}" alt="" /></span>
       {/if}
       <span>{open ? c.name : t('？？？')}</span>
-      {#if tags[c.id]?.length}<span class="tags">{#each tags[c.id] as tag, i (i)}<i class="tag">{tag}</i>{/each}</span>{/if}
+      {#if tags[c.id]?.length}<span class="tags">{#each tags[c.id] as tag, i (i)}<i class="tag" style="--slot: {tagColor(tag)}">{tag}</i>{/each}</span>{/if}
     </button>
   {/each}
 </div>
@@ -69,14 +72,11 @@
     gap: 1.4cqh;
     align-content: center;
   }
-  .card.looking:not(.selected) {
-    border-color: var(--gold-deep);
-  }
   .lock {
     flex: 1;
     display: grid;
     place-items: center;
-    background: linear-gradient(#3b5a9a, #233c75);
+    background: #4a4f5a;
   }
   .lock img {
     width: 55%;

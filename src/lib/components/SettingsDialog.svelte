@@ -102,14 +102,24 @@
   .settings {
     border: none;
     background: none;
-    padding: 0;
+    padding: 3cqh 1.4cqh 1.4cqh 2cqh;
+    overflow: visible;
     width: 78cqw;
     max-width: 96vw;
     font-size: 2.4cqh;
     color: var(--navy);
   }
   .settings::backdrop {
-    background: rgba(8, 18, 48, 0.6);
+    background: rgba(22, 24, 29, 0.62);
+  }
+  .settings > :global(.panel) {
+    box-shadow: 1cqh 1cqh 0 var(--navy-deep);
+  }
+  .settings :global(.panel-head) {
+    font-size: 4.4cqh;
+    font-style: italic;
+    padding: 0.4cqh 6cqh 0.6cqh 2.6cqh;
+    margin-top: -2.6cqh;
   }
   .panel-body {
     padding: 1.6cqh 3cqh 2.4cqh;
@@ -149,8 +159,8 @@
     cursor: pointer;
   }
   .style-card.selected {
-    border-color: var(--gold-deep);
-    box-shadow: 0 0 0 0.45cqh var(--gold);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 0.4cqh var(--accent);
   }
   .style-card.selected::after {
     content: '✔';
@@ -158,13 +168,15 @@
     top: 0.2cqh;
     right: 0.8cqh;
     font-weight: 900;
-    color: var(--gold-deep);
+    color: var(--accent);
   }
   .pic {
     position: relative;
     width: 100%;
     aspect-ratio: 1;
-    background: linear-gradient(#5aa9ec, #9fd3ff);
+    background:
+      radial-gradient(rgba(40, 127, 120, 0.3) 22%, transparent 26%) 0 0 / 1cqh 1cqh,
+      #e6efe9;
     overflow: hidden;
   }
   .pic img {
@@ -206,7 +218,7 @@
   }
   .row input[type='range'] {
     width: 100%;
-    accent-color: var(--gold-deep);
+    accent-color: var(--teal);
     padding: 0;
     border: none;
     background: none;
@@ -231,8 +243,6 @@
   .note {
     margin: 0;
     font-size: 1.9cqh;
-    color: var(--muted);
-    text-align: center;
   }
   .actions {
     display: flex;

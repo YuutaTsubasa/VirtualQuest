@@ -122,6 +122,14 @@
     gap: 3cqh;
     text-align: left;
   }
+  /* 目前選的模式：朱紅（青綠留給次要按鈕） */
+  .mode.active {
+    --face: var(--accent);
+    --fg: var(--on-dark);
+  }
+  .mode.active .tag {
+    border-left-color: var(--on-dark);
+  }
   .icon {
     width: 13cqh;
     display: flex;

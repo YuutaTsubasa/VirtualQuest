@@ -23,12 +23,11 @@ const fileSets = Object.fromEntries(
 );
 
 // 選用的插圖：只用該風格自己交的（不借 90 年代版，免得畫風混在一起）；沒有時畫面改用角色動作圖拼
-// （Logo 也還沒畫：沒有的時候 Logo.svelte 用文字排）
-export const OPTIONAL = new Set(['ui/logo.webp', 'ui/title-scene.webp', 'ui/mode-solo.webp', 'ui/mode-party.webp', 'ui/mode-watch.webp', 'ui/icons/watch.webp']);
+export const OPTIONAL = new Set(['ui/title-scene.webp', 'ui/mode-solo.webp', 'ui/mode-party.webp', 'ui/mode-watch.webp', 'ui/icons/watch.webp']);
 
-// 一種風格完整的檔案數：11 位角色 ×（5 表情＋1 圖集）＋特效 3＋介面 3＋圖示 10
+// 一種風格完整的檔案數：11 位角色 ×（5 表情＋1 圖集）＋特效 3＋介面 4（含 Logo）＋圖示 10
 // （關卡背景、敵人、魔王的圖還在請美術畫，交件後再加進來）
-export const EXPECTED_FILES = 11 * 6 + 3 + 3 + 10;
+export const EXPECTED_FILES = 11 * 6 + 3 + 4 + 10;
 
 /** 這個風格有沒有這張圖（anime90 的基本圖一律當作有） */
 export function hasAsset(style, path) {

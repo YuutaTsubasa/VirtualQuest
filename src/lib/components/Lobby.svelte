@@ -1,6 +1,5 @@
 <script>
-  // 房間大廳：四個座位、邀請朋友、闖關設定、大廳聊天、出發
-  import { asset } from '../art-style.svelte.js';
+  // 房間大廳（art-work/ui-concept-v1/06-online-lobby）：左邊 2×2 隊員卡，右邊邀請朋友、闖關設定、聊天；房主按「出發！」
   import { tick } from 'svelte';
   import { net, inTauri, hostCmd, leave, send, serverUrls, setCharacter, toast, load } from '../net.svelte.js';
   import { WEB_URL, shareLink } from '../site.js';
@@ -12,8 +11,12 @@
   import ScreenFrame from './ScreenFrame.svelte';
   import BackButton from './BackButton.svelte';
   import CharacterGrid from './CharacterGrid.svelte';
+  import Stepper from './Stepper.svelte';
 
   const room = $derived(net.room);
+  const worldOptions = WORLDS.map((w, i) => ({ value: i, label: t(w.name) }));
+  const livesOptions = [1, 3, 5].map((n) => ({ value: n, label: String(n) }));
+  const difficultyOptions = Object.entries(DIFFICULTIES).map(([k, label]) => ({ value: k, label: t(label) }));
   const isHost = $derived(net.isHost);
   const urls = $derived(serverUrls());
   let urlIdx = $state(0);
@@ -77,43 +80,43 @@
   }
 </script>
 
-<ScreenFrame title={t('房間大廳')} subtitle={t('邀請朋友，一起上場！')}>
+<ScreenFrame title={t('夥伴集合')} subtitle={t('房間大廳')}>
   <div class="seats">
     {#each room.seats as seat, i (i)}
       <div class="panel seat" class:gold-frame={i === net.seat} class:empty={!seat} style="--c: {SLOT_COLORS[i]}">
-        <div class="panel-head">{i + 1}P</div>
+        <span class="no">{i + 1}P</span>
         {#if seat}
           {@const c = getCharacter(seat.character)}
-          <div class="pic">
-            {#if roleOf(i)}
-              <span class="role">
-                {#if i === room.host_seat}<svg viewBox="0 0 24 18" aria-hidden="true"><path d="M2 16 4 4l5 5 3-7 3 7 5-5 2 12z" fill="#ffd43b" stroke="#142a63" stroke-width="2" stroke-linejoin="round" /></svg>{/if}
-                {roleOf(i)}
-              </span>
+          <div class="pic"><img src={i === net.seat ? c.portraits.happy : c.portraits.normal} alt="" /></div>
+          <div class="info">
+            <b class="who" title={displayName(seat.name)}>{seat.kind === 'bot' ? c.name : displayName(seat.name)}</b>
+            <small>{seat.kind === 'bot' ? statusOf(seat) : c.name}</small>
+            {#if roleOf(i)}<span class="role">{roleOf(i)}</span>{/if}
+            {#if seat.kind !== 'bot'}
+              <span class="status"><i class="dot" class:on={seat.connected}></i>{statusOf(seat)}</span>
             {/if}
-            <img src={i === net.seat ? c.portraits.happy : c.portraits.normal} alt="" />
+            <div class="seat-actions">
+              {#if i === net.seat}
+                <button type="button" class="vbtn small gold" onclick={openCharacters}>{t('更換角色')}</button>
+              {:else if isHost && room.host_seat !== i}
+                <button type="button" class="vbtn small" onclick={() => hostCmd('remove', { seat: i })}>{t('移除')}</button>
+              {/if}
+            </div>
           </div>
-          <div class="plate">
-            <b title={displayName(seat.name)}>{displayName(seat.name)}</b>
-            <small>{c.name}</small>
-          </div>
-          <span class="status"><i class="dot" class:on={seat.kind === 'bot' || seat.connected}></i>{statusOf(seat)}</span>
-          {#if i === net.seat}
-            <button type="button" class="vbtn small gold" onclick={openCharacters}>{t('更換角色')}</button>
-          {:else if isHost && room.host_seat !== i}
-            <button type="button" class="vbtn small" onclick={() => hostCmd('remove', { seat: i })}>{t('移除')}</button>
-          {/if}
         {:else}
-          <div class="waiting">
-            <b>{t('等待入席')}</b>
+          <div class="pic plus" aria-hidden="true"></div>
+          <div class="info">
+            <b class="who">{t('等待入席')}</b>
             <small>{t('邀請朋友一起闖關')}</small>
+            <div class="seat-actions">
+              {#if net.seat == null}
+                <button type="button" class="vbtn small gold" onclick={sit}>{t('入席')}</button>
+              {/if}
+              {#if isHost}
+                <button type="button" class="vbtn small outline" onclick={() => hostCmd('add_bot', { seat: i, difficulty: room.settings.difficulty })}>{t('加入電腦隊友')}</button>
+              {/if}
+            </div>
           </div>
-          {#if net.seat == null}
-            <button type="button" class="vbtn small gold" onclick={sit}>{t('入席')}</button>
-          {/if}
-          {#if isHost}
-            <button type="button" class="vbtn small gold" onclick={() => hostCmd('add_bot', { seat: i, difficulty: room.settings.difficulty })}>{t('加入電腦隊友')}</button>
-          {/if}
         {/if}
       </div>
     {/each}
@@ -124,27 +127,19 @@
       <div class="panel-head left">{isHost ? t('邀請朋友') : t('連線資訊')}</div>
       <div class="panel-body">
         {#if net.code}
-          <div class="copy-row">
+          <div class="code-row">
             <span class="code-label">{t('房號')}</span>
             <code class="room-code">{net.code}</code>
-            <button type="button" class="vbtn small gold" onclick={() => copy(net.code)}>{t('複製')}</button>
           </div>
-          {#if link}
-            <div class="copy-row">
-              <code>{link}</code>
-              <button type="button" class="vbtn small gold" onclick={() => copy(link)}>{t('複製')}</button>
-            </div>
+          <div class="copy-buttons">
+            <button type="button" class="vbtn small gold" onclick={() => copy(net.code)}>{t('複製房號')}</button>
+            {#if link}<button type="button" class="vbtn small" onclick={() => copy(link)}>{t('複製邀請連結')}</button>{/if}
+          </div>
+          {#if net.signalDown}
+            <div class="signal-down"><i>i</i><div><b>{t('暫時無法邀請新玩家')}</b><small>{t('房內玩家不受影響，新玩家請稍後再加入')}</small></div></div>
+          {:else}
+            <p class="small">{isHost ? t('請保持房主分頁開啟') : t('已用 WebRTC 直接連到房主。')}</p>
           {/if}
-          <p class="small">
-            {#if net.signalDown}
-              <b class="warn">{t('配對服務暫時連不上：已經在房間的人不受影響，新的人要等一下才進得來。')}</b>
-            {:else if isHost}
-              {link ? t('朋友在「加入房間」輸入房號，或直接打開連結就能加入。') : t('朋友在「加入房間」輸入房號就能加入。')}
-              {t('比賽在你的瀏覽器裡跑，請不要關掉這個分頁。')}
-            {:else}
-              {t('已用 WebRTC 直接連到房主。')}
-            {/if}
-          </p>
         {:else}
           {#if urls.length > 1}
             <div class="tabs">
@@ -167,21 +162,12 @@
     <section class="panel">
       <div class="panel-head left">{t('闖關設定')}</div>
       <div class="panel-body rules">
-        <label>{t('出發關卡')}
-          <select class="vsel" value={room.settings.world} disabled={!isHost} onchange={(e) => updateSettings({ world: Number(e.currentTarget.value) })}>
-            {#each WORLDS as w, i (w.id)}<option value={i}>{i + 1}. {t(w.name)}</option>{/each}
-          </select>
-        </label>
-        <label>{t('命數')}
-          <select class="vsel" value={room.settings.lives} disabled={!isHost} onchange={(e) => updateSettings({ lives: Number(e.currentTarget.value) })}>
-            {#each [1, 3, 5] as n (n)}<option value={n}>{n}</option>{/each}
-          </select>
-        </label>
-        <label>{t('難度')}
-          <select class="vsel" value={room.settings.difficulty} disabled={!isHost} onchange={(e) => updateSettings({ difficulty: e.currentTarget.value })}>
-            {#each Object.entries(DIFFICULTIES) as [k, label] (k)}<option value={k}>{t(label)}</option>{/each}
-          </select>
-        </label>
+        <span>{t('出發關卡')}</span>
+        <Stepper options={worldOptions} value={room.settings.world} disabled={!isHost} onchange={(v) => updateSettings({ world: Number(v) })} />
+        <span>{t('命數')}</span>
+        <Stepper options={livesOptions} value={room.settings.lives} disabled={!isHost} onchange={(v) => updateSettings({ lives: Number(v) })} />
+        <span>{t('難度')}</span>
+        <Stepper options={difficultyOptions} value={room.settings.difficulty} disabled={!isHost} onchange={(v) => updateSettings({ difficulty: v })} />
       </div>
     </section>
 
@@ -191,7 +177,7 @@
         <ol bind:this={chatBox}>
           {#each room.chat as line, i (i)}
             {#if line.sys}
-              <li class="sys">{serverText(line.text)}</li>
+              <li class="sys">{t('系統')}：{serverText(line.text)}</li>
             {:else}
               <li><b class:mine={line.seat === net.seat && line.seat != null}>{displayName(line.name)}</b>：{line.text}</li>
             {/if}
@@ -199,7 +185,7 @@
         </ol>
         <form onsubmit={sendChat}>
           <input bind:value={chatText} placeholder={t('說點什麼…')} maxlength="300" />
-          <button type="submit" class="vbtn small gold" disabled={!chatText.trim()}>{t('送出')}</button>
+          <button type="submit" class="vbtn small dark" disabled={!chatText.trim()}>{t('送出')}</button>
         </form>
       </div>
     </section>
@@ -207,7 +193,7 @@
 
   {#snippet foot()}
     <BackButton label={t('離開房間')} onclick={leave} />
-    <div class="hint-bar">{isHost ? t('空位不會自動補人，要電腦隊友請按「加入電腦隊友」。') : t('等待房主出發…')}</div>
+    <div class="hint-bar"><i class="bang">!</i>{isHost ? t('空位不會自動補人') : t('等待房主出發…')}</div>
     {#if isHost}
       <button type="button" class="vbtn primary" onclick={() => hostCmd('start')}>{t('出發！')}</button>
     {:else}
@@ -236,136 +222,186 @@
 
 <style>
   .seats {
-    flex: 1.45;
+    flex: 1.7;
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
-    align-items: stretch;
-    gap: 1.2cqh 1cqw;
+    gap: 2.4cqh 1.4cqw;
     min-width: 0;
     min-height: 0;
+    padding-top: 0.8cqh;
   }
-  .seat .panel-head {
-    background: var(--c);
-  }
+  /* 隊員卡：左邊大頭像、右邊名字與狀態，左上角是座位編號（該座位的代表色） */
   .seat {
-    align-items: center;
-    gap: 0.8cqh;
-    padding-bottom: 1.4cqh;
+    flex-direction: row;
+    gap: 1.4cqw;
+    padding: 1.2cqh;
     min-width: 0;
   }
-  .seat .panel-head {
-    align-self: stretch;
+  .no {
+    position: absolute;
+    left: -0.4cqh;
+    top: -0.4cqh;
+    z-index: 2;
+    background: var(--c);
+    color: #fff;
+    font-size: 4.4cqh;
+    font-weight: 900;
+    font-style: italic;
+    padding: 0 3cqh 0 1.2cqh;
+    line-height: 1.15;
+    clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%);
+    text-shadow: 0.25cqh 0.25cqh 0 var(--navy);
   }
   .pic {
     position: relative;
-    align-self: stretch;
-    margin: 0 1cqh;
-    flex: 1;
-    min-height: 0;
-    border: 0.35cqh solid var(--navy);
-    background: linear-gradient(#5aa9ec, #9fd3ff);
+    flex: 1 1 50%;
+    min-width: 0;
+    background:
+      radial-gradient(color-mix(in srgb, var(--c) 45%, transparent) 22%, transparent 26%) 0 0 / 1.2cqh 1.2cqh,
+      color-mix(in srgb, var(--c) 18%, var(--cream));
     overflow: hidden;
   }
   .pic img {
     position: absolute;
     left: 50%;
     bottom: 0;
-    height: 100%;
+    height: 112%;
     translate: -50% 0;
   }
-  .role {
+  .pic.plus {
+    background: none;
+    border: 0.3cqh dashed var(--muted);
+  }
+  .pic.plus::before,
+  .pic.plus::after {
+    content: '';
     position: absolute;
-    top: 0.8cqh;
-    left: 0.8cqh;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    gap: 0.6cqh;
-    background: linear-gradient(#ffe56b, var(--gold) 55%, var(--gold-deep));
-    border: 0.3cqh solid var(--navy);
-    font-weight: 900;
-    font-size: 2.1cqh;
-    padding: 0.2cqh 1.6cqh 0.2cqh 1cqh;
-    clip-path: polygon(0 0, 100% 0, calc(100% - 1cqh) 100%, 0 100%);
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    width: 9cqh;
+    height: 1.6cqh;
+    background: var(--navy);
   }
-  .role svg {
-    width: 3cqh;
+  .pic.plus::after {
+    width: 1.6cqh;
+    height: 9cqh;
   }
-  .plate {
-    margin-top: -3cqh;
-    z-index: 1;
-    width: 86%;
-    background: var(--cream);
-    border: 0.35cqh solid var(--navy);
-    border-radius: 0.6cqh;
+  .info {
+    flex: 1 1 50%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 0.4cqh;
+    align-items: flex-start;
+    gap: 0.8cqh;
+    padding-top: 1.4cqh;
   }
-  .plate b {
-    font-size: 3.6cqh;
+  .who {
     max-width: 100%;
+    font-size: 4cqh;
+    font-weight: 900;
+    line-height: 1.1;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
   }
-  .plate small {
+  .info small {
+    font-size: 2.3cqh;
     font-weight: 800;
-    font-size: 2.1cqh;
+    color: var(--navy-soft);
+  }
+  .role {
+    background: var(--navy);
+    color: var(--on-dark);
+    font-weight: 900;
+    font-size: 2cqh;
+    letter-spacing: 0.15em;
+    padding: 0.2cqh 1.4cqh;
   }
   .status {
-    font-weight: 800;
     font-size: 2.1cqh;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 0.8cqh;
   }
   .dot {
-    display: inline-block;
-    width: 1.6cqh;
-    height: 1.6cqh;
+    width: 1.8cqh;
+    height: 1.8cqh;
     border-radius: 50%;
-    background: #9aa3ba;
-    border: 0.25cqh solid var(--navy);
-    margin-right: 0.6cqh;
-    vertical-align: -0.2cqh;
+    background: var(--muted);
   }
   .dot.on {
-    background: var(--ok);
+    background: var(--teal);
   }
-  .waiting {
-    flex: 1;
+  .seat-actions {
+    margin-top: auto;
+    align-self: stretch;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.6cqh;
+    gap: 0.8cqh;
+    border-top: 0.2cqh solid var(--navy);
+    padding-top: 1cqh;
   }
-
-  .waiting b {
-    font-size: 4.2cqh;
-    letter-spacing: 0.1em;
+  .seat-actions:empty {
+    border: 0;
   }
-  .waiting small {
-    font-weight: 800;
-    font-size: 2.1cqh;
+  .outline {
+    --fg: var(--teal);
+    border-color: var(--teal);
+    box-shadow: 0.4cqh 0.4cqh 0 var(--teal);
   }
-
+  .dark {
+    --face: var(--navy);
+    --fg: var(--on-dark);
+  }
 
   .side {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 1.2cqh;
+    gap: 2.4cqh;
     min-height: 0;
     min-width: 0;
+    padding-top: 0.8cqh;
   }
   .side .panel-body {
-    padding: 1cqh 1.6cqh;
+    padding: 1.4cqh 1.6cqh 1cqh;
     gap: 0.8cqh;
   }
   .side .panel-head {
     font-size: 2.6cqh;
-    padding: 0.3cqh 3cqh 0.3cqh 6.4cqh;
+  }
+  .code-row {
+    display: flex;
+    gap: 1.4cqh;
+    align-items: center;
+  }
+  .code-label {
+    font-weight: 900;
+    font-size: 2.4cqh;
+  }
+  .room-code {
+    flex: 1;
+    text-align: center;
+    font-family: inherit;
+    font-size: 5.4cqh;
+    font-weight: 900;
+    letter-spacing: 0.25em;
+    padding: 0.2cqh 1cqh;
+    border: var(--line) solid var(--navy);
+    background: var(--paper-white);
+    user-select: text;
+  }
+  .copy-buttons {
+    display: flex;
+    gap: 1cqw;
+  }
+  .copy-buttons .vbtn {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 1cqh;
   }
   .copy-row {
     display: flex;
@@ -376,8 +412,7 @@
     flex: 1;
     min-width: 0;
     background: var(--paper-white);
-    border: 0.35cqh solid var(--navy);
-    border-radius: 0.6cqh;
+    border: 0.3cqh solid var(--navy);
     padding: 0.5cqh 1cqh;
     font-size: 2.2cqh;
     font-weight: 700;
@@ -385,18 +420,33 @@
     white-space: nowrap;
     user-select: text;
   }
-  .code-label {
+  .signal-down {
+    display: flex;
+    gap: 1.2cqh;
+    align-items: center;
+    border: 0.3cqh solid var(--navy);
+    border-left: 1cqh solid var(--gold);
+    padding: 0.8cqh 1.2cqh;
+  }
+  .signal-down i {
+    flex: none;
+    width: 4cqh;
+    height: 4cqh;
+    border-radius: 50%;
+    background: var(--gold);
+    display: grid;
+    place-items: center;
+    font-style: normal;
     font-weight: 900;
+    font-size: 2.6cqh;
+  }
+  .signal-down b {
+    display: block;
     font-size: 2.2cqh;
   }
-  .room-code {
-    font-size: 3.6cqh !important;
-    font-weight: 900 !important;
-    letter-spacing: 0.3em;
-    text-align: center;
-  }
-  .warn {
-    color: var(--accent);
+  .signal-down small {
+    font-size: 1.8cqh;
+    font-weight: 700;
   }
   .tabs {
     display: flex;
@@ -406,27 +456,24 @@
   .tabs button {
     border: 0.25cqh solid var(--navy);
     background: var(--paper-white);
-    border-radius: 0.6cqh;
     font-weight: 800;
     font-size: 1.8cqh;
     padding: 0.2cqh 1cqh;
   }
   .tabs .sel {
-    background: var(--gold);
+    background: var(--teal);
+    color: var(--on-dark);
   }
   .small {
     margin: 0;
+    text-align: center;
     font-size: 1.9cqh;
     font-weight: 700;
   }
   .rules {
-    flex-direction: row !important;
-    gap: 2cqw !important;
-    flex-wrap: wrap;
-  }
-  .rules label {
-    display: flex;
-    gap: 1cqh;
+    display: grid !important;
+    grid-template-columns: max-content 1fr;
+    gap: 0.7cqh 1.4cqw !important;
     align-items: center;
     font-weight: 900;
     font-size: 2.2cqh;
@@ -444,8 +491,7 @@
     font-size: 2cqh;
     line-height: 1.5;
     background: var(--paper-white);
-    border: 0.3cqh solid var(--navy);
-    border-radius: 0.6cqh;
+    border: 0.25cqh solid var(--navy);
   }
   .chat .sys {
     color: var(--muted);
@@ -462,18 +508,26 @@
     min-width: 0;
     font-size: 2.1cqh;
   }
+  .bang {
+    width: 3cqh;
+    height: 3cqh;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--on-dark);
+    display: grid;
+    place-items: center;
+    font-style: normal;
+    font-weight: 900;
+    flex: none;
+  }
   .spinner {
     width: 6cqh;
     height: 6cqh;
-    border: 0.8cqh solid var(--cream);
-    border-top-color: var(--gold);
+    border: 0.8cqh solid var(--cream-deep);
+    border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }}
 
   .char-dialog {
     border: none;
@@ -483,18 +537,14 @@
     max-width: 92vw;
   }
   .char-dialog::backdrop {
-    background: rgba(8, 18, 48, 0.6);
+    background: rgba(22, 24, 29, 0.62);
   }
   .char-dialog .panel-body {
     min-height: 40cqh;
+    padding-top: 2.4cqh;
   }
   .dialog-actions {
     display: flex;
     justify-content: flex-end;
-  }
-  @keyframes spin {
-    to {
-      rotate: 360deg;
-    }
   }
 </style>

@@ -154,7 +154,8 @@
       {/if}
 
       {#if online}
-        <p class="note">{t('比賽在你的瀏覽器裡跑，朋友用 WebRTC 直接連到你。')}<small>{t('開著這個畫面房間才在，關掉分頁房間就關了。')}</small></p>
+        <p class="note">{t('開房後取得 5 碼房號與分享連結，邀請朋友一起闖關！')}</p>
+        <p class="warn-line"><i>!</i>{t('關閉分頁會結束房間')}</p>
       {:else if isHost && inTauri}
         {#if net.hostInfo}
           <p class="note">{t('房間已在通訊埠 {port} 開著。', { port: net.hostInfo.port })}</p>
@@ -174,6 +175,9 @@
             spellcheck="false"
           />
         </label>
+        {#if !isHost}
+          <p class="note">{net.online ? t('可輸入房號、分享連結或區網位址') : t('輸入房主分享的網址')}<br />{t('沒有座位時，會自動改為觀戰')}</p>
+        {/if}
         {#if isHost}
           <label class="field">{t('房主金鑰')}
             <input bind:value={hostKey} placeholder={t('伺服器啟動時印出的金鑰')} />
@@ -216,7 +220,100 @@
   {/snippet}
 </ScreenFrame>
 
+<!-- 連線狀態（art-work/ui-concept-v1/07-connection-states）：連線中可以取消；加入失敗說明下一步 -->
+{#if connecting && !isHost}
+  <div class="state-veil">
+    <div class="state-card">
+      <span class="ring"></span>
+      <b>{t('連線到房間中…')}</b>
+      {#if net.code}<code>{net.code}</code>{/if}
+      <small>{t('正在等候回應')}</small>
+      <button type="button" class="vbtn small" onclick={disconnect}>{t('取消')}</button>
+    </div>
+  </div>
+{:else if net.failure && !isHost}
+  <div class="state-veil">
+    <div class="state-card">
+      <span class="bang">!</span>
+      <b>{t('無法加入房間')}</b>
+      <small>{serverText(net.failure)}</small>
+      <small>{t('請確認房號與網路，再試一次')}</small>
+      <button type="button" class="vbtn primary small-primary" onclick={() => (net.failure = null)}>{t('返回修改')}</button>
+    </div>
+  </div>
+{/if}
+
 <style>
+  .state-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(rgba(0, 0, 0, 0.25) 22%, transparent 26%) 0 0 / 1.3cqh 1.3cqh,
+      rgba(32, 35, 41, 0.78);
+  }
+  .state-card {
+    min-width: 40cqw;
+    max-width: 60cqw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.4cqh;
+    padding: 4cqh 4cqw 3.6cqh;
+    background: var(--cream);
+    border: 0.45cqh solid var(--navy);
+    box-shadow: 1cqh 1cqh 0 var(--navy-deep);
+    text-align: center;
+  }
+  .state-card b {
+    font-size: 4.4cqh;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+  }
+  .state-card small {
+    font-size: 2.4cqh;
+    font-weight: 800;
+  }
+  .state-card code {
+    font-family: inherit;
+    font-size: 4.4cqh;
+    font-weight: 900;
+    letter-spacing: 0.25em;
+    padding: 0.2cqh 4cqh;
+    border: 0.3cqh solid var(--navy);
+    background: var(--paper-white);
+  }
+  .ring {
+    width: 8cqh;
+    height: 8cqh;
+    border-radius: 50%;
+    border: 1.4cqh solid #b9d6cf;
+    border-top-color: var(--teal);
+    animation: ring 1s linear infinite;
+  }
+  .bang {
+    width: 8cqh;
+    height: 8cqh;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 5.4cqh;
+    font-weight: 900;
+  }
+  .small-primary {
+    margin-top: 1cqh;
+    font-size: 3cqh !important;
+    min-height: 6.4cqh !important;
+  }
+  @keyframes ring {
+    to {
+      rotate: 360deg;
+    }
+  }
   .profile {
     flex: 1;
   }
@@ -230,15 +327,26 @@
   }
   .note {
     margin: 0;
-    font-weight: 800;
-    font-size: 2.3cqh;
   }
-  .note small {
-    display: block;
-    margin-top: 0.4cqh;
-    font-weight: 700;
-    font-size: 1.9cqh;
-    color: var(--muted);
+  .warn-line {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1cqh;
+    font-weight: 800;
+    font-size: 2.1cqh;
+  }
+  .warn-line i {
+    width: 3cqh;
+    height: 3cqh;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--on-dark);
+    display: grid;
+    place-items: center;
+    font-style: normal;
+    font-weight: 900;
   }
   .modes {
     display: flex;
@@ -263,10 +371,10 @@
     width: 13cqh;
     height: 13cqh;
     flex: none;
-    border: 0.45cqh solid var(--navy);
-    outline: 0.3cqh solid var(--gold);
-    outline-offset: -0.9cqh;
-    background: linear-gradient(#5aa9ec, #9fd3ff);
+    border: var(--line) solid var(--navy);
+    background:
+      radial-gradient(rgba(217, 75, 61, 0.3) 22%, transparent 26%) 0 0 / 1cqh 1cqh,
+      #f3e6cf;
     overflow: hidden;
   }
   .frame-pic img {
@@ -294,20 +402,30 @@
   }
   .badge {
     align-self: flex-start;
-    background: linear-gradient(#ffe56b, var(--gold) 55%, var(--gold-deep));
-    border: 0.35cqh solid var(--navy);
+    background: var(--teal);
+    color: var(--on-dark);
     font-weight: 900;
-    font-size: 2.4cqh;
+    font-size: 2.3cqh;
     letter-spacing: 0.2em;
-    padding: 0.3cqh 2.6cqh;
-    clip-path: polygon(1cqh 0, 100% 0, calc(100% - 1cqh) 100%, 0 100%);
+    padding: 0.3cqh 2.4cqh;
   }
   .tip {
     margin: 0;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 1.4cqw;
+    justify-content: center;
     font-weight: 800;
     font-size: 2.1cqh;
     letter-spacing: 0.2em;
+  }
+  .tip::before,
+  .tip::after {
+    content: '';
+    flex: 1;
+    max-width: 10cqw;
+    height: 0.25cqh;
+    background: var(--navy);
   }
   .actions {
     display: flex;

@@ -23,7 +23,8 @@ const art = (key) => loadImage(asset(ART_PATHS[key]));
 let cfg = currentConfig();
 
 // HUD 的字、框、對話泡泡的顏色：跟介面用同一組 CSS 變數，限色風格也一致
-const pal = { text: '#fff', ink: '#142a63', flash: '#ffe066', paper: '#fff', accent: '#ff5d8f', hp: '#ffd23f', hpLow: '#ff4d5e' };
+// 墨黑 HUD 底、暖白字、青綠血條，低血量朱紅（art-work/ui-concept-v1/DESIGN.md）
+const pal = { text: '#f5efdf', ink: '#202329', flash: '#e9b85e', paper: '#fffbf1', cream: '#f5efdf', accent: '#d94b3d', teal: '#287f78', hp: '#2fbf9a', hpLow: '#d94b3d' };
 let palStyle = null;
 function updatePalette() {
   const style = document.documentElement.dataset.style ?? 'anime90';
@@ -32,10 +33,13 @@ function updatePalette() {
   const css = getComputedStyle(document.documentElement);
   const v = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
   pal.text = v('--on-dark', '#fff');
-  pal.ink = v('--navy', '#142a63');
-  pal.flash = v('--gold', '#ffe066');
+  pal.ink = v('--navy', '#202329');
+  pal.flash = v('--gold', '#e9b85e');
   pal.paper = v('--paper-white', '#fff');
-  pal.accent = v('--accent', '#ff5d8f');
+  pal.accent = v('--accent', '#d94b3d');
+  pal.hpLow = pal.accent;
+  pal.cream = v('--cream', '#f5efdf');
+  pal.teal = v('--teal', '#287f78');
 }
 
 const ready = (img) => img && img.complete && img.naturalWidth > 0;
@@ -261,7 +265,7 @@ function drawSlotMarker(g, p, cam, you, cpu) {
   g.lineTo(x + 9, y - 8);
   g.lineTo(x, y + 4);
   g.fill();
-  outlinedText(g, you ? t('你') : cpu ? 'CPU' : `${p.slot + 1}P`, x, y - 18, 15, color);
+  outlinedText(g, `${p.slot + 1}P`, x, y - 18, you ? 18 : 15, color);
 }
 
 // ---------- 敵人（程式畫的 Q 版人形） ----------
@@ -545,81 +549,177 @@ function drawShot(g, s, cam, frame) {
 
 // ---------- HUD ----------
 
-function hpBar(g, x, y, w, h, hp, max) {
-  g.fillStyle = 'rgba(0,0,0,0.55)';
-  g.fillRect(x - 2, y - 2, w + 4, h + 4);
+function hpBar(g, x, y, w, h, hp, max, frame = 0) {
+  g.fillStyle = '#3a3e46';
+  g.fillRect(x, y, w, h);
   const r = Math.max(0, hp / max);
-  g.fillStyle = r < 0.3 ? pal.hpLow : pal.hp;
+  const low = r < 0.3;
+  // 低血量：朱紅＋短暫閃一下（不是只靠閃爍提示）
+  g.fillStyle = low ? (Math.floor(frame / 12) % 4 === 0 ? '#ff8b7e' : pal.hpLow) : pal.hp;
   g.fillRect(x, y, w * r, h);
-  g.fillStyle = 'rgba(255,255,255,0.35)';
+  g.fillStyle = 'rgba(255,255,255,0.28)';
   g.fillRect(x, y, w * r, h / 3);
+  g.strokeStyle = 'rgba(245,239,223,0.5)';
+  g.lineWidth = 1;
+  g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
 }
 
-function drawPlayerPanel(g, p, names, cpu) {
-  const x = 10 + p.slot * 237;
-  const y = 8;
-  g.fillStyle = 'rgba(10,20,50,0.55)';
-  rr(g, x, y, 226, 58, 8);
+// 毛筆刷過的長方形（標籤、章）：邊緣微微不齊
+function brush(g, x, y, w, h, color) {
+  g.fillStyle = color;
+  g.beginPath();
+  g.moveTo(x + 4, y + h * 0.1);
+  g.lineTo(x + w * 0.3, y);
+  g.lineTo(x + w * 0.7, y + 2);
+  g.lineTo(x + w - 2, y - 1);
+  g.lineTo(x + w + 6, y + h * 0.35);
+  g.lineTo(x + w - 2, y + h * 0.6);
+  g.lineTo(x + w + 3, y + h);
+  g.lineTo(x + w * 0.5, y + h - 2);
+  g.lineTo(x + 2, y + h + 1);
+  g.lineTo(x - 4, y + h * 0.55);
+  g.closePath();
   g.fill();
-  g.strokeStyle = SLOT_COLORS[p.slot];
-  g.lineWidth = 3;
-  g.stroke();
+}
+
+// 頂端的隊員牌：肖像、1P～4P／CPU、名稱、HP、剩餘生命、七位數分數
+const CARD = { w: 228, h: 58, gap: 8, top: 8 };
+function drawPlayerPanel(g, p, names, cpu, frame) {
+  const x = 10 + p.slot * (CARD.w + CARD.gap);
+  const y = CARD.top;
+  const color = SLOT_COLORS[p.slot];
+  g.fillStyle = 'rgba(32,35,41,0.92)';
+  g.fillRect(x, y, CARD.w, CARD.h);
+  g.strokeStyle = 'rgba(245,239,223,0.55)';
+  g.lineWidth = 1.5;
+  g.strokeRect(x + 1.5, y + 1.5, CARD.w - 3, CARD.h - 3);
+  // 座位色條：肖像左邊一條
+  g.fillStyle = color;
+  g.fillRect(x, y, 4, CARD.h);
   const face = loadImage(p.character.portraits[p.act === 'hurt' || p.act === 'fall' || p.act === 'down' ? 'surprised' : p.act === 'win' ? 'happy' : 'normal']);
   if (ready(face)) {
     g.save();
-    rr(g, x + 5, y + 5, 48, 48, 6);
+    g.beginPath();
+    g.rect(x + 7, y + 5, 48, 48);
     g.clip();
-    g.fillStyle = SLOT_COLORS[p.slot];
-    g.fillRect(x + 5, y + 5, 48, 48);
+    g.fillStyle = color;
+    g.fillRect(x + 7, y + 5, 48, 48);
     if (p.out) g.filter = 'grayscale(1) brightness(0.6)';
-    g.drawImage(face, x + 5, y + 5, 48, 48);
+    g.drawImage(face, x + 7, y + 3, 50, 50);
     g.restore();
+    g.strokeStyle = color;
+    g.lineWidth = 2;
+    g.strokeRect(x + 7, y + 5, 48, 48);
   }
-  const name = names?.[p.slot] ? displayName(names[p.slot]) : p.character.name;
-  g.font = `800 15px ${FONT}`;
+  // 1P 標籤（斜切）
+  const tx = x + 62;
+  g.fillStyle = color;
+  g.beginPath();
+  g.moveTo(tx, y + 6);
+  g.lineTo(tx + 30, y + 6);
+  g.lineTo(tx + 25, y + 22);
+  g.lineTo(tx, y + 22);
+  g.closePath();
+  g.fill();
+  g.font = `900 13px ${FONT}`;
+  g.textAlign = 'left';
+  g.textBaseline = 'middle';
+  g.fillStyle = '#fff';
+  g.fillText(`${p.slot + 1}P`, tx + 4, y + 14.5);
+  const name = cpu ? `CPU ${p.character.name}` : names?.[p.slot] ? displayName(names[p.slot]) : p.character.name;
+  g.font = `800 14px ${FONT}`;
+  g.fillStyle = pal.text;
+  let shown = name;
+  while (g.measureText(shown).width > CARD.w - 104 && shown.length > 1) shown = shown.slice(0, -1);
+  g.fillText(shown === name ? name : `${shown}…`, tx + 36, y + 14.5);
+  if (p.out) {
+    outlinedText(g, 'GAME OVER', x + 140, y + 40, 15, '#ff8b7e');
+    return;
+  }
+  hpBar(g, tx, y + 27, CARD.w - 70, 10, p.hp, p.maxHp, frame);
+  g.font = `800 13px ${FONT}`;
+  g.fillStyle = pal.text;
+  g.fillText(`♥ ×${Math.max(0, p.lives)}`, tx, y + 48);
+  g.textAlign = 'right';
+  g.font = `900 14px ${FONT}`;
+  g.fillText(String(p.score).padStart(7, '0'), x + CARD.w - 8, y + 48);
+}
+
+// 隊員牌下面的關卡標籤：「白色都市　1-1 白色大道」
+function drawStageTag(g, match) {
+  const w = WORLDS[match.world];
+  const text = `${t(w.name)}   ${stageLabel(match.world, match.sub)} ${t(w.subs[match.sub])}`;
+  g.font = `900 14px ${FONT}`;
+  const tw = g.measureText(text).width;
+  brush(g, 8, CARD.top + CARD.h + 8, tw + 34, 24, 'rgba(32,35,41,0.85)');
   g.textAlign = 'left';
   g.textBaseline = 'middle';
   g.fillStyle = pal.text;
-  g.fillText(`${cpu ? 'CPU' : `${p.slot + 1}P`} ${name}`.slice(0, 14), x + 60, y + 15);
-  if (p.out) {
-    outlinedText(g, 'GAME OVER', x + 140, y + 38, 15, '#ff8a8a');
-    return;
-  }
-  hpBar(g, x + 60, y + 29, 158, 10, p.hp, p.maxHp);
-  g.font = `800 13px ${FONT}`;
-  g.fillStyle = pal.text;
-  g.fillText(`♥×${Math.max(0, p.lives)}`, x + 60, y + 50);
-  g.textAlign = 'right';
-  g.fillText(String(p.score).padStart(7, '0'), x + 218, y + 50);
+  g.fillText(text, 20, CARD.top + CARD.h + 20.5);
 }
 
+// 魔王戰：底部一條窄的名字＋HP，讓出地面
 function drawBossBar(g, match) {
   const boss = match.enemies.find((e) => e.id === match.boss);
   if (!boss) return;
-  const w = 460;
+  const w = 440;
   const x = (W - w) / 2;
-  const y = H - 34;
-  g.fillStyle = 'rgba(10,10,30,0.6)';
-  rr(g, x - 10, y - 22, w + 20, 40, 8);
-  g.fill();
-  g.font = `900 15px ${FONT}`;
+  const y = H - 30;
+  g.fillStyle = 'rgba(32,35,41,0.88)';
+  g.fillRect(x - 12, y - 22, w + 24, 38);
+  g.fillStyle = pal.accent;
+  g.fillRect(x - 12, y - 22, 4, 38);
+  g.font = `900 14px ${FONT}`;
   g.textAlign = 'left';
   g.textBaseline = 'middle';
-  g.fillStyle = '#ff9aa8';
-  g.fillText(t(WORLDS[match.world].boss.name), x, y - 10);
-  hpBar(g, x, y + 2, w, 10, boss.hp, boss.maxHp);
+  g.fillStyle = pal.text;
+  g.fillText(`BOSS  ${t(WORLDS[match.world].boss.name)}`, x, y - 10);
+  g.fillStyle = '#3a3e46';
+  g.fillRect(x, y + 1, w, 9);
+  g.fillStyle = pal.accent;
+  g.fillRect(x, y + 1, w * Math.max(0, boss.hp / boss.maxHp), 9);
 }
 
-function drawBanner(g, title, sub, alpha) {
+// 關卡開頭的章節牌、過關的「突破！」章、全軍覆沒
+function drawChapter(g, match, alpha) {
+  const w = WORLDS[match.world];
   g.save();
   g.globalAlpha = alpha;
-  g.fillStyle = 'rgba(10,20,50,0.7)';
-  g.fillRect(0, H / 2 - 70, W, 140);
-  g.fillStyle = pal.flash;
-  g.fillRect(0, H / 2 - 70, W, 4);
-  g.fillRect(0, H / 2 + 66, W, 4);
-  outlinedText(g, title, W / 2, H / 2 - 22, 52, pal.flash);
-  if (sub) outlinedText(g, sub, W / 2, H / 2 + 34, 26);
+  const slide = (1 - Math.min(1, alpha)) * -60;
+  g.translate(slide, 0);
+  brush(g, W / 2 - 250, H / 2 - 74, 500, 74, 'rgba(32,35,41,0.92)');
+  outlinedText(g, t(w.name), W / 2, H / 2 - 37, 40, pal.cream);
+  g.fillStyle = pal.accent;
+  g.fillRect(W / 2 - 170, H / 2 + 8, 340, 34);
+  g.font = `900 20px ${FONT}`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = '#fff';
+  g.fillText(`STAGE ${stageLabel(match.world, match.sub)}  ${t(w.subs[match.sub])}`, W / 2, H / 2 + 25.5);
+  g.restore();
+}
+
+function drawStamp(g, text, sub, alpha, scale = 1) {
+  g.save();
+  g.globalAlpha = alpha;
+  g.translate(W / 2, H / 2 - 10);
+  g.rotate(-0.08);
+  g.scale(scale, scale);
+  g.strokeStyle = pal.accent;
+  g.lineWidth = 6;
+  g.fillStyle = 'rgba(245,239,223,0.92)';
+  g.fillRect(-190, -62, 380, 124);
+  g.strokeRect(-182, -54, 364, 108);
+  g.font = `900 64px ${FONT}`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = pal.accent;
+  g.fillText(text, 0, sub ? -10 : 0);
+  if (sub) {
+    g.font = `800 17px ${FONT}`;
+    g.fillStyle = pal.ink;
+    g.fillText(sub, 0, 36);
+  }
   g.restore();
 }
 
@@ -636,7 +736,7 @@ function drawBubbles(g, match, cam) {
     const w = tw + 26;
     const h = 36;
     const x = Math.max(10, Math.min(W - w - 10, px - w / 2));
-    const y = Math.max(76, p.z - p.y - SPRITE_H - 70);
+    const y = Math.max(100, p.z - p.y - SPRITE_H - 70);
     g.fillStyle = pal.paper;
     g.strokeStyle = pal.ink;
     g.lineWidth = 3;
@@ -658,22 +758,42 @@ function drawBubbles(g, match, cam) {
 }
 
 function drawHud(g, match, opts) {
-  match.players.forEach((p) => drawPlayerPanel(g, p, opts.names, opts.cpu?.[p.slot]));
+  match.players.forEach((p) => drawPlayerPanel(g, p, opts.names, opts.cpu?.[p.slot], match.frame));
+  if (match.phase === 'play') drawStageTag(g, match);
   drawBossBar(g, match);
   const w = WORLDS[match.world];
-  if (match.go && Math.floor(match.frame / 20) % 2 === 0) {
-    outlinedText(g, 'GO ▶', W - 90, H / 2 - 40, 46, pal.flash);
+  // 清場：右側出現小型「GO →」章
+  if (match.go && Math.floor(match.frame / 20) % 3 !== 0) {
+    g.save();
+    g.translate(W - 110, H / 2 - 40);
+    g.rotate(-0.06);
+    g.fillStyle = pal.accent;
+    g.fillRect(-58, -26, 116, 52);
+    g.strokeStyle = pal.cream;
+    g.lineWidth = 3;
+    g.strokeRect(-52, -20, 104, 40);
+    g.font = `900 30px ${FONT}`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillStyle = '#fff';
+    g.fillText('GO →', 0, 1);
+    g.restore();
   }
   if (match.phase === 'intro') {
     const k = 140 - match.timer;
-    const alpha = Math.min(1, k / 12, match.timer / 18);
-    drawBanner(g, `STAGE ${stageLabel(match.world, match.sub)}`, `${t(w.name)} · ${t(w.subs[match.sub])}`, alpha);
+    drawChapter(g, match, Math.min(1, k / 12, match.timer / 18));
   } else if (match.phase === 'clear') {
-    drawBanner(g, 'STAGE CLEAR!', `${t(w.name)} · ${t(w.subs[match.sub])}`, Math.min(1, (200 - match.timer) / 12));
+    const k = 200 - match.timer;
+    // 蓋章：一開始大大的，啪一下縮回原尺寸
+    drawStamp(g, t('突破！'), `${stageLabel(match.world, match.sub)} ${t(w.subs[match.sub])}`, Math.min(1, k / 6), Math.max(1, 1.6 - k * 0.08));
   } else if (match.phase === 'over') {
-    drawBanner(g, 'GAME OVER', null, Math.min(1, match.timer / 30));
+    g.save();
+    g.globalAlpha = Math.min(1, match.timer / 30);
+    brush(g, W / 2 - 230, H / 2 - 44, 460, 88, 'rgba(32,35,41,0.92)');
+    outlinedText(g, 'GAME OVER', W / 2, H / 2, 52, pal.accent);
+    g.restore();
   } else if (match.phase === 'ending') {
-    drawBanner(g, 'CONGRATULATIONS!', t('六大關全部突破！'), Math.min(1, match.timer / 30));
+    drawStamp(g, t('破關！'), t('六大關全部突破！'), Math.min(1, match.timer / 20));
   }
 }
 

@@ -21,6 +21,7 @@ export const net = $state({
   code: null, // 線上房間的房號（區網房間是 null）
   online: null, // 線上房間能不能用（配對服務在不在）；null = 還沒檢查
   signalDown: false, // 房主：配對服務暫時連不上（已經在房間裡的人不受影響，只是新的人進不來）
+  failure: null, // 還沒進房間就失敗了（房號不對、房主不在）：加入畫面顯示「無法加入房間」
   toasts: [],
 });
 
@@ -78,6 +79,7 @@ export function normalizeAddress(a) {
 }
 
 export function connect(address, { name, hostKey, spectate = false, character } = {}) {
+  net.failure = null;
   disconnect();
   address = normalizeAddress(address);
   if (!address) return;
@@ -249,6 +251,7 @@ function registerRoom(key, tries) {
 /** 加入線上房間：透過配對服務找到房主，用 WebRTC 直接連過去 */
 export function joinOnline(code, { name, spectate = false, character } = {}) {
   disconnect();
+  net.failure = null;
   net.code = code.trim().toUpperCase();
   opener = openGuest;
   openSession(`p2p:${net.code}`, { name, spectate, character });
@@ -271,9 +274,11 @@ function openGuest() {
     },
     onFatal: (message, code) => {
       if (p2pGuest !== g) return;
-      // 已經在房間裡卻找不到房主：房主關掉了頁面
-      toast(net.room && code === 'no_host' ? t('房主離開了，房間已經關閉') : message);
+      // 已經在房間裡卻找不到房主：房主關掉了頁面；還沒進房間就失敗：加入畫面顯示失敗卡片
+      if (net.room) toast(code === 'no_host' ? t('房主離開了，房間已經關閉') : message);
+      const failed = !net.room ? message : null;
       disconnect();
+      net.failure = failed;
     },
   });
   p2pGuest = g;

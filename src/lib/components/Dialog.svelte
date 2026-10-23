@@ -1,5 +1,5 @@
 <script>
-  // 疊在比賽畫面上的視窗（暫停、結果、連線選單）：深藍標題條＋米白面板
+  // 疊在遊戲畫面上的視窗（暫停、結果、連線選單）：墨黑半透明遮罩＋暖白矩形面板，左上朱紅毛筆標題
   let { title, subtitle = '', wide = false, children } = $props();
 </script>
 
@@ -15,41 +15,43 @@
 
 <style>
   .dialog {
-    min-width: 52cqw;
-    align-items: center;
-    padding-bottom: 3cqh;
+    min-width: 46cqw;
+    max-width: 92cqw;
+    padding: 0 4cqw 3.6cqh;
+    box-shadow: 1cqh 1cqh 0 var(--navy-deep);
   }
   .dialog.wide {
     min-width: 76cqw;
   }
   .dialog-title {
-    align-self: stretch;
-    margin: 1.2cqh 1.2cqh 0;
-    padding: 1.4cqh 6cqh 1.2cqh;
-    background:
-      repeating-linear-gradient(115deg, transparent 0 0.6cqh, rgba(223, 230, 245, 0.85) 0.6cqh 1.1cqh) left 3cqh center / 4cqh 50% no-repeat,
-      repeating-linear-gradient(115deg, transparent 0 0.6cqh, rgba(223, 230, 245, 0.85) 0.6cqh 1.1cqh) right 3cqh center / 4cqh 50% no-repeat,
-      var(--navy);
-    text-align: center;
-    clip-path: polygon(2cqh 0, calc(100% - 2cqh) 0, 100% 50%, calc(100% - 2cqh) 100%, 2cqh 100%, 0 50%);
+    align-self: flex-start;
+    margin: -2.6cqh 0 0 -5.4cqw;
+    display: flex;
+    align-items: baseline;
+    gap: 2cqw;
   }
   h2 {
     margin: 0;
+    padding: 0.6cqh 6cqh 1cqh 3cqh;
+    background: var(--accent);
     color: var(--on-dark);
     font-size: 6cqh;
     font-weight: 900;
-    letter-spacing: 0.2em;
-    text-indent: 0.2em;
+    font-style: italic;
+    letter-spacing: 0.15em;
+    line-height: 1.1;
+    clip-path: polygon(0 10%, 4% 0, 90% 6%, 100% 0, 95% 45%, 100% 70%, 93% 100%, 5% 90%, 0 100%);
+    filter: drop-shadow(0.5cqh 0.5cqh 0 var(--navy));
   }
   p {
-    margin: 0.4cqh 0 0;
-    color: var(--gold);
-    font-weight: 800;
-    font-size: 2.3cqh;
-    letter-spacing: 0.2em;
+    margin: 0;
+    color: var(--accent);
+    font-weight: 900;
+    font-size: 2.4cqh;
+    letter-spacing: 0.15em;
   }
   .dialog-body {
-    padding: 3cqh 4cqh 0;
+    padding: 3cqh 0 0;
     display: flex;
     flex-direction: column;
     align-items: center;
