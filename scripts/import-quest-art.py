@@ -20,6 +20,10 @@
 並更新 src/lib/game/sheets.json（畫面用）與 src/lib/style-assets.json（預先載入用）。
 
 圖的 alpha：生圖工具交的人物大多是 253/255，接的時候把 ≥240 的拉成全不透明，免得角色微微透光。
+
+寬的姿勢（高踢）為了塞進 512 的格子會整個縮小（站著 400px、踢腿只剩 280～350px）。
+交件包的 layout-metrics.json 有每格的實際人物高度：kick 這格記一個放大倍數（fix），
+畫面會以腳底為中心放大回來，踢腿時人不會突然變小。
 """
 
 import json
@@ -41,6 +45,9 @@ CHARACTER_FRAMES = ['idle', 'walk1', 'walk2', 'punch1', 'punch2', 'kick', 'jump'
 ENEMY_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'attack', 'hurt', 'fall', 'down', 'charge']
 BOSS_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'slam', 'hurt', 'fall', 'down', 'charge', 'leap', 'cast', 'vanish']
 CELL = 400
+# 哪些格子要依實際高度放大回來、目標高度（px，以 512 格子計）、最多放大幾倍
+FIX_FRAMES = {'kick': 370}
+FIX_MAX = 1.45
 BOSS_CELL = 600
 
 
@@ -60,6 +67,27 @@ def save(im, rel, lossless=False):
         im.save(out, 'WEBP', quality=90, method=6, alpha_quality=95)
     print('  ', rel, im.size)
     return rel.replace(os.sep, '/')
+
+
+def heights(metrics, prefix):
+    """layout-metrics.json 裡每格的實際人物高度：{動作: 高度}"""
+    out = {}
+    for path, info in (metrics.get('assets') or {}).items():
+        if path.startswith(prefix) and path.endswith('.png'):
+            h = info.get('actualSilhouetteHeight') or (info.get('visibleBounds') or {}).get('height')
+            if h:
+                out[path[len(prefix):-4]] = h
+    return out
+
+
+def fixes(names, hs):
+    out = {}
+    for name, target in FIX_FRAMES.items():
+        if name in names and hs.get(name):
+            k = min(FIX_MAX, max(1.0, target / hs[name]))
+            if k > 1.02:
+                out[name] = round(k, 3)
+    return out
 
 
 def strip(frames, folder, cell, cols=None):
@@ -88,6 +116,8 @@ def main(src):
         entries = os.listdir(tmp)
         src = os.path.join(tmp, entries[0]) if len(entries) == 1 and os.path.isdir(os.path.join(tmp, entries[0])) else tmp
 
+    metrics_path = os.path.join(src, 'layout-metrics.json')
+    metrics = json.load(open(metrics_path, encoding='utf-8')) if os.path.exists(metrics_path) else {}
     sheets = json.load(open(SHEETS, encoding='utf-8')) if os.path.exists(SHEETS) else {}
     for k in ['characters', 'enemies', 'bosses', 'stages', 'props', 'items', 'shots']:
         sheets.setdefault(k, {} if k in ('characters', 'enemies', 'bosses') else [])
@@ -100,6 +130,9 @@ def main(src):
         if sheet:
             written.append(save(sheet, f'sprites/{cid}.webp'))
             sheets['characters'][cid] = {'src': f'sprites/{cid}.webp', 'frames': names, 'cols': cols, 'cell': CELL}
+            fix = fixes(names, heights(metrics, f'characters/{cid}/sprites/'))
+            if fix:
+                sheets['characters'][cid]['fix'] = fix
 
     enemies = os.path.join(src, 'enemies')
     for world in sorted(os.listdir(enemies)) if os.path.isdir(enemies) else []:

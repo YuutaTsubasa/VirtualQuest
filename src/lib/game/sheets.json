@@ -21,7 +21,10 @@
         "win"
       ],
       "cols": 8,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "kick": 1.069
+      }
     },
     "xiaocui": {
       "src": "sprites/xiaocui.webp",
@@ -44,7 +47,10 @@
         "win"
       ],
       "cols": 8,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "kick": 1.242
+      }
     },
     "yuehua": {
       "src": "sprites/yuehua.webp",
@@ -67,7 +73,10 @@
         "win"
       ],
       "cols": 8,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "kick": 1.125
+      }
     },
     "aming": {
       "src": "sprites/aming.webp",
@@ -90,7 +99,10 @@
         "win"
       ],
       "cols": 8,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "kick": 1.307
+      }
     },
     "tangtang": {
       "src": "sprites/tangtang.webp",
@@ -113,7 +125,10 @@
         "win"
       ],
       "cols": 8,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "kick": 1.171
+      }
     },
     "cangya": {
       "src": "sprites/cangya.webp",
@@ -136,7 +151,10 @@
         "win"
       ],
       "cols": 8,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "kick": 1.326
+      }
     },
     "lanjie": {
       "src": "sprites/lanjie.webp",
@@ -159,7 +177,10 @@
         "win"
       ],
       "cols": 8,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "kick": 1.186
+      }
     },
     "jinye": {
       "src": "sprites/jinye.webp",
@@ -182,7 +203,10 @@
         "win"
       ],
       "cols": 8,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "kick": 1.402
+      }
     },
     "leo": {
       "src": "sprites/leo.webp",
@@ -205,7 +229,62 @@
         "win"
       ],
       "cols": 8,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "kick": 1.201
+      }
+    },
+    "alie": {
+      "src": "sprites/alie.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "punch1",
+        "punch2",
+        "kick",
+        "jump",
+        "jumpkick",
+        "special",
+        "grab",
+        "knee",
+        "throw",
+        "hurt",
+        "fall",
+        "down",
+        "win"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "kick": 1.312
+      }
+    },
+    "ayi": {
+      "src": "sprites/ayi.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "punch1",
+        "punch2",
+        "kick",
+        "jump",
+        "jumpkick",
+        "special",
+        "grab",
+        "knee",
+        "throw",
+        "hurt",
+        "fall",
+        "down",
+        "win"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "kick": 1.254
+      }
     }
   },
   "enemies": {
