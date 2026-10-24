@@ -1186,6 +1186,38 @@
             "jump": 1.087
           }
         }
+      },
+      "enemies": {
+        "city/brute": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.327,
+            "windup": 1.05
+          }
+        },
+        "city/knife": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.096
+          }
+        },
+        "city/thrower": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.171
+          }
+        },
+        "city/thug": {
+          "cell": 256
+        }
+      },
+      "bosses": {
+        "city": {
+          "cell": 384,
+          "fix": {
+            "charge": 1.024
+          }
+        }
       }
     }
   }
