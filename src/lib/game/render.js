@@ -245,6 +245,11 @@ function drawFrame(g, sheet, frame, x, y, h, facing, { fallback = 'idle', flash 
   // （倍數是 scripts/import-quest-art.py 依交件的實測高度算的）
   h *= (sheet.fix?.[sheet.frames[i]] ?? 1) * (sheet.scale ?? 1);
   g.save();
+  // 像素畫風：對齊畫布的像素格，走動時像素不會一下寬一下窄
+  if (cfg.pixelated) {
+    x = Math.round(x * SCALE) / SCALE;
+    y = Math.round(y * SCALE) / SCALE;
+  }
   g.translate(x, y);
   if (facing < 0) g.scale(-1, 1);
   if (rotate) g.rotate(rotate);

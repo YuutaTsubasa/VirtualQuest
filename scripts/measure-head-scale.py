@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """量每一格角色動作圖的「頭」跟 idle 的頭比起來多大，修正 sheets.json 的 fix，讓動作時人物不會忽大忽小。
 
-用法：python scripts/measure-head-scale.py [--write] [角色 id ...]
+用法：python scripts/measure-head-scale.py [--write] [--style <畫風>] [角色 id ...]
+  --style：量別的畫風（public/styles/<畫風>/sprites/），倍數寫進 sheets.json 的 styles.<畫風>.characters
   不加 --write 只印出結果；加了就把差太多的格子寫進 src/lib/game/sheets.json 的 fix。
 
 做法：把 idle 的頭（含頭髮，人物最上面 30%）當樣板，縮放、旋轉、左右翻去每一格的上半部找最像的位置，
@@ -17,9 +18,22 @@ from PIL import Image
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHEETS = os.path.join(root, 'src', 'lib', 'game', 'sheets.json')
 WRITE = '--write' in sys.argv
-ONLY = [a for a in sys.argv[1:] if not a.startswith('--')]
+argv = sys.argv[1:]
+STYLE = None
+if '--style' in argv:
+    i = argv.index('--style')
+    STYLE = argv[i + 1]
+    del argv[i:i + 2]
+ONLY = [a for a in argv if not a.startswith('--')]
 ALL = json.load(open(SHEETS, encoding='utf-8'))
-S = ALL['characters']
+if STYLE:
+    # 別的畫風：格子順序照 anime90，格子大小與倍數是這個畫風自己的
+    OWN = ALL.get('styles', {}).get(STYLE, {}).get('characters', {})
+    S = {cid: {**ALL['characters'][cid], 'fix': dict(own.get('fix', {})), 'cell': own['cell'], '_own': own} for cid, own in OWN.items()}
+    BASE = os.path.join(root, 'public', 'styles', STYLE)
+else:
+    S = ALL['characters']
+    BASE = os.path.join(root, 'public')
 MIN_SCORE = 0.55
 MIN_DIFF = 0.07
 SKIP = {'idle', 'down', 'fall'}  # 躺著的頭轉 90 度，另外看
@@ -28,7 +42,8 @@ SKIP = {'idle', 'down', 'fall'}  # 躺著的頭轉 90 度，另外看
 def cell(im, s, f):
     c = s['cell']; cols = s['cols']; i = s['frames'].index(f)
     x, y = (i % cols) * c, (i // cols) * c
-    a = np.array(im.crop((x, y, x + c, y + c)).resize((c // 2, c // 2), Image.LANCZOS))
+    # 一律縮成 200×200 再比（anime90 的 400 格、像素畫風的 256／128 格都一樣量法）
+    a = np.array(im.crop((x, y, x + c, y + c)).resize((200, 200), Image.LANCZOS))
     return a
 
 
@@ -43,7 +58,7 @@ changed = []
 for cid, s in S.items():
     if ONLY and cid not in ONLY:
         continue
-    im = Image.open(f'{root}/public/sprites/{cid}.webp').convert('RGBA')
+    im = Image.open(os.path.join(BASE, s['src'])).convert('RGBA')
     fix = s.get('fix', {})
     idle = cell(im, s, 'idle')
     g0, a0 = prep(idle)
@@ -91,8 +106,11 @@ for cid, s in S.items():
                 fix[f] = new
             changed.append((cid, f))
         print(f'{cid:9} {f:9} 頭 ×{shown:.2f}（分數 {best[0]:.2f}）{mark}', flush=True)
+    target = s['_own'] if STYLE else s
     if fix:
-        s['fix'] = fix
+        target['fix'] = fix
+    else:
+        target.pop('fix', None)
 if WRITE and changed:
     json.dump(ALL, open(SHEETS, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
 print(f'{len(changed)} 格{"已寫進 sheets.json" if WRITE else "要修（加 --write 寫入）"}')

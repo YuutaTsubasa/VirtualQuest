@@ -1066,5 +1066,51 @@
     "city-1": 400,
     "city-2": 400,
     "city-3": 400
+  },
+  "styles": {
+    "pc98": {
+      "characters": {
+        "aming": {
+          "cell": 256,
+          "fix": {
+            "kick": 1.303,
+            "punch1": 0.935,
+            "jump": 1.117,
+            "knee": 1.087,
+            "hurt": 1.258,
+            "win": 1.117,
+            "run1": 0.913
+          }
+        },
+        "xiaochun": {
+          "cell": 256,
+          "fix": {
+            "kick": 1.069,
+            "jump": 1.087,
+            "win": 0.935,
+            "run1": 0.913
+          }
+        },
+        "xiaocui": {
+          "cell": 256,
+          "fix": {
+            "kick": 1.3,
+            "dash": 1.104,
+            "punch1": 0.935,
+            "jump": 1.117,
+            "grab": 0.913,
+            "hurt": 1.183,
+            "run1": 0.935
+          }
+        },
+        "yuehua": {
+          "cell": 256,
+          "fix": {
+            "kick": 1.299,
+            "dash": 1.087
+          }
+        }
+      }
+    }
   }
 }
