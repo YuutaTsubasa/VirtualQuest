@@ -40,14 +40,10 @@ export default {
   'B／Y／RT': 'B / Y / RT',
   '「必殺」': '“Special”',
   連段: 'Combo',
-  '：連按攻擊，打中後接第二、三下，第三下會把敵人踢倒。': ': Tap attack. Landed hits chain into a second and third hit, and the third knocks the enemy down.',
   跳踢: 'Jump kick',
-  '：跳起來在空中按攻擊。': ': Press attack in mid-air.',
   抓摔: 'Grab & throw',
   '：敵人被打得搖晃時走過去就會抓住，按攻擊膝擊，第三下（或按反方向＋攻擊）丟出去，能撞倒其他敵人。':
     ': Walk into a staggered enemy to grab them. Attack to knee; the third hit (or back + attack) throws them into other enemies.',
-  '：打倒身邊所有敵人（攻擊＋跳一起按也可以），打中會扣一點自己的體力。':
-    ': Knocks down every enemy around you (or press attack + jump together). Costs a little of your own stamina when it hits.',
   '打破路上的箱子會掉出補血的食物或寶石。': 'Break crates along the way for healing food or gems.',
   '一個人玩時方向鍵＋Z 攻擊、X 跳、C 必殺也可以；多人同樂時第 1 支手把是 1P、第 2 支是 2P，依此類推。':
     'Solo, you can also use arrow keys + Z attack, X jump, C special. In party mode, gamepad 1 is 1P, gamepad 2 is 2P, and so on.',
@@ -257,5 +253,9 @@ export default {
 
   // 跑步
   '跑步': 'Run',
-  '：連按兩下左右（搖桿往同一邊推兩下）就會跑；跑步中按攻擊是衝刺攻擊、按跳跳得更遠。': ': Double-tap left or right (or flick the stick twice) to run. Attack while running for a dash attack; jump while running to leap farther.',
+  '：連按攻擊，打中後接第二、三下，第三下會把敵人踢倒。單挑時傷害最高。': 'Tap attack; after a hit, chain the 2nd and 3rd blows — the 3rd kicks the enemy down. Best damage one-on-one.',
+  '：連按兩下左右（搖桿往同一邊推兩下）就會跑；跑步中按攻擊是衝刺攻擊，可以衝過一整排敵人（打空的話收招很久）、按跳跳得更遠。': 'Double-tap left or right (or push the stick twice) to run. Attack while running for a dash attack that plows through a whole line (long recovery if it whiffs); jump while running to leap farther.',
+  '：跳起來在空中按攻擊。用來接近、躲開包圍；傷害比連段低，落地也比較慢，魔王會用上勾拳打下來。': 'Press attack in mid-air. Good for closing in or escaping a crowd; weaker than a combo with slower landing, and bosses will uppercut you out of the air.',
+  '：每個人不同（選角色畫面看得到），被包圍時用（攻擊＋跳一起按也可以），打中會扣一點自己的體力。': 'Different for every character (see the select screen). Use it when surrounded (attack + jump together also works); landing it costs a little of your own HP.',
+  '：拳頭打他不會停下來，要用踢、跳踢、衝刺攻擊或丟人去撞。': 'Punches won’t stagger them — use kicks, jump kicks, dash attacks, or throw someone into them.',
 };

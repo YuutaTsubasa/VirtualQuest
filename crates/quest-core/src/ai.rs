@@ -3,6 +3,7 @@
 //! 輸出跟真人一樣的 `Input`，所以模擬不用分辨誰是電腦。
 
 use crate::game::{Act, ItemKind, Match, Phase, Input, W};
+use crate::characters::Reach;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
@@ -150,13 +151,23 @@ impl Ai {
                 out.right = self.fight > 0.0;
             }
         }
-        // 被圍住：必殺技
+        // 必殺技：看自己的必殺是哪一種（身邊一圈／往前衝／氣波）再決定什麼時候放
+        let sp = me.special;
+        let (ahead, around) = match sp.reach {
+            Reach::Around(r) => (0.0, r * 0.9),
+            Reach::Front(f) => (if sp.wave { 420.0 } else { f + sp.dash * sp.active as f32 * 0.8 }, 0.0),
+        };
         let crowd = m
             .enemies
             .iter()
-            .filter(|e| e.body.vulnerable() && (e.body.x - b.x).abs() < 90.0 && (e.body.z - b.z).abs() < 22.0)
+            .filter(|e| {
+                let dx = e.body.x - b.x;
+                let zr = (e.body.z - b.z).abs() < sp.zr.min(26.0);
+                e.body.vulnerable() && e.brain_entered() && zr && if around > 0.0 { dx.abs() < around } else { dx * b.facing > 0.0 && dx.abs() < ahead }
+            })
             .count();
-        if crowd >= 3 && self.special_cool == 0 && b.hp as f32 > b.max_hp as f32 * 0.25 && matches!(b.act, Act::Stand | Act::Walk) {
+        let need = 2;
+        if crowd >= need && self.special_cool == 0 && b.hp as f32 > b.max_hp as f32 * 0.25 && matches!(b.act, Act::Stand | Act::Walk) {
             self.special_cool = 200;
             if self.rng.gen_bool(cfg.special) {
                 out = Input { special_pressed: true, ..Input::default() };

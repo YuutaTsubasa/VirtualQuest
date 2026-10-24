@@ -164,6 +164,34 @@ mod balance {
             }
         }
     }
+
+    /// 每個角色自己打 1-1：必殺放了幾次、必殺打中幾下
+    #[test]
+    #[ignore]
+    fn specials_per_character() {
+        for (id, ..) in crate::characters::CHARACTERS {
+            let entrants = [Entrant { slot: 0, character: id }];
+            let mut m = Match::new(&entrants, 0, Difficulty::Normal, 3, 3);
+            let mut ai = Ai::new(0, Difficulty::Hard, 5);
+            let (mut used, mut hits, mut casting) = (0, 0, false);
+            for _ in 0..60 * 600 {
+                let inp = ai.think(&m);
+                m.step(&[inp]);
+                casting = m.players[0].body.mv == crate::game::Move::Special && m.players[0].body.act == crate::game::Act::Attack || (casting && !m.shots.is_empty());
+                for e in &m.events {
+                    match e {
+                        Event::Special { .. } => used += 1,
+                        Event::Hit { by: Some(0), .. } if casting => hits += 1,
+                        _ => {}
+                    }
+                }
+                if m.world > 0 || m.phase == Phase::Over {
+                    break;
+                }
+            }
+            println!("{id:9} 必殺 {used:2} 次、打中 {hits:3} 下、{}", format!("到 {}-{}", m.world + 1, m.sub + 1));
+        }
+    }
 }
 
 
@@ -233,8 +261,8 @@ mod run {
         assert!(m.players[0].body.x - x1 > walked * 1.5, "跑步應該比走路快");
         m.step(&[press(true, true, false)]);
         assert_eq!(m.players[0].body.mv, Move::DashAttack);
-        // 等衝刺攻擊結束，再跑一次、跳
-        for _ in 0..40 {
+        // 等衝刺攻擊結束（打空收招比較久），再跑一次、跳
+        for _ in 0..60 {
             m.step(&[Input::default()]);
         }
         m.step(&[press(true, false, false)]);

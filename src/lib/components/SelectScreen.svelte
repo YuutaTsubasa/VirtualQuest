@@ -149,6 +149,11 @@
           </div>
         {/each}
       </div>
+      <h3 class="ink-tab">{t('必殺技')}</h3>
+      <div class="special" style:--sp={open ? current.specialColor : 'var(--navy)'}>
+        <b>{open ? current.specialName : '？？？'}</b>
+        <small>{open ? current.specialDesc : ''}</small>
+      </div>
       <h3 class="ink-tab">{t('闖關設定')}</h3>
       <div class="settings">
         {#if start === 'party'}
@@ -271,7 +276,7 @@
   .info {
     display: flex;
     flex-direction: column;
-    gap: 1.2cqh;
+    gap: 0.7cqh;
     min-height: 0;
     min-width: 0;
   }
@@ -291,8 +296,23 @@
     flex-direction: column;
   }
   .stats .stat {
-    padding: 0.8cqh 0;
+    padding: 0.4cqh 0;
     border-bottom: 0.2cqh solid var(--navy);
+  }
+  .special {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2cqh;
+    padding: 0.3cqh 0 0.3cqh 1cqw;
+    border-left: 0.8cqh solid var(--sp);
+  }
+  .special b {
+    font-size: 2.4cqh;
+    font-weight: 900;
+  }
+  .special small {
+    font-size: 1.9cqh;
+    line-height: 1.35;
   }
   .settings {
     display: grid;

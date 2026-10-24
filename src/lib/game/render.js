@@ -133,7 +133,12 @@ export function handleEvents(match) {
       }
       case 'special': {
         const p = playerOf(match, e.slot);
-        if (p) effect('burst', p.x, p.z - 60, 220, 22, { grow: 0.4, alpha: 0.75 });
+        if (p) {
+          effect('burst', p.x, p.z - 60, 220, 22, { grow: 0.4, alpha: 0.75 });
+          // 每個人的必殺顏色、招式名稱
+          burst(p.x, p.z - 70, p.character.specialColor, 14, 7, 24, 0);
+          floaters.push({ x: p.x, y: p.z - 170, text: p.character.specialName, life: 60, max: 60, color: p.character.specialColor });
+        }
         break;
       }
       case 'stage': {
@@ -284,10 +289,22 @@ function legacyPose(p) {
   }
 }
 
+function drawSpecialAura(g, p, x) {
+  if (!(p.act === 'attack' && p.mv === 'special')) return;
+  g.save();
+  g.globalAlpha = 0.35 + 0.2 * Math.sin(p.t * 0.8);
+  g.fillStyle = p.character.specialColor;
+  g.beginPath();
+  g.ellipse(x, p.z, 70, 16, 0, 0, Math.PI * 2);
+  g.fill();
+  g.restore();
+}
+
 function drawPlayer(g, match, p, cam) {
   if (p.out) return;
   const x = p.x - cam;
   shadow(g, x, p.z, p.y, 40);
+  drawSpecialAura(g, p, x);
   if (p.act === 'dead' && Math.floor(p.t / 4) % 2 === 0) return;
   if (blinking(p, match.frame)) return;
   const sheet = SHEETS.characters?.[p.character.id];
@@ -706,6 +723,19 @@ function drawShot(g, s, cam, frame, world) {
   g.save();
   g.translate(x, y);
   g.fillStyle = SHOT_COLORS[s.kind];
+  if (s.kind === 'moon') {
+    // 月華的月光波：發光的新月
+    if (s.vx < 0) g.scale(-1, 1);
+    g.shadowColor = '#c9d4ff';
+    g.shadowBlur = 24;
+    g.fillStyle = '#eef2ff';
+    g.beginPath();
+    g.arc(0, 0, 40, -Math.PI / 2, Math.PI / 2);
+    g.arc(-14, 0, 36, Math.PI / 2, -Math.PI / 2, true);
+    g.fill();
+    g.restore();
+    return;
+  }
   if (s.kind === 'ice') {
     g.rotate(s.vx > 0 ? 0 : Math.PI);
     g.beginPath();
@@ -1042,7 +1072,10 @@ export function draw(canvas, match, opts = {}) {
   g.globalAlpha = 1;
   for (const f of floaters) {
     g.globalAlpha = Math.min(1, f.life / 15);
-    outlinedText(g, f.text, f.x - cam, f.y - (f.max - f.life) * 0.8, 20, f.color);
+    // 字不要超出畫面左右
+    g.font = `900 20px ${FONT}`;
+    const half = g.measureText(f.text).width / 2 + 8;
+    outlinedText(g, f.text, Math.min(W - half, Math.max(half, f.x - cam)), f.y - (f.max - f.life) * 0.8, 20, f.color);
   }
   g.globalAlpha = 1;
   drawAmbient(g, match.world, match.sub, match.frame);

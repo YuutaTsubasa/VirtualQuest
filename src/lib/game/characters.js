@@ -25,6 +25,7 @@ const RAW = [
   {
     id: 'xiaocui', name: '小翠', intro: '綠色雙馬尾的元氣少女',
     hair: '#3fbf86', clothes: '#ffffff', collar: '#2a9d8f', skin: '#ffe0c8', shorts: '#2a9d8f',
+    special: { name: '旋風腿', desc: '原地轉兩圈，踢倒身邊一圈的敵人。', color: '#3fbf86' },
     stats: { speed: 4, power: 2, hp: 4 },
     lines: {
       go: ['小翠出擊～！', '大家跟上喔～！'],
@@ -38,6 +39,7 @@ const RAW = [
   {
     id: 'yuehua', name: '月華', intro: '銀髮的冷靜大小姐',
     hair: '#e6e9f2', clothes: '#2b2d42', collar: '#e6e9f2', skin: '#fde6d6', shorts: '#2b2d42',
+    special: { name: '月光波', desc: '往前放一道月光，穿過一整排敵人。', color: '#c9d4ff' },
     stats: { speed: 3, power: 4, hp: 3 },
     lines: {
       go: ['路線已經計算好了。', '請跟緊我。'],
@@ -51,6 +53,7 @@ const RAW = [
   {
     id: 'aming', name: '阿明', intro: '熱血的刺蝟頭少年',
     hair: '#2f2f3a', clothes: '#f77f00', collar: '#fcbf49', skin: '#e9b48a', shorts: '#d62828',
+    special: { name: '燃燒拳', desc: '往前衝的上勾拳，把敵人打上天。', color: '#ff6a3d' },
     stats: { speed: 2, power: 5, hp: 3 },
     lines: {
       go: ['燃起來了——！', '全部給我放馬過來！'],
@@ -64,6 +67,7 @@ const RAW = [
   {
     id: 'tangtang', name: '糖糖', intro: '愛撒嬌的粉紅包包頭',
     hair: '#ff9ec7', clothes: '#ffd6e8', collar: '#ff8fab', skin: '#ffe4d4', shorts: '#ff8fab',
+    special: { name: '糖果旋風', desc: '一邊往前一邊連轉，打很多下。', color: '#ff8fc8' },
     stats: { speed: 5, power: 2, hp: 3 },
     lines: {
       go: ['糖糖要出發囉♪', '打完要吃糖喔♡'],
@@ -77,6 +81,7 @@ const RAW = [
   {
     id: 'xiaochun', name: '小春', intro: '橘色馬尾的運動少女',
     hair: '#f8961e', clothes: '#277da1', collar: '#ffffff', skin: '#f6cfae', shorts: '#1d4e89',
+    special: { name: '殺球', desc: '跳起來往前下方扣殺。', color: '#ffd23f' },
     stats: { speed: 5, power: 3, hp: 2 },
     lines: {
       go: ['熱身完畢，衝啊！', '比賽開始！'],
@@ -90,6 +95,7 @@ const RAW = [
   {
     id: 'lanjie', name: '蘭姐', intro: '戴眼鏡的麻將館老闆娘',
     hair: '#6a4c93', clothes: '#c1121f', collar: '#ffd166', skin: '#f3d0b4', shorts: '#7a0b14',
+    special: { name: '推手', desc: '把面前一整排敵人推得老遠。', color: '#9b7fe0' },
     stats: { speed: 2, power: 4, hp: 4 },
     lines: {
       go: ['年輕人，跟著我走。', '開店三十年，什麼場面沒見過。'],
@@ -103,6 +109,7 @@ const RAW = [
   {
     id: 'cangya', name: '蒼牙', intro: '銀髮狼耳、鼻子靈又好勝的狼族少年',
     hair: '#a7a9ad', clothes: '#2c2c34', collar: '#c9a24a', skin: '#f6dccb', shorts: '#2c2c34',
+    special: { name: '狼牙突進', desc: '往前衝過去，路上的敵人連咬好幾下。', color: '#5ab0ff' },
     stats: { speed: 4, power: 4, hp: 2 },
     lines: {
       go: ['聞到獵物的味道了。', '一個都別想跑。'],
@@ -116,6 +123,7 @@ const RAW = [
   {
     id: 'jinye', name: '金爺', intro: '鬍子帥氣、見過大風大浪的老牌賭客',
     hair: '#2a2a2e', clothes: '#1b2233', collar: '#f0ece2', skin: '#d9a47c', shorts: '#1b2233',
+    special: { name: '豪賭震地', desc: '起手很慢，但震倒身邊很大一圈。', color: '#e9b85e' },
     stats: { speed: 1, power: 5, hp: 4 },
     lines: {
       go: ['小場面，走吧。', '這把，我押自己贏。'],
@@ -129,6 +137,7 @@ const RAW = [
   {
     id: 'leo', name: '雷歐', intro: '戴著王冠、一本正經的異國王子騎士',
     hair: '#f2c94c', clothes: '#c7ccd6', collar: '#1f3f9a', skin: '#fde6d6', shorts: '#1f3f9a',
+    special: { name: '騎士衝鋒', desc: '無敵地往前衝撞，把人撞開。', color: '#4fd1c5' },
     stats: { speed: 3, power: 3, hp: 4 },
     lines: {
       go: ['以騎士之名，前進！', '我會守護大家。'],
@@ -142,6 +151,7 @@ const RAW = [
   {
     id: 'alie', name: '阿烈', intro: '紅髮刀疤、豪爽愛冒險的傭兵',
     hair: '#c1272d', clothes: '#1d1d1d', collar: '#7a1d1d', skin: '#e2b08c', shorts: '#7a1d1d',
+    special: { name: '爆裂重拳', desc: '一拳把人打飛，撞倒後面的敵人。', color: '#ff4d4d' },
     stats: { speed: 3, power: 5, hp: 2 },
     lines: {
       go: ['冒險開始啦！', '前面一定有寶藏！'],
@@ -155,6 +165,7 @@ const RAW = [
   {
     id: 'ayi', name: '阿翼', intro: '棕髮藍眼、穿著銀色盔甲的隱藏來客', hidden: true,
     hair: '#795038', clothes: '#cbd3dc', collar: '#20252f', skin: '#f3d2b6', shorts: '#20252f',
+    special: { name: '天翼十字斬', desc: '小跳一下，前後一起斬兩次。', color: '#ffffff' },
     stats: { speed: 4, power: 4, hp: 3 },
     lines: {
       go: ['大家，一起走吧。', '我會幫上忙的。'],
@@ -178,6 +189,14 @@ export const CHARACTERS = RAW.map((c) => ({
   get intro() {
     return t(c.intro);
   },
+  // 必殺技（每個人不同，數值在 crates/quest-core/src/characters.rs 的 special_of）
+  get specialName() {
+    return t(c.special.name);
+  },
+  get specialDesc() {
+    return t(c.special.desc);
+  },
+  specialColor: c.special.color,
   portraits: portraits(c.id),
   get spriteSrc() {
     return asset(`sprites/${c.id}.webp`);

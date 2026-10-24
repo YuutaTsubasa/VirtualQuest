@@ -6,7 +6,7 @@
 //! 欄位名稱用 camelCase 序列化，前端 src/lib/game/render.js 直接讀。
 
 use crate::ai::Difficulty;
-use crate::characters::{stats_of, Stats};
+use crate::characters::{special_of, stats_of, Reach, Special, Stats};
 use crate::stages::{build_stage, Spawn, StageDef, SUBS, WORLDS};
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -120,6 +120,7 @@ pub enum Move {
     Slash,
     Slam,
     BossSlam,
+    Uppercut,
     Shoot,
 }
 
@@ -148,9 +149,14 @@ fn move_data(m: Move) -> MoveData {
         Move::None | Move::Throw | Move::Shoot => md(0, 0, 18, 0.0, 0.0, 0.0, false),
         Move::Jab => md(4, 3, 8, 6.0, 64.0, 16.0, false),
         Move::Jab2 => md(4, 3, 9, 7.0, 66.0, 16.0, false),
-        Move::Kick => md(6, 4, 15, 12.0, 76.0, 18.0, true),
-        Move::DashAttack => md(3, 9, 16, 12.0, 72.0, 18.0, true),
-        Move::JumpKick => md(3, 60, 0, 13.0, 70.0, 18.0, true),
+        // 連段收尾：單挑時傷害最高的打法
+        Move::Kick => md(6, 4, 15, 14.0, 76.0, 18.0, true),
+        // 衝刺攻擊：打得久一點，衝過一整排都打得到（打空的話收招會更久，見 update_players）
+        Move::DashAttack => md(3, 12, 16, 12.0, 72.0, 18.0, true),
+        // 跳踢：接近、脫身用，傷害比連段低
+        Move::JumpKick => md(3, 60, 0, 9.0, 70.0, 18.0, true),
+        // 魔王的對空上勾拳：看到玩家在身邊跳起來就打下來
+        Move::Uppercut => md(5, 7, 18, 14.0, 100.0, 26.0, true),
         Move::Special => MoveData { omni: true, ..md(3, 14, 14, 14.0, 100.0, 24.0, true) },
         Move::Knee => md(0, 1, 9, 8.0, 50.0, 20.0, false),
         Move::Slash => md(7, 3, 20, 8.0, 78.0, 15.0, false),
@@ -363,6 +369,8 @@ pub enum ShotKind {
     Ice,
     Fire,
     Dark,
+    /// 月華的月光波
+    Moon,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -372,6 +380,8 @@ pub struct Player {
     pub character: String,
     #[serde(skip)]
     pub stats: Stats,
+    #[serde(skip)]
+    pub special: Special,
     #[serde(flatten)]
     pub body: Body,
     pub lives: i32,
@@ -406,6 +416,8 @@ struct Brain {
     /// 魔王：下一個要用的招式
     plan: u8,
     summoned: u8,
+    /// 魔王：對空上勾拳的冷卻
+    antiair: i32,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -432,6 +444,10 @@ pub struct Enemy {
 }
 
 impl Enemy {
+    /// 已經走進畫面、可以被打
+    pub fn brain_entered(&self) -> bool {
+        self.brain.entered
+    }
     fn reach(&self) -> f32 {
         match self.kind {
             Kind::Boss => 96.0,
@@ -500,6 +516,10 @@ pub struct Shot {
     dmg: i32,
     #[serde(skip)]
     knock: bool,
+    /// 玩家放的（月光波）：打敵人、會貫穿；None = 敵人丟的，打玩家
+    pub owner: Option<usize>,
+    #[serde(skip)]
+    hits: Vec<u32>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -605,6 +625,7 @@ impl Match {
                     slot: e.slot,
                     character: e.character.to_string(),
                     stats,
+                    special: special_of(e.character),
                     body: Body::new(120.0 + i as f32 * 40.0, Z_TOP + 40.0 + i as f32 * 36.0, stats.hp, 1.0),
                     lives: lives.max(1),
                     score: 0,
@@ -808,6 +829,8 @@ impl Match {
             }
             let slot = p.slot;
             let speed = p.stats.speed;
+            let sp = p.special;
+            let power = p.stats.power;
             let b = &mut p.body;
             b.t += 1;
             b.inv = (b.inv - 1).max(0);
@@ -831,8 +854,7 @@ impl Match {
                 Act::Run => {
                     // 放開方向、或按了反方向：停下來
                     if inp.special_pressed || (inp.attack_pressed && inp.jump_pressed) {
-                        b.attack(Move::Special);
-                        b.inv = 22;
+                        begin_special(b, &sp);
                         self.events.push(Event::Special { slot });
                     } else if inp.jump_pressed {
                         // 跑步跳：跳得比較遠
@@ -862,8 +884,7 @@ impl Match {
                 }
                 Act::Stand | Act::Walk => {
                     if inp.special_pressed || (inp.attack_pressed && inp.jump_pressed) {
-                        b.attack(Move::Special);
-                        b.inv = 22;
+                        begin_special(b, &sp);
                         self.events.push(Event::Special { slot });
                     } else if inp.jump_pressed {
                         b.set(Act::Jump, 0);
@@ -919,9 +940,57 @@ impl Match {
                         }
                     }
                 }
+                Act::Attack if b.mv == Move::Special => {
+                    let live = b.t < sp.startup + sp.active;
+                    if live && b.t >= sp.startup.min(2) {
+                        b.x += b.facing * sp.dash;
+                        b.z += inp.dz() * speed * Z_SPEED * 0.5;
+                    }
+                    if b.y > 0.0 || b.vy > 0.0 {
+                        b.y += b.vy;
+                        b.vy -= G;
+                        if b.y <= 0.0 {
+                            b.y = 0.0;
+                            b.vy = 0.0;
+                            self.events.push(Event::Land { x: b.x, z: b.z });
+                        }
+                    }
+                    if b.t == sp.startup {
+                        if sp.wave {
+                            // 月光波：往前飛、貫穿，打中的人都會倒
+                            self.next_id += 1;
+                            self.shots.push(Shot {
+                                id: self.next_id,
+                                kind: ShotKind::Moon,
+                                x: b.x + b.facing * 50.0,
+                                z: b.z,
+                                y: 60.0,
+                                vx: b.facing * 9.0,
+                                vz: 0.0,
+                                life: 70,
+                                dmg: (sp.dmg * power) as i32,
+                                knock: true,
+                                owner: Some(slot),
+                                hits: Vec::new(),
+                            });
+                            let cost = (b.max_hp as f32 * 0.06) as i32;
+                            b.hp = (b.hp - cost).max(1);
+                        }
+                        if sp.quake {
+                            self.events.push(Event::Quake { x: b.x, z: b.z });
+                        }
+                    }
+                    if b.t >= b.dur && b.y <= 0.0 {
+                        b.set(Act::Stand, 0);
+                    }
+                }
                 Act::Attack => {
                     b.x += b.vx;
                     b.vx *= 0.8;
+                    // 衝刺攻擊打空：收招多 14 格（不能一直衝來衝去）
+                    if b.mv == Move::DashAttack && b.t == b.dur - 1 && !b.connected && b.dur == Move::DashAttack.total() {
+                        b.dur += 14;
+                    }
                     if b.mv == Move::Kick && b.t < 8 {
                         b.x += b.facing * 1.6;
                     }
@@ -943,7 +1012,8 @@ impl Match {
                     if b.air() {
                         self.events.push(Event::Land { x: b.x, z: b.z });
                         b.attack(Move::None);
-                        b.dur = 7;
+                        // 跳踢落地的硬直比較長，不能一直跳踢
+                        b.dur = if b.mv == Move::JumpKick { 14 } else { 7 };
                     }
                 }
                 Act::Hurt => {
@@ -1074,6 +1144,13 @@ impl Match {
     // ---------- 敵人 ----------
 
     fn update_enemies(&mut self) {
+        // 正在跳的玩家（魔王對空用）
+        let jumpers: Vec<(f32, f32, bool)> = self
+            .players
+            .iter()
+            .filter(|p| !p.out && p.body.act == Act::Jump)
+            .map(|p| (p.body.x, p.body.z, true))
+            .collect();
         let targets: Vec<(f32, f32, bool)> = self
             .players
             .iter()
@@ -1155,6 +1232,16 @@ impl Match {
                     let side = if b.x < tx { -1.0 } else { 1.0 };
                     let dx = tx - b.x;
                     let dz = tz - b.z;
+                    // 魔王：有人在身邊跳起來（想跳踢）就用上勾拳打下來
+                    e.brain.antiair = (e.brain.antiair - 1).max(0);
+                    if e.kind == Kind::Boss && e.brain.antiair == 0 {
+                        if let Some(&(jx, _, _)) = jumpers.iter().find(|(jx, jz, _)| (jx - b.x).abs() < 150.0 && (jz - b.z).abs() < 30.0) {
+                            b.facing = (jx - b.x).signum();
+                            b.attack(Move::Uppercut);
+                            e.brain.antiair = 80;
+                            continue;
+                        }
+                    }
                     let r: f32 = self.rng.gen();
                     // 魔王的特殊招式
                     if e.kind == Kind::Boss && e.brain.cool <= 0 {
@@ -1412,7 +1499,7 @@ impl Match {
         }
         for (x, z, y, vx, vz, kind, dmg, knock) in new_shots {
             let id = self.new_id();
-            self.shots.push(Shot { id, kind, x, z, y, vx, vz, life: 200, dmg, knock });
+            self.shots.push(Shot { id, kind, x, z, y, vx, vz, life: 200, dmg, knock, owner: None, hits: Vec::new() });
             self.events.push(Event::Shoot { x, y: z - y });
         }
         for k in 0..summons {
@@ -1488,9 +1575,18 @@ impl Match {
             if p.out {
                 continue;
             }
-            let Some(d) = p.body.active_move() else { continue };
+            let sp = p.special;
+            let special = p.body.mv == Move::Special && p.body.act == Act::Attack;
+            let d = if special { special_window(&p.body, &sp) } else { p.body.active_move() };
+            let Some(d) = d else { continue };
             let slot = p.slot;
             let mut landed = false;
+            // 多段的必殺：每隔幾格可以再打中同一個人
+            if special && sp.rehit > 0 && (p.body.t - sp.startup) % sp.rehit == 0 && p.body.t > sp.startup {
+                p.body.hit_list.clear();
+            }
+            // 多段的必殺只有最後一段把人打倒，前面幾段讓敵人硬直
+            let last_hit = !special || sp.rehit == 0 || p.body.t + sp.rehit >= sp.startup + sp.active;
             for e in self.enemies.iter_mut() {
                 let eb = &e.body;
                 if !eb.vulnerable() || eb.act == Act::Held || !e.brain.entered || p.body.hit_list.contains(&e.id) {
@@ -1504,9 +1600,28 @@ impl Match {
                 let dmg = (d.dmg * p.stats.power) as i32;
                 let dir = if d.omni { (e.body.x - p.body.x).signum() } else { p.body.facing };
                 let was_alive = e.body.hp > 0;
-                let armor = e.armor > 0;
-                e.body.take_hit(dmg, d.knock, dir, armor);
+                // 大隻佬被拳頭打不會硬直（要用踢、跳踢、衝刺、丟人去撞）
+                let fists = matches!(p.body.mv, Move::Jab | Move::Jab2) && e.kind == Kind::Brute;
+                let armor = e.armor > 0 || fists;
+                let knock = d.knock && last_hit;
+                e.body.take_hit(dmg, knock, dir, armor);
                 e.last_by = Some(slot);
+                if special && knock && !armor && e.body.act == Act::Fall {
+                    if sp.push > 0.0 {
+                        e.body.vx = dir * sp.push;
+                    }
+                    if sp.lift > 0.0 {
+                        e.body.vy = sp.lift;
+                    }
+                    // 爆裂重拳：被打飛的人會撞倒別人
+                    if sp.launch && e.body.hp > 0 && e.grabbable() {
+                        e.body.set(Act::Thrown, 0);
+                        e.body.vx = dir * 9.0;
+                        e.body.vy = 6.5;
+                        e.body.y = e.body.y.max(8.0);
+                        e.thrown_dmg = 0;
+                    }
+                }
                 if e.kind == Kind::Boss && d.knock && !armor {
                     // 魔王被打倒後，起身會有一段霸體（不然會被連到死）
                     e.body.vx *= 0.5;
@@ -1599,6 +1714,32 @@ impl Match {
             s.x += s.vx;
             s.z = (s.z + s.vz).clamp(Z_TOP, Z_BOTTOM);
             s.life -= 1;
+            if let Some(slot) = s.owner {
+                for e in self.enemies.iter_mut() {
+                    let eb = &e.body;
+                    if !eb.vulnerable() || eb.act == Act::Held || !e.brain.entered || s.hits.contains(&e.id) || (eb.x - s.x).abs() > 40.0 || (eb.z - s.z).abs() > 22.0 {
+                        continue;
+                    }
+                    s.hits.push(e.id);
+                    let was_alive = e.body.hp > 0;
+                    let armor = e.armor > 0;
+                    e.body.take_hit(s.dmg, s.knock, s.vx.signum(), armor);
+                    e.last_by = Some(slot);
+                    events.push(Event::Hit { x: e.body.x, y: e.body.z - 70.0, big: true, by: Some(slot) });
+                    if let Some(p) = self.players.iter_mut().find(|p| p.slot == slot) {
+                        p.score += s.dmg as u32 * 10;
+                        if was_alive && e.body.hp <= 0 {
+                            p.score += e.score();
+                            p.kos += 1;
+                            events.push(Event::Ko { x: e.body.x, z: e.body.z, boss: e.kind == Kind::Boss, by: Some(slot) });
+                        }
+                    }
+                }
+                if s.x < cam - 80.0 || s.x > cam + W + 80.0 {
+                    s.life = 0;
+                }
+                continue;
+            }
             for p in self.players.iter_mut() {
                 let pb = &p.body;
                 if p.out || !pb.vulnerable() || (pb.x - s.x).abs() > 28.0 || (pb.z - s.z).abs() > 16.0 || pb.y > s.y + 20.0 {
@@ -1725,6 +1866,29 @@ impl Match {
             self.events.push(Event::Over);
         }
     }
+}
+
+/// 開始放必殺
+fn begin_special(b: &mut Body, sp: &Special) {
+    b.attack(Move::Special);
+    b.dur = sp.startup + sp.active + sp.recover;
+    b.inv = sp.inv;
+    if sp.leap > 0.0 {
+        b.vy = sp.leap;
+        b.y = 1.0;
+    }
+}
+
+/// 必殺這一格有沒有打擊範圍（依角色）
+fn special_window(b: &Body, sp: &Special) -> Option<MoveData> {
+    if sp.wave || b.t < sp.startup || b.t >= sp.startup + sp.active {
+        return None;
+    }
+    let (far, omni) = match sp.reach {
+        Reach::Around(r) => (r, true),
+        Reach::Front(f) => (f, false),
+    };
+    Some(MoveData { startup: sp.startup, active: sp.active, recover: sp.recover, dmg: sp.dmg, near: -10.0, far, zr: sp.zr, knock: true, omni })
 }
 
 /// 魔王的招式組合（每一大關不同）
