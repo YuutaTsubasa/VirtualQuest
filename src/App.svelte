@@ -24,6 +24,7 @@
   import { ui, openSettings } from './lib/ui.svelte.js';
   import { roomCodeOf } from './lib/site.js';
   import { setBgm, playJingle } from './lib/audio/sound.svelte.js';
+  import { STAGE_SONGS } from './lib/audio/songs.js';
 
   // 單機：title | solo | help | select | play | pause | result | host | join（設定是隨時可開的視窗）
   // 連線中（net.room 有值）時畫面由房間狀態決定：大廳或比賽
@@ -66,11 +67,14 @@
       onStage: (m) => {
         result = null;
         bossFight = false;
+        stageWorld = m.world;
         reachWorld(m.world);
       },
       onBoss: () => (bossFight = true),
       onClear: (m) => {
         bossFight = false;
+        // 最後一關打完是破關曲（onEnd 會播），其他小關播突破的短曲
+        if (!(m.world === 5 && m.sub === 2)) playJingle('clear');
         // 打倒第一大關的魔王：隱藏角色加入
         if (m.world === 0 && m.sub === 2 && unlockHidden()) unlockedNow = true;
         if (m.sub === 2) reachWorld(m.world + 1);
@@ -125,12 +129,15 @@
 
   // 背景音樂：依畫面切換（短曲播完會自動接回）
   let bossFight = $state(false);
+  let stageWorld = $state(0);
   let unlockedNow = $state(false);
+  // 遊戲中：每一大關自己的曲子；魔王戰換魔王曲（最後的魔王另一首）
+  const fightSong = $derived(bossFight ? (stageWorld === 5 ? 'final' : 'boss') : STAGE_SONGS[stageWorld] ?? STAGE_SONGS[0]);
   const scene = $derived.by(() => {
     if (view === 'online-lobby') return 'menu';
-    if (view === 'online-playing') return result ? 'menu' : bossFight ? 'tension' : 'match';
+    if (view === 'online-playing') return result ? 'menu' : fightSong;
     if (screen === 'title') return 'title';
-    if (screen === 'play' || screen === 'pause') return bossFight ? 'tension' : 'match';
+    if (screen === 'play' || screen === 'pause') return fightSong;
     return 'menu';
   });
   $effect(() => setBgm(scene));

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SONGS } from '../src/lib/audio/songs.js';
+import { SONGS, STAGE_SONGS } from '../src/lib/audio/songs.js';
 import { parseMML, chordNotes } from '../src/lib/audio/synth.js';
 
 const bars = (mml) => mml.split('|').map((b) => b.trim()).filter(Boolean);
@@ -42,5 +42,6 @@ test('every chord name in the progressions is understood', () => {
 });
 
 test('scenes and jingles the app asks for exist', () => {
-  for (const name of ['title', 'menu', 'match', 'tension', 'win', 'lose']) assert.ok(SONGS[name], name);
+  for (const name of ['title', 'menu', 'boss', 'final', 'clear', 'win', 'lose', ...STAGE_SONGS]) assert.ok(SONGS[name], name);
+  assert.equal(STAGE_SONGS.length, 6, '六大關各一首');
 });

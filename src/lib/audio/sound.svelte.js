@@ -222,6 +222,13 @@ export const sfx = {
     noiseHit(out(), t, { type: 'highpass', freq: 2400, q: 0.7, vol: 0.4, decay: 0.3 });
     for (const m of [55, 62, 67, 74]) fmNote(out(), 'brass', m, t, 0.2, 0.8);
   },
+  /** 必殺氣集滿：往上爬的鐘聲＋一點閃亮的雜訊 */
+  gauge() {
+    if (!ready()) return;
+    const t = now();
+    [72, 76, 79, 84, 88].forEach((m, i) => fmNote(out(), 'bell', m, t + i * 0.04, 0.16, 0.7));
+    noiseHit(out(), t + 0.16, { type: 'highpass', freq: 6000, q: 0.7, vol: 0.12, decay: 0.2 });
+  },
   /** 撿到道具 */
   pickup() {
     if (!ready()) return;

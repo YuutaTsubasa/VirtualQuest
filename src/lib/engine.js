@@ -31,6 +31,7 @@ const EVENT_SOUND = {
   quake: 'quake',
   go: 'go',
   boss: 'alarm',
+  nosp: 'deny',
 };
 
 const wasmReady = init();
@@ -58,7 +59,15 @@ export function createEngine(canvas, { onEnd, onStage = () => {}, onClear = () =
   let ready = false;
   wasmReady.then(() => (ready = true));
 
+  // 必殺氣上一格是多少（集滿的那一刻提示一聲，只提示真人玩家，電腦隊友不吵）
+  let lastSp = {};
+  const isHuman = (i, p) => (state === 'online' ? p.slot === net.seat : local && !local.cpu[i]);
+
   function advance(m) {
+    m.players.forEach((p, i) => {
+      if (p.sp >= 100 && (lastSp[p.slot] ?? 100) < 100 && !p.out && isHuman(i, p)) play('gauge');
+      lastSp[p.slot] = p.sp;
+    });
     for (const e of m.events) {
       if (e.type === 'hit') play(e.big ? 'heavy' : 'punch');
       else if (EVENT_SOUND[e.type]) play(EVENT_SOUND[e.type]);
