@@ -336,6 +336,25 @@ mod run {
         assert_eq!(m.players[0].body.act, Act::Stand);
     }
 
+    /// 暫停選單「從本關開頭」：回到進這一關時的命、體力、分數，位置回到起點
+    #[test]
+    fn restart_stage_restores_start() {
+        let entrants = [Entrant { slot: 0, character: "xiaocui" }];
+        let mut m = Match::new(&entrants, 0, Difficulty::Easy, 3, 1);
+        while m.phase != Phase::Play {
+            m.step(&[Input::default()]);
+        }
+        let (lives, hp, score, x) = (m.players[0].lives, m.players[0].body.hp, m.players[0].score, m.players[0].body.x);
+        m.players[0].lives = 1;
+        m.players[0].body.hp = 5;
+        m.players[0].score = 9999;
+        m.players[0].body.x += 300.0;
+        m.restart_stage();
+        assert_eq!((m.players[0].lives, m.players[0].body.hp, m.players[0].score), (lives, hp, score));
+        assert_eq!(m.players[0].body.x, x);
+        assert_eq!((m.world, m.sub, m.phase), (0, 0, Phase::Intro));
+    }
+
     /// 必殺要集滿氣才能放，放完氣就歸零（不能一直放）
     #[test]
     fn special_needs_full_gauge() {

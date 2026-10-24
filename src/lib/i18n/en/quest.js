@@ -11,7 +11,8 @@ export default {
   再玩一次: 'Play Again',
   '連線遊戲不會暫停喔！': 'Online games don’t pause!',
   '結束遊戲、回大廳': 'End game, back to lobby',
-  從頭開始: 'Restart',
+  從本關開頭: 'Restart Stage',
+  從頭開始: 'Restart Game',
   '回復！': 'Healed!',
 
   // 房間的系統訊息

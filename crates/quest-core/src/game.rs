@@ -628,6 +628,9 @@ pub struct Match {
     hitstop: i32,
     #[serde(skip)]
     buffered: Vec<Input>,
+    /// 這一小關開始時每位玩家的（命、體力、分數、必殺氣）：暫停選單「從本關開頭」用
+    #[serde(skip)]
+    stage_start: Vec<(i32, i32, u32, i32)>,
 }
 
 /// 每位參加者：(座位 slot, 角色 id)
@@ -694,6 +697,7 @@ impl Match {
             go_from: 0.0,
             hitstop: 0,
             buffered: Vec::new(),
+            stage_start: Vec::new(),
         };
         m.load_stage(world, 0);
         m
@@ -751,6 +755,23 @@ impl Match {
         self.phase = Phase::Intro;
         self.timer = INTRO_FRAMES;
         self.events.push(Event::Stage { world, sub });
+        self.stage_start = self.players.iter().map(|p| (p.lives, p.body.hp, p.score, p.sp)).collect();
+    }
+
+    /// 從這一小關的開頭重來（暫停選單）：每位玩家回到進這一關時的命、體力、分數、必殺氣
+    pub fn restart_stage(&mut self) {
+        let start = std::mem::take(&mut self.stage_start);
+        for (p, &(lives, hp, score, sp)) in self.players.iter_mut().zip(&start) {
+            p.out = false;
+            p.lives = lives;
+            p.body.hp = hp;
+            p.score = score;
+            p.sp = sp;
+        }
+        self.hitstop = 0;
+        self.buffered.clear();
+        let (w, s) = (self.world, self.sub);
+        self.load_stage(w, s);
     }
 
     /// 打擊停頓中按下的鍵先記著

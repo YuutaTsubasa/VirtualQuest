@@ -67,6 +67,12 @@ impl LocalMatch {
         self.game.continue_game()
     }
 
+    /// 從這一小關的開頭重來（暫停選單）
+    #[wasm_bindgen(js_name = restartStage)]
+    pub fn restart_stage(&mut self) {
+        self.game.restart_stage();
+    }
+
     pub fn state(&self) -> String {
         serde_json::to_string(&self.game).unwrap_or_default()
     }

@@ -164,6 +164,15 @@ export function createEngine(canvas, { onEnd, onStage = () => {}, onClear = () =
       render.resetEffects();
       state = 'local';
     },
+    // 暫停選單：從這一小關的開頭重來（單機）
+    restartStageLocal() {
+      if (!local) return false;
+      local.game.restartStage();
+      endTimer = 0;
+      render.resetEffects();
+      state = 'local';
+      return true;
+    },
     // 全軍覆沒後接關（單機）
     continueLocal() {
       if (!local || !local.game.continueGame()) return false;

@@ -226,6 +226,14 @@
     engine.resume();
     screen = 'play';
   }
+
+  // 暫停選單：從這一小關的開頭重來（「從頭開始」是回到第一關）
+  function restartStage() {
+    if (engine.restartStageLocal()) {
+      engine.resume();
+      screen = 'play';
+    }
+  }
 </script>
 
 <svelte:window {onkeydown} />
@@ -321,6 +329,7 @@
       <Menu
         items={[
           { label: t('繼續'), action: resume },
+          { label: t('從本關開頭'), action: restartStage },
           { label: t('從頭開始'), action: () => start(lastSetup) },
           { label: t('設定'), action: openSettings },
           { label: t('回標題'), action: toTitle },
