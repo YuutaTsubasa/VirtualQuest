@@ -47,7 +47,7 @@ CHARACTER_FRAMES = ['idle', 'walk1', 'walk2', 'punch1', 'punch2', 'kick', 'jump'
                     # 走路補成四格：兩格收腳（requests/2026-10-24-1500-anime90-walk-down-fix.md）
                     'walk3', 'walk4']
 ENEMY_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'attack', 'hurt', 'fall', 'down', 'charge', 'walk3', 'walk4']
-BOSS_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'slam', 'hurt', 'fall', 'down', 'charge', 'leap', 'cast', 'vanish']
+BOSS_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'slam', 'hurt', 'fall', 'down', 'charge', 'leap', 'cast', 'vanish', 'walk3', 'walk4']
 CELL = 400
 # 哪些格子要依實際高度放大回來：目標高度＝這張圖集 idle 的高度 × 比例；最多放大幾倍
 FIX_CHARACTER = {'kick': 0.925, 'dash': 0.85}
@@ -133,6 +133,12 @@ def old_cells(entry):
             for i, name in enumerate(entry['frames'])}
 
 
+def kept_fix(before, names, folder):
+    """原本圖集裡、這次沒有重畫的格子的放大倍數"""
+    redrawn = {f for f in names if os.path.exists(os.path.join(folder, f + '.png'))}
+    return {f: v for f, v in (before or {}).get('fix', {}).items() if f not in redrawn}
+
+
 def strip(frames, folder, cell, cols=None, keep=None):
     """把有的格子排成圖集；回傳（圖, 實際有的格子名, 欄數）。
     keep：原本圖集裡的格子，這次沒交的就沿用（例如只補交跑步 3 格）"""
@@ -182,9 +188,7 @@ def main(src):
             sheets['characters'][cid] = {'src': f'sprites/{cid}.webp', 'frames': names, 'cols': cols, 'cell': CELL}
             # 補交幾格時，原本那些格的放大倍數也要留著；這次重畫的格子舊的倍數就不算了
             # （頭的大小用 scripts/measure-head-scale.py --write 重新量）
-            redrawn = {f for f in names if os.path.exists(os.path.join(folder, f + '.png'))}
-            old_fix = {f: v for f, v in (before or {}).get('fix', {}).items() if f not in redrawn}
-            fix = {**old_fix, **fixes(names, heights(metrics, f'characters/{cid}/sprites/'), FIX_CHARACTER)}
+            fix = {**kept_fix(before, names, folder), **fixes(names, heights(metrics, f'characters/{cid}/sprites/'), FIX_CHARACTER)}
             if fix:
                 sheets['characters'][cid]['fix'] = fix
             if (before or {}).get('scale'):
@@ -196,28 +200,38 @@ def main(src):
     enemies = os.path.join(src, 'enemies')
     for world in sorted(os.listdir(enemies)) if os.path.isdir(enemies) else []:
         for kind in sorted(os.listdir(os.path.join(enemies, world))):
-            sheet, names, cols = strip(ENEMY_FRAMES, os.path.join(enemies, world, kind), CELL)
+            folder = os.path.join(enemies, world, kind)
+            key = f'{world}/{kind}'
+            before = sheets['enemies'].get(key)
+            # 補交幾格（例如只補走路 2 格）時，原本的格子、倍數都留著
+            sheet, names, cols = strip(ENEMY_FRAMES, folder, CELL, keep=old_cells(before))
             if sheet:
                 rel = f'enemies/{world}/{kind}.webp'
                 written.append(save(sheet, rel))
-                sheets['enemies'][f'{world}/{kind}'] = {'src': rel, 'frames': names, 'cols': cols, 'cell': CELL}
-                fix = fixes(names, heights(metrics, f'enemies/{world}/{kind}/'), FIX_ENEMY)
+                sheets['enemies'][key] = {'src': rel, 'frames': names, 'cols': cols, 'cell': CELL}
+                fix = {**kept_fix(before, names, folder), **fixes(names, heights(metrics, f'enemies/{world}/{kind}/'), FIX_ENEMY)}
                 if fix:
-                    sheets['enemies'][f'{world}/{kind}']['fix'] = fix
+                    sheets['enemies'][key]['fix'] = fix
+                if (before or {}).get('scale'):
+                    sheets['enemies'][key]['scale'] = before['scale']
                 k = sheet_scale(metrics, f'enemies/{world}/{kind}/', kind)
                 if k > 1:
-                    sheets['enemies'][f'{world}/{kind}']['scale'] = k
+                    sheets['enemies'][key]['scale'] = k
 
     bosses = os.path.join(src, 'bosses')
     for world in sorted(os.listdir(bosses)) if os.path.isdir(bosses) else []:
-        sheet, names, cols = strip(BOSS_FRAMES, os.path.join(bosses, world), BOSS_CELL, cols=6)
+        folder = os.path.join(bosses, world)
+        before = sheets['bosses'].get(world)
+        sheet, names, cols = strip(BOSS_FRAMES, folder, BOSS_CELL, cols=6, keep=old_cells(before))
         if sheet:
             rel = f'bosses/{world}.webp'
             written.append(save(sheet, rel))
             sheets['bosses'][world] = {'src': rel, 'frames': names, 'cols': cols, 'cell': BOSS_CELL}
-            fix = fixes(names, heights(metrics, f'bosses/{world}/'), FIX_BOSS)
+            fix = {**kept_fix(before, names, folder), **fixes(names, heights(metrics, f'bosses/{world}/'), FIX_BOSS)}
             if fix:
                 sheets['bosses'][world]['fix'] = fix
+            if (before or {}).get('scale'):
+                sheets['bosses'][world]['scale'] = before['scale']
             k = sheet_scale(metrics, f'bosses/{world}/', 'boss')
             if k > 1:
                 sheets['bosses'][world]['scale'] = k
