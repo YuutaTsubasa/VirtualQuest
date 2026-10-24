@@ -20,7 +20,7 @@
   ].map(([id, face, pos]) => ({ c: getCharacter(id), face, pos }));
 </script>
 
-<section class="screen title">
+<section class="screen title" class:scene-on={!!scene}>
   <div class="paper-bg"></div>
 
   {#if scene}
