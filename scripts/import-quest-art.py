@@ -43,8 +43,10 @@ MANIFEST = os.path.join(ROOT, 'src', 'lib', 'style-assets.json')
 CHARACTER_FRAMES = ['idle', 'walk1', 'walk2', 'punch1', 'punch2', 'kick', 'jump', 'jumpkick',
                     'special', 'grab', 'knee', 'throw', 'hurt', 'fall', 'down', 'win',
                     # 跑步與衝刺攻擊（後來加的，requests/2026-10-24-0910-anime90-run-frames.md）
-                    'run1', 'run2', 'dash']
-ENEMY_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'attack', 'hurt', 'fall', 'down', 'charge']
+                    'run1', 'run2', 'dash',
+                    # 走路補成四格：兩格收腳（requests/2026-10-24-1500-anime90-walk-down-fix.md）
+                    'walk3', 'walk4']
+ENEMY_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'attack', 'hurt', 'fall', 'down', 'charge', 'walk3', 'walk4']
 BOSS_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'slam', 'hurt', 'fall', 'down', 'charge', 'leap', 'cast', 'vanish']
 CELL = 400
 # 哪些格子要依實際高度放大回來：目標高度＝這張圖集 idle 的高度 × 比例；最多放大幾倍
@@ -178,8 +180,11 @@ def main(src):
         if sheet:
             written.append(save(sheet, f'sprites/{cid}.webp'))
             sheets['characters'][cid] = {'src': f'sprites/{cid}.webp', 'frames': names, 'cols': cols, 'cell': CELL}
-            # 補交幾格時，原本那些格的放大倍數也要留著
-            fix = {**(before or {}).get('fix', {}), **fixes(names, heights(metrics, f'characters/{cid}/sprites/'), FIX_CHARACTER)}
+            # 補交幾格時，原本那些格的放大倍數也要留著；這次重畫的格子舊的倍數就不算了
+            # （頭的大小用 scripts/measure-head-scale.py --write 重新量）
+            redrawn = {f for f in names if os.path.exists(os.path.join(folder, f + '.png'))}
+            old_fix = {f: v for f, v in (before or {}).get('fix', {}).items() if f not in redrawn}
+            fix = {**old_fix, **fixes(names, heights(metrics, f'characters/{cid}/sprites/'), FIX_CHARACTER)}
             if fix:
                 sheets['characters'][cid]['fix'] = fix
             if (before or {}).get('scale'):
@@ -255,8 +260,10 @@ def main(src):
     files = set(manifest['styles']['anime90']['files'])
     files.update(written)
     manifest['styles']['anime90']['files'] = sorted(files)
-    json.dump(manifest, open(MANIFEST, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+    open(MANIFEST, 'w', encoding='utf-8').write(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
     print(f'接了 {len(written)} 張圖，sheets.json 與 style-assets.json 已更新')
+    if os.path.isdir(chars):
+        print('有角色動作圖：記得跑 python scripts/measure-head-scale.py --write，修正各格頭的大小')
     if tmp:
         shutil.rmtree(tmp, ignore_errors=True)
 

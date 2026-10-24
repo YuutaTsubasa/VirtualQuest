@@ -149,14 +149,14 @@ const fn md(startup: i32, active: i32, recover: i32, dmg: f32, far: f32, zr: f32
 fn move_data(m: Move) -> MoveData {
     match m {
         Move::None | Move::Throw | Move::Shoot => md(0, 0, 18, 0.0, 0.0, 0.0, false),
-        Move::Jab => md(4, 3, 8, 6.0, 64.0, 16.0, false),
-        Move::Jab2 => md(4, 3, 9, 7.0, 66.0, 16.0, false),
+        Move::Jab => md(4, 3, 8, 6.0, 64.0, 24.0, false),
+        Move::Jab2 => md(4, 3, 9, 7.0, 66.0, 24.0, false),
         // 連段收尾：單挑時傷害最高的打法
-        Move::Kick => md(6, 4, 15, 14.0, 76.0, 18.0, true),
+        Move::Kick => md(6, 4, 15, 14.0, 76.0, 26.0, true),
         // 衝刺攻擊：打得久一點，衝過一整排都打得到（打空的話收招會更久，見 update_players）
-        Move::DashAttack => md(3, 12, 16, 12.0, 72.0, 18.0, true),
+        Move::DashAttack => md(3, 12, 16, 12.0, 72.0, 26.0, true),
         // 跳踢：接近、脫身用，傷害比連段低
-        Move::JumpKick => md(3, 60, 0, 9.0, 70.0, 18.0, true),
+        Move::JumpKick => md(3, 60, 0, 9.0, 70.0, 26.0, true),
         // 魔王的對空上勾拳：看到玩家在身邊跳起來就打下來
         Move::Uppercut => md(5, 7, 18, 14.0, 100.0, 26.0, true),
         Move::Special => MoveData { omni: true, ..md(3, 14, 14, 14.0, 100.0, 24.0, true) },
@@ -864,6 +864,13 @@ impl Match {
 
     fn update_players(&mut self, inputs: &[Input], can_fight: bool) {
         let (left, right) = (self.camera + 24.0, self.camera + W - 24.0);
+        // 打得到的敵人位置（出拳時自動上下對準用）
+        let foes: Vec<(f32, f32)> = self
+            .enemies
+            .iter()
+            .filter(|e| e.brain.entered && e.body.vulnerable() && e.body.act != Act::Held && e.body.y <= 0.0)
+            .map(|e| (e.body.x, e.body.z))
+            .collect();
         for i in 0..self.players.len() {
             let inp = if can_fight { inputs.get(i).copied().unwrap_or_default() } else {
                 // 關卡標題中：只能走路
@@ -959,6 +966,7 @@ impl Match {
                         if inp.dx() != 0.0 {
                             b.facing = inp.dx();
                         }
+                        align_z(b, &foes);
                         self.events.push(Event::Swing { slot });
                     } else {
                         let (dx, dz) = (inp.dx(), inp.dz());
@@ -1549,8 +1557,19 @@ impl Match {
             let b = &mut e.body;
             b.z = b.z.clamp(Z_TOP, Z_BOTTOM);
             // 進場後就留在畫面裡（投擲手會想拉開距離，不能讓它躲到畫面外）
-            if e.brain.entered && !matches!(b.act, Act::Fall | Act::Thrown | Act::Charge) {
-                b.x = b.x.clamp(cam + 24.0, cam + W - 24.0);
+            // 倒地、死掉的只擋右邊（被打飛到右邊還是在畫面裡）、不擋左邊：鏡頭只會往右走，
+            // 擋左邊的話鏡頭前進時倒地的人會被拖著走
+            if e.brain.entered && matches!(b.act, Act::Down | Act::Dead) {
+                b.x = b.x.min(cam + W - 24.0);
+            }
+            // 站著的貼著邊緣就擋住；離畫面比較遠的（倒地時被鏡頭甩在後面、站起來的）走回來，不會瞬間移動
+            if e.brain.entered && matches!(b.act, Act::Stand | Act::Walk | Act::Attack | Act::Hurt | Act::Rise) {
+                let (lo, hi) = (cam + 24.0, cam + W - 24.0);
+                if b.x < lo {
+                    b.x = if lo - b.x < 16.0 { lo } else { b.x + 6.0 };
+                } else if b.x > hi {
+                    b.x = if b.x - hi < 16.0 { hi } else { b.x - 6.0 };
+                }
             }
         }
         // 被丟出去的敵人撞到其他敵人
@@ -1945,6 +1964,22 @@ impl Match {
             self.timer = 0;
             self.events.push(Event::Over);
         }
+    }
+}
+
+/// 出拳時：前方打得到的距離內、上下差一點點的敵人，自動往他那邊對齊（上下很難完全對準）
+const ALIGN_RANGE: f32 = 40.0;
+const ALIGN_STEP: f32 = 12.0;
+fn align_z(b: &mut Body, foes: &[(f32, f32)]) {
+    let near = foes
+        .iter()
+        .filter(|(x, z)| {
+            let ahead = (x - b.x) * b.facing;
+            ahead > -10.0 && ahead < 100.0 && (z - b.z).abs() < ALIGN_RANGE
+        })
+        .min_by(|a, c| (a.0 - b.x).abs().total_cmp(&(c.0 - b.x).abs()));
+    if let Some(&(_, z)) = near {
+        b.z += (z - b.z).clamp(-ALIGN_STEP, ALIGN_STEP);
     }
 }
 

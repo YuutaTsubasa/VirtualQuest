@@ -234,10 +234,21 @@ function drawFrame(g, sheet, frame, x, y, h, facing, { fallback = 'idle', flash 
 }
 
 // 清版動作專用圖集（16 格）的動作
+// 走路：有四格（walk1 跨步、walk3 收腳、walk2 跨另一腳、walk4 收腳）就照四格輪播，只有兩格就兩格換快一點
+const WALK4 = ['walk1', 'walk3', 'walk2', 'walk4'];
+function walkPose(t, sheet) {
+  if (sheet?.frames.includes('walk3') && sheet.frames.includes('walk4')) return WALK4[Math.floor(t / 7) % 4];
+  return Math.floor(t / 7) % 2 ? 'walk1' : 'walk2';
+}
+// 走路的上下起伏：跨步時身體低一點、換腳中間高一點（只有兩格圖時，起伏讓步伐看起來比較連續）
+function walkBob(t) {
+  return -Math.abs(Math.sin((t / 14) * Math.PI)) * 3;
+}
+
 function poseOf(p, sheet) {
   switch (p.act) {
     case 'walk':
-      return Math.floor(p.t / 9) % 2 ? 'walk1' : 'walk2';
+      return walkPose(p.t, sheet);
     case 'run':
       // 還沒有跑步圖：用走路的兩格、換得快一點
       if (sheet?.frames.includes('run1')) return Math.floor(p.t / 6) % 2 ? 'run1' : 'run2';
@@ -324,7 +335,8 @@ function drawPlayer(g, match, p, cam) {
     const pose = poseOf(p, sheet);
     // 借用走路圖跑步時身體往前傾一點，看起來比較像在跑
     const lean = p.act === 'run' && !sheet.frames.includes('run1') ? 0.12 : 0;
-    drawFrame(g, sheet, pose, x + lunge * p.facing, p.z - p.y, CELL_H, p.facing, { flash: p.flash, rotate: lean });
+    const bob = p.act === 'walk' ? walkBob(p.t) : 0;
+    drawFrame(g, sheet, pose, x + lunge * p.facing, p.z - p.y + bob, CELL_H, p.facing, { flash: p.flash, rotate: lean });
     return;
   }
   const img = p.character.sprite ? loadImage(p.character.spriteSrc) : null;
@@ -378,10 +390,10 @@ function enemyLook(match, e) {
 }
 
 // 敵人的動作 → 圖集格子
-function enemyPose(e) {
+function enemyPose(e, sheet) {
   switch (e.act) {
     case 'walk':
-      return Math.floor(e.t / 9) % 2 ? 'walk1' : 'walk2';
+      return walkPose(e.t, sheet);
     case 'attack': {
       // 魔王跳起來落地後的硬直（沒有招式）：用蹲低的 slam 那格當落地的衝擊
       if (e.mv === 'none') return e.kind === 'boss' ? 'slam' : 'idle';
@@ -419,7 +431,7 @@ function drawEnemySprite(g, match, e, x) {
   const boss = e.kind === 'boss';
   const sheet = boss ? SHEETS.bosses?.[world] : SHEETS.enemies?.[`${world}/${e.kind}`];
   if (!sheet) return false;
-  const pose = enemyPose(e);
+  const pose = enemyPose(e, sheet);
   const h = (boss ? BOSS_H : CELL_H) * (e.elite ? 1.25 : 1);
   const fallback = pose === 'charge' || pose === 'leap' ? 'walk1' : pose === 'cast' ? 'windup' : 'idle';
   const vanish = pose === 'vanish' && !sheet.frames.includes('vanish');
