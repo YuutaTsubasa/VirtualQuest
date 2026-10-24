@@ -35,7 +35,8 @@
         "grab": 0.913,
         "throw": 0.855,
         "run1": 0.893,
-        "dash": 0.913
+        "dash": 0.913,
+        "down": 1.393
       }
     },
     "xiaocui": {
@@ -71,7 +72,8 @@
         "knee": 1.087,
         "hurt": 1.258,
         "run1": 0.935,
-        "dash": 1.149
+        "dash": 1.149,
+        "down": 1.393
       }
     },
     "yuehua": {
@@ -108,7 +110,8 @@
         "jump": 1.149,
         "special": 1.149,
         "win": 1.087,
-        "run1": 0.913
+        "run1": 0.913,
+        "down": 1.388
       }
     },
     "aming": {
@@ -144,7 +147,8 @@
         "jump": 1.117,
         "hurt": 1.299,
         "win": 1.087,
-        "run1": 0.913
+        "run1": 0.913,
+        "down": 1.388
       }
     },
     "tangtang": {
@@ -181,7 +185,8 @@
         "punch1": 0.935,
         "punch2": 0.935,
         "jump": 1.117,
-        "run1": 0.935
+        "run1": 0.935,
+        "down": 1.393
       }
     },
     "cangya": {
@@ -218,7 +223,8 @@
         "special": 1.087,
         "knee": 1.087,
         "run1": 0.913,
-        "run2": 1.087
+        "run2": 1.087,
+        "down": 1.393
       }
     },
     "lanjie": {
@@ -252,7 +258,8 @@
         "kick": 1.299,
         "jump": 1.149,
         "knee": 1.183,
-        "run2": 1.087
+        "run2": 1.087,
+        "down": 1.388
       }
     },
     "jinye": {
@@ -291,7 +298,8 @@
         "throw": 1.299,
         "hurt": 1.117,
         "win": 1.087,
-        "run2": 1.22
+        "run2": 1.22,
+        "down": 1.383
       }
     },
     "leo": {
@@ -330,7 +338,8 @@
         "throw": 1.117,
         "win": 1.117,
         "run1": 0.913,
-        "dash": 1.117
+        "dash": 1.117,
+        "down": 1.393
       }
     },
     "alie": {
@@ -368,7 +377,8 @@
         "throw": 1.183,
         "hurt": 1.087,
         "run1": 0.935,
-        "dash": 1.117
+        "dash": 1.117,
+        "down": 1.398
       }
     },
     "ayi": {
@@ -405,7 +415,8 @@
         "jumpkick": 0.893,
         "grab": 0.935,
         "run2": 0.873,
-        "dash": 0.913
+        "dash": 0.913,
+        "down": 1.393
       }
     }
   },
@@ -425,7 +436,10 @@
         "walk4"
       ],
       "cols": 10,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "down": 1.321
+      }
     },
     "city/brute": {
       "src": "enemies/city/brute.webp",
@@ -446,7 +460,8 @@
       "cell": 400,
       "fix": {
         "attack": 1.331,
-        "windup": 1.05
+        "windup": 1.05,
+        "down": 1.438
       }
     },
     "city/knife": {
@@ -466,7 +481,8 @@
       "cols": 10,
       "cell": 400,
       "fix": {
-        "attack": 1.1
+        "attack": 1.1,
+        "down": 1.317
       }
     },
     "city/thrower": {
@@ -486,7 +502,8 @@
       "cols": 10,
       "cell": 400,
       "fix": {
-        "attack": 1.171
+        "attack": 1.171,
+        "down": 1.312
       }
     },
     "forest/brute": {
@@ -507,7 +524,8 @@
       "cols": 11,
       "cell": 400,
       "fix": {
-        "attack": 1.258
+        "attack": 1.258,
+        "down": 1.434
       },
       "scale": 1.048
     },
@@ -528,7 +546,8 @@
       "cols": 10,
       "cell": 400,
       "fix": {
-        "attack": 1.024
+        "attack": 1.024,
+        "down": 1.317
       }
     },
     "forest/thrower": {
@@ -546,7 +565,10 @@
         "walk4"
       ],
       "cols": 10,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "down": 1.317
+      }
     },
     "forest/thug": {
       "src": "enemies/forest/thug.webp",
@@ -563,7 +585,10 @@
         "walk4"
       ],
       "cols": 10,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "down": 1.321
+      }
     },
     "sea/brute": {
       "src": "enemies/sea/brute.webp",
@@ -605,7 +630,8 @@
       "cols": 10,
       "cell": 400,
       "fix": {
-        "attack": 1.266
+        "attack": 1.266,
+        "down": 1.152
       },
       "scale": 1.145
     },
@@ -626,7 +652,8 @@
       "cols": 10,
       "cell": 400,
       "fix": {
-        "attack": 1.027
+        "attack": 1.027,
+        "down": 1.316
       }
     },
     "sea/thug": {
@@ -646,7 +673,8 @@
       "cols": 10,
       "cell": 400,
       "fix": {
-        "attack": 1.036
+        "attack": 1.036,
+        "down": 1.321
       }
     },
     "ice/brute": {
@@ -669,7 +697,8 @@
       "fix": {
         "attack": 1.403,
         "windup": 1.031,
-        "charge": 1.122
+        "charge": 1.122,
+        "down": 1.439
       },
       "scale": 1.042
     },
@@ -690,7 +719,8 @@
       "cols": 10,
       "cell": 400,
       "fix": {
-        "attack": 1.072
+        "attack": 1.072,
+        "down": 1.312
       }
     },
     "ice/thrower": {
@@ -708,7 +738,10 @@
         "walk4"
       ],
       "cols": 10,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "down": 1.312
+      }
     },
     "ice/thug": {
       "src": "enemies/ice/thug.webp",
@@ -727,7 +760,8 @@
       "cols": 10,
       "cell": 400,
       "fix": {
-        "attack": 1.059
+        "attack": 1.059,
+        "down": 1.321
       }
     },
     "mine/brute": {
@@ -751,7 +785,8 @@
         "attack": 1.45,
         "windup": 1.021,
         "charge": 1.082,
-        "walk1": 1.061
+        "walk1": 1.061,
+        "down": 1.438
       },
       "scale": 1.04
     },
@@ -770,7 +805,10 @@
         "walk4"
       ],
       "cols": 10,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "down": 1.321
+      }
     },
     "mine/thrower": {
       "src": "enemies/mine/thrower.webp",
@@ -787,7 +825,10 @@
         "walk4"
       ],
       "cols": 10,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "down": 1.312
+      }
     },
     "mine/thug": {
       "src": "enemies/mine/thug.webp",
@@ -806,7 +847,8 @@
       "cols": 10,
       "cell": 400,
       "fix": {
-        "attack": 1.069
+        "attack": 1.069,
+        "down": 1.312
       }
     },
     "castle/brute": {
@@ -829,7 +871,8 @@
       "fix": {
         "attack": 1.294,
         "windup": 1.123,
-        "charge": 1.256
+        "charge": 1.256,
+        "down": 1.438
       },
       "scale": 1.081
     },
@@ -850,7 +893,8 @@
       "cols": 10,
       "cell": 400,
       "fix": {
-        "attack": 1.148
+        "attack": 1.148,
+        "down": 1.321
       }
     },
     "castle/thrower": {
@@ -868,7 +912,10 @@
         "walk4"
       ],
       "cols": 10,
-      "cell": 400
+      "cell": 400,
+      "fix": {
+        "down": 1.316
+      }
     },
     "castle/thug": {
       "src": "enemies/castle/thug.webp",
@@ -887,7 +934,8 @@
       "cols": 10,
       "cell": 400,
       "fix": {
-        "attack": 1.036
+        "attack": 1.036,
+        "down": 1.316
       }
     }
   },
@@ -910,7 +958,8 @@
       "cols": 6,
       "cell": 600,
       "fix": {
-        "charge": 1.024
+        "charge": 1.024,
+        "down": 1.357
       }
     },
     "forest": {
@@ -929,7 +978,10 @@
         "walk4"
       ],
       "cols": 6,
-      "cell": 600
+      "cell": 600,
+      "fix": {
+        "down": 1.357
+      }
     },
     "sea": {
       "src": "bosses/sea.webp",
@@ -950,7 +1002,8 @@
       "cols": 6,
       "cell": 600,
       "fix": {
-        "walk1": 1.09
+        "walk1": 1.09,
+        "down": 1.266
       },
       "scale": 1.071
     },
@@ -971,7 +1024,10 @@
         "walk4"
       ],
       "cols": 6,
-      "cell": 600
+      "cell": 600,
+      "fix": {
+        "down": 1.354
+      }
     },
     "mine": {
       "src": "bosses/mine.webp",
@@ -991,7 +1047,10 @@
         "walk4"
       ],
       "cols": 6,
-      "cell": 600
+      "cell": 600,
+      "fix": {
+        "down": 1.357
+      }
     },
     "castle": {
       "src": "bosses/castle.webp",
@@ -1012,7 +1071,8 @@
       "cols": 6,
       "cell": 600,
       "fix": {
-        "walk1": 1.101
+        "walk1": 1.101,
+        "down": 1.319
       }
     }
   },
@@ -1079,7 +1139,8 @@
             "knee": 1.051,
             "hurt": 1.148,
             "win": 1.069,
-            "run1": 0.947
+            "run1": 0.947,
+            "down": 1.42
           }
         },
         "xiaochun": {
@@ -1088,7 +1149,8 @@
             "kick": 1.069,
             "jump": 1.051,
             "win": 0.96,
-            "run1": 0.947
+            "run1": 0.947,
+            "down": 1.397
           }
         },
         "xiaocui": {
@@ -1100,13 +1162,15 @@
             "jump": 1.069,
             "grab": 0.947,
             "hurt": 1.106,
-            "run1": 0.96
+            "run1": 0.96,
+            "down": 1.42
           }
         },
         "yuehua": {
           "cell": 256,
           "fix": {
-            "kick": 1.121
+            "kick": 1.121,
+            "down": 1.374
           }
         },
         "cangya": {
@@ -1116,7 +1180,8 @@
             "walk2": 0.96,
             "jump": 1.069,
             "special": 1.069,
-            "run2": 1.051
+            "run2": 1.051,
+            "down": 1.412
           }
         },
         "jinye": {
@@ -1133,7 +1198,8 @@
             "throw": 1.193,
             "hurt": 1.106,
             "run1": 0.96,
-            "run2": 1.126
+            "run2": 1.126,
+            "down": 1.389
           }
         },
         "lanjie": {
@@ -1143,7 +1209,8 @@
             "punch2": 0.96,
             "jump": 1.087,
             "knee": 1.051,
-            "walk3": 0.96
+            "walk3": 0.96,
+            "down": 1.445
           }
         },
         "tangtang": {
@@ -1153,7 +1220,8 @@
             "dash": 1.104,
             "walk1": 0.96,
             "walk2": 0.96,
-            "punch2": 0.96
+            "punch2": 0.96,
+            "down": 1.45
           }
         },
         "alie": {
@@ -1166,7 +1234,8 @@
             "throw": 1.106,
             "hurt": 1.069,
             "win": 1.051,
-            "run1": 0.947
+            "run1": 0.947,
+            "down": 1.316
           }
         },
         "ayi": {
@@ -1176,14 +1245,16 @@
             "punch1": 0.96,
             "jump": 1.051,
             "jumpkick": 0.947,
-            "run2": 0.922
+            "run2": 0.922,
+            "down": 1.404
           }
         },
         "leo": {
           "cell": 256,
           "fix": {
             "kick": 1.201,
-            "jump": 1.087
+            "jump": 1.087,
+            "down": 1.404
           }
         }
       },
@@ -1192,30 +1263,37 @@
           "cell": 256,
           "fix": {
             "attack": 1.327,
-            "windup": 1.05
+            "windup": 1.05,
+            "down": 1.35
           }
         },
         "city/knife": {
           "cell": 256,
           "fix": {
-            "attack": 1.096
+            "attack": 1.096,
+            "down": 1.334
           }
         },
         "city/thrower": {
           "cell": 256,
           "fix": {
-            "attack": 1.171
+            "attack": 1.171,
+            "down": 1.373
           }
         },
         "city/thug": {
-          "cell": 256
+          "cell": 256,
+          "fix": {
+            "down": 1.319
+          }
         }
       },
       "bosses": {
         "city": {
           "cell": 384,
           "fix": {
-            "charge": 1.024
+            "charge": 1.024,
+            "down": 1.363
           }
         }
       }
