@@ -12,6 +12,7 @@ import { asset, currentConfig, artStyle } from '../art-style.svelte.js';
 import { hasAsset } from '../style-assets.js';
 import { loadImage } from '../preload.svelte.js';
 import { drawWeapon, heldPose } from './weapons.js';
+import * as combo from './combo.js';
 import { t, displayName } from '../i18n.svelte.js';
 
 // 內部解析度：一般風格 2 倍（1920×1080）比較銳利；像素風格用較低的倍數再放大（見 style-assets.js）
@@ -82,6 +83,7 @@ function say(slot, text, frames = 110) {
 }
 
 export function resetEffects() {
+  combo.resetCombo();
   particles.length = 0;
   effects.length = 0;
   bubbles.length = 0;
@@ -98,6 +100,7 @@ const randomPlayer = (match) => {
 
 // 依遊戲事件產生特效與台詞（座標是關卡座標，畫的時候再減鏡頭）
 export function handleEvents(match) {
+  combo.onEvents(match);
   for (const e of match.events) {
     switch (e.type) {
       case 'hit':
@@ -437,6 +440,9 @@ function drawSlotMarker(g, p, cam, you, cpu) {
   g.lineTo(x, y + 4);
   g.fill();
   outlinedText(g, `${p.slot + 1}P`, x, y - 18, you ? 18 : 15, color);
+  // 連段數：3 下以上才出現，越多字越大
+  const n = combo.comboOf(p.slot, frameNow);
+  if (n) outlinedText(g, `${n} HITS`, x, y - 44, Math.min(34, 16 + n), n >= 10 ? pal.accent : pal.flash);
 }
 
 // ---------- 敵人（程式畫的 Q 版人形） ----------
@@ -939,6 +945,7 @@ function brush(g, x, y, w, h, color) {
 // 頂端的隊員牌：肖像、1P～4P／CPU、名稱、HP、剩餘生命、七位數分數
 const CARD = { w: 228, h: 58, gap: 8, top: 8 };
 let cardWorld = 0; // 隊員牌上的武器用哪一大關的樣子（draw() 每格設）
+let frameNow = 0; // 目前第幾格（連段數用）
 function drawPlayerPanel(g, p, names, cpu, frame) {
   const x = 10 + p.slot * (CARD.w + CARD.gap);
   const y = CARD.top;
@@ -1083,6 +1090,39 @@ function drawStamp(g, text, sub, alpha, scale = 1) {
   g.restore();
 }
 
+// 小關評價：大大的 S／A／B／C 章，下面一行時間、最高連段、被打次數
+const RANK_COLORS = { S: '#e9b85e', A: '#d94b3d', B: '#287f78', C: '#6b6a66' };
+function drawRank(g, r, alpha, scale) {
+  g.save();
+  g.globalAlpha = alpha;
+  g.translate(W / 2 + 250, H / 2 - 20);
+  g.rotate(0.12);
+  g.scale(scale, scale);
+  const color = RANK_COLORS[r.rank];
+  g.fillStyle = 'rgba(245,239,223,0.94)';
+  g.strokeStyle = color;
+  g.lineWidth = 6;
+  g.beginPath();
+  g.arc(0, 0, 58, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  g.font = `900 78px ${FONT}`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = color;
+  g.fillText(r.rank, 0, 4);
+  if (r.newBest) outlinedText(g, t('新紀錄！'), 0, -76, 20, pal.flash);
+  g.restore();
+  g.save();
+  g.globalAlpha = alpha;
+  const m = Math.floor(r.seconds / 60);
+  const s = String(r.seconds % 60).padStart(2, '0');
+  const gap = '    ';
+  const line = t('時間') + ` ${m}:${s}` + gap + t('最高連段') + ` ${r.maxCombo}` + gap + t('被打') + ` ${r.hurts}` + gap + t('最佳') + ` ${r.best}`;
+  outlinedText(g, line, W / 2, H / 2 + 80, 20, pal.text);
+  g.restore();
+}
+
 function drawBubbles(g, match, cam) {
   for (const b of bubbles) {
     const p = playerOf(match, b.slot);
@@ -1146,6 +1186,7 @@ function drawHud(g, match, opts) {
     const k = 200 - match.timer;
     // 蓋章：一開始大大的，啪一下縮回原尺寸
     drawStamp(g, t('突破！'), `${stageLabel(match.world, match.sub)} ${t(w.subs[match.sub])}`, Math.min(1, k / 6), Math.max(1, 1.6 - k * 0.08));
+    if (combo.result && k > 24) drawRank(g, combo.result, Math.min(1, (k - 24) / 8), Math.max(1, 1.8 - (k - 24) * 0.1));
   } else if (match.phase === 'over') {
     g.save();
     g.globalAlpha = Math.min(1, match.timer / 30);
@@ -1185,6 +1226,7 @@ export function draw(canvas, match, opts = {}) {
 
   // 真人玩家（連線時只算自己）：對準提示用
   cardWorld = match.world;
+  frameNow = match.frame;
   aimers = match.players.filter((p) => !p.out && (opts.you != null ? p.slot === opts.you : !opts.cpu?.[p.slot]));
   // 依前後（z）排序：靠後的先畫
   const things = [];

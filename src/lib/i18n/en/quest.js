@@ -262,4 +262,9 @@ export default {
   '：站在旁邊按攻擊撿起來，打幾下就會壞；跑步中按攻擊丟出去，被打倒會掉。': ': Press attack next to one to pick it up; it breaks after a few hits. Attack while running to throw it; you drop it when knocked down.',
   '拿到武器！': 'Got a weapon!',
   '武器壞了！': 'Weapon broke!',
+  '新紀錄！': 'New best!',
+  '時間': 'Time',
+  '最高連段': 'Max combo',
+  '被打': 'Hits taken',
+  '最佳': 'Best',
 };
