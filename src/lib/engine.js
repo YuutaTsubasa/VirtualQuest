@@ -32,6 +32,7 @@ const EVENT_SOUND = {
   go: 'go',
   boss: 'alarm',
   nosp: 'deny',
+  weaponbreak: 'crack',
 };
 
 const wasmReady = init();

@@ -258,4 +258,8 @@ export default {
   '：拳頭打不停他，用踢、跳踢、衝刺或丟人。': ': Punches won’t stop them — use kicks, jump kicks, dashes or throws.',
   '一個人玩也能用方向鍵＋Z／X／C；手把依序是 1P、2P…': 'Solo players can also use the arrows + Z/X/C; gamepads are 1P, 2P… in order.',
   '必殺氣不夠！': 'Gauge not full!',
+  '武器': 'Weapons',
+  '：站在旁邊按攻擊撿起來，打幾下就會壞；跑步中按攻擊丟出去，被打倒會掉。': ': Press attack next to one to pick it up; it breaks after a few hits. Attack while running to throw it; you drop it when knocked down.',
+  '拿到武器！': 'Got a weapon!',
+  '武器壞了！': 'Weapon broke!',
 };

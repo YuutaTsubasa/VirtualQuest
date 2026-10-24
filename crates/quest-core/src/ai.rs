@@ -59,6 +59,8 @@ pub struct Ai {
     jump_kick: i32,
     /// 跑步用的連按兩下：還剩幾格（放開、按、放開，之後照常按住就跑起來）
     dash_tap: i32,
+    /// 正走去撿地上的武器（到了就按攻擊撿起來）
+    pickup: bool,
 }
 
 impl Ai {
@@ -74,6 +76,7 @@ impl Ai {
             fight: 0.0,
             jump_kick: 0,
             dash_tap: 0,
+            pickup: false,
         }
     }
 
@@ -137,6 +140,11 @@ impl Ai {
             out.up = dz < 0.0;
             out.down = dz > 0.0;
         }
+        if self.pickup && dx.abs() <= 20.0 && dz.abs() <= 10.0 && matches!(b.act, Act::Stand | Act::Walk) {
+            out = Input { attack_pressed: true, ..Input::default() };
+            self.pickup = false;
+            return out;
+        }
         if self.fight != 0.0 && dx.abs() <= 8.0 && dz.abs() <= 7.0 {
             // 到位了：面向敵人連打
             out.left = false;
@@ -178,17 +186,35 @@ impl Ai {
 
     fn decide(&mut self, m: &Match) {
         let me = &m.players[self.index].body;
+        let armed = m.players[self.index].weapon.is_some();
         self.fight = 0.0;
-        // 血少：去撿補血
+        self.pickup = false;
+        // 血少：去撿補血（只有食物；武器要按攻擊才撿）
         if me.hp < me.max_hp / 2 {
             if let Some(it) = m
                 .items
                 .iter()
-                .filter(|it| it.kind != ItemKind::Gem && it.x > m.camera && it.x < m.camera + W)
+                .filter(|it| matches!(it.kind, ItemKind::Apple | ItemKind::Meat | ItemKind::Feast) && it.x > m.camera && it.x < m.camera + W)
                 .min_by(|a, b| (a.x - me.x).abs().total_cmp(&(b.x - me.x).abs()))
             {
                 self.goal = Some((it.x, it.z));
                 return;
+            }
+        }
+        // 撿武器：手上沒有、身邊沒有敵人逼近、武器在畫面裡不遠
+        if !armed {
+            let threat = m.enemies.iter().any(|e| e.body.alive() && (e.body.x - me.x).abs() < 110.0 && (e.body.z - me.z).abs() < 30.0);
+            if !threat {
+                if let Some(it) = m
+                    .items
+                    .iter()
+                    .filter(|it| it.kind.is_weapon() && it.y <= 0.0 && it.x > m.camera + 20.0 && it.x < m.camera + W - 20.0 && (it.x - me.x).abs() < 260.0)
+                    .min_by(|a, b| (a.x - me.x).abs().total_cmp(&(b.x - me.x).abs()))
+                {
+                    self.goal = Some((it.x, it.z));
+                    self.pickup = true;
+                    return;
+                }
             }
         }
         // 最近的敵人（在畫面裡、打得到的）；已經有隊友在打的敵人算遠一點，大家才會分散開來

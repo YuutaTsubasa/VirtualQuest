@@ -11,6 +11,7 @@ import SHEETS from './sheets.json' with { type: 'json' };
 import { asset, currentConfig, artStyle } from '../art-style.svelte.js';
 import { hasAsset } from '../style-assets.js';
 import { loadImage } from '../preload.svelte.js';
+import { drawWeapon, heldPose } from './weapons.js';
 import { t, displayName } from '../i18n.svelte.js';
 
 // 內部解析度：一般風格 2 倍（1920×1080）比較銳利；像素風格用較低的倍數再放大（見 style-assets.js）
@@ -135,9 +136,15 @@ export function handleEvents(match) {
         break;
       case 'pickup': {
         const p = playerOf(match, e.slot);
-        if (p) floaters.push({ x: p.x, y: p.z - 150, text: e.kind === 'gem' ? '+2000' : t('回復！'), life: 50, max: 50, color: e.kind === 'gem' ? '#7ff0ff' : '#7dff8a' });
+        if (p && (e.kind === 'bat' || e.kind === 'blade')) floaters.push({ x: p.x, y: p.z - 150, text: t('拿到武器！'), life: 50, max: 50, color: '#ffd23f' });
+        else if (p) floaters.push({ x: p.x, y: p.z - 150, text: e.kind === 'gem' ? '+2000' : t('回復！'), life: 50, max: 50, color: e.kind === 'gem' ? '#7ff0ff' : '#7dff8a' });
         break;
       }
+      case 'weaponbreak':
+        // 武器用完：碎片
+        burst(e.x, e.z - 80, '#c9cfd4', 12, 6, 24);
+        floaters.push({ x: e.x, y: e.z - 140, text: t('武器壞了！'), life: 45, max: 45, color: '#c9cfd4' });
+        break;
       case 'special': {
         const p = playerOf(match, e.slot);
         if (p) {
@@ -282,7 +289,7 @@ function poseOf(p, sheet) {
       return Math.floor(p.t / 5) % 2 ? 'walk1' : 'walk2';
     case 'attack':
       if (p.mv === 'dashAttack') return sheet?.frames.includes('dash') ? 'dash' : 'kick';
-      return { jab: 'punch1', jab2: 'punch2', kick: 'kick', special: 'special', throw: 'throw' }[p.mv] ?? 'idle';
+      return { jab: 'punch1', jab2: 'punch2', kick: 'kick', special: 'special', throw: 'throw', bat: 'punch2', blade: 'punch1' }[p.mv] ?? 'idle';
     case 'grab':
       return p.mv === 'knee' ? 'knee' : 'grab';
     case 'jump':
@@ -365,6 +372,7 @@ function drawPlayer(g, match, p, cam) {
     // 四格走路圖本身就有上下起伏（收腳時身體最高），只有兩格時才用程式補
     const bob = p.act === 'walk' && !sheet.frames.includes('walk3') ? walkBob(p.t) : 0;
     drawFrame(g, sheet, pose, x + lunge * p.facing, p.z - p.y + bob, CELL_H, p.facing, { flash: p.flash, rotate: lean });
+    drawHeld(g, match, p, x + lunge * p.facing, p.z - p.y + bob);
     return;
   }
   const img = p.character.sprite ? loadImage(p.character.spriteSrc) : null;
@@ -389,6 +397,31 @@ function drawPlayer(g, match, p, cam) {
   if (p.flash > 0) g.filter = 'brightness(2.2)';
   g.drawImage(img, i * fw, 0, fw, fh, -drawW / 2, -drawH * cfg.spriteAnchorY, drawW, drawH);
   g.restore();
+}
+
+// 手上拿的武器（動作圖沒有拿武器的版本，畫在角色前面）；鈍器揮下去時畫一道白色弧線
+function drawHeld(g, match, p, x, y) {
+  if (!p.weapon) return;
+  const pose = heldPose(p);
+  if (!pose) return;
+  const f = p.facing;
+  const hx = x + pose.x * f;
+  const hy = y + pose.y;
+  if (pose.swing) {
+    g.save();
+    g.strokeStyle = 'rgba(255,255,255,0.7)';
+    g.lineWidth = 10;
+    g.lineCap = 'round';
+    g.beginPath();
+    const a0 = -2.3;
+    const a1 = pose.angle;
+    if (f > 0) g.arc(hx, hy, 58, a0, a1);
+    else g.arc(hx, hy, 58, Math.PI - a1, Math.PI - a0);
+    g.stroke();
+    g.restore();
+  }
+  // 面向左：角度鏡像
+  drawWeapon(g, p.weapon, match.world, hx, hy, f > 0 ? pose.angle : Math.PI - pose.angle, 1);
 }
 
 // 頭上的 1P／2P 標記
@@ -725,10 +758,25 @@ function drawProp(g, match, pr, cam) {
   g.restore();
 }
 
-function drawItem(g, it, cam, frame) {
+function drawItem(g, it, cam, frame, world) {
   const x = it.x - cam;
   const bob = Math.sin(frame * 0.12 + it.id) * 3;
   shadow(g, x, it.z, it.y, 16);
+  if (it.kind === 'bat' || it.kind === 'blade') {
+    // 武器躺在地上，閃一下提示可以撿
+    drawWeapon(g, it.kind, world, x - 22, it.z - it.y - 6, -0.12, 1);
+    if (Math.floor(frame / 20) % 3 === 0) {
+      g.save();
+      g.globalAlpha = 0.5;
+      g.strokeStyle = '#fff3a0';
+      g.lineWidth = 2;
+      g.beginPath();
+      g.ellipse(x, it.z - 4, 30, 9, 0, 0, Math.PI * 2);
+      g.stroke();
+      g.restore();
+    }
+    return;
+  }
   if (SHEETS.items?.includes(it.kind) && drawImageProp(g, `props/items/${it.kind}.webp`, x, it.z - it.y - 2 + bob, 44, 44)) return;
   g.save();
   g.translate(x, it.z - it.y - 16 + bob);
@@ -776,6 +824,10 @@ function drawShot(g, s, cam, frame, world) {
   const x = s.x - cam;
   const y = s.z - s.y;
   shadow(g, x, s.z, s.y, 12);
+  if (s.kind === 'bat' || s.kind === 'blade') {
+    drawWeapon(g, s.kind, world, x, y, frame * 0.6 * Math.sign(s.vx || 1), 1);
+    return;
+  }
   const name = s.kind === 'rock' ? THROWN[world] : s.kind;
   if (SHEETS.shots?.includes(name)) {
     const img = loadImage(asset(`props/shots/${name}.webp`));
@@ -886,6 +938,7 @@ function brush(g, x, y, w, h, color) {
 
 // 頂端的隊員牌：肖像、1P～4P／CPU、名稱、HP、剩餘生命、七位數分數
 const CARD = { w: 228, h: 58, gap: 8, top: 8 };
+let cardWorld = 0; // 隊員牌上的武器用哪一大關的樣子（draw() 每格設）
 function drawPlayerPanel(g, p, names, cpu, frame) {
   const x = 10 + p.slot * (CARD.w + CARD.gap);
   const y = CARD.top;
@@ -943,6 +996,10 @@ function drawPlayerPanel(g, p, names, cpu, frame) {
   g.font = `800 13px ${FONT}`;
   g.fillStyle = pal.text;
   g.fillText(`♥ ×${Math.max(0, p.lives)}`, tx, y + 49);
+  if (p.weapon) {
+    drawWeapon(g, p.weapon, cardWorld, tx + 52, y + 49, -0.5, 0.42);
+    g.fillText(`×${p.weaponUses}`, tx + 74, y + 49);
+  }
   g.textAlign = 'right';
   g.font = `900 14px ${FONT}`;
   g.fillText(String(p.score).padStart(7, '0'), x + CARD.w - 8, y + 49);
@@ -1127,11 +1184,12 @@ export function draw(canvas, match, opts = {}) {
   drawScenery(g, match.world, match.sub, cam, SCALE);
 
   // 真人玩家（連線時只算自己）：對準提示用
+  cardWorld = match.world;
   aimers = match.players.filter((p) => !p.out && (opts.you != null ? p.slot === opts.you : !opts.cpu?.[p.slot]));
   // 依前後（z）排序：靠後的先畫
   const things = [];
   for (const pr of match.props) things.push([pr.z, () => drawProp(g, match, pr, cam)]);
-  for (const it of match.items) things.push([it.z - 1, () => drawItem(g, it, cam, match.frame)]);
+  for (const it of match.items) things.push([it.z - 1, () => drawItem(g, it, cam, match.frame, match.world)]);
   for (const e of match.enemies) things.push([e.z + (e.act === 'held' ? 0.5 : 0), () => drawEnemy(g, match, e, cam)]);
   for (const p of match.players) things.push([p.z, () => drawPlayer(g, match, p, cam)]);
   for (const s of match.shots) things.push([s.z + 0.2, () => drawShot(g, s, cam, match.frame, match.world)]);

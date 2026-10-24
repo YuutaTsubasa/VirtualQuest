@@ -123,6 +123,9 @@ pub enum Move {
     Uppercut,
     /// 雜兵的拳頭（比玩家的刺拳慢很多）
     Punch,
+    /// 拿著武器揮
+    Bat,
+    Blade,
     Shoot,
 }
 
@@ -163,6 +166,9 @@ fn move_data(m: Move) -> MoveData {
         Move::Knee => md(0, 1, 9, 8.0, 50.0, 20.0, false),
         // 雜兵的拳頭：起手 12 格，手會先往後拉（看到就先打他，打中就能打斷）
         Move::Punch => md(12, 4, 16, 10.0, 64.0, 16.0, false),
+        // 武器：鈍器一揮打倒、範圍長；刀快、可以一直砍（第四下會把人砍倒）
+        Move::Bat => md(7, 5, 14, 16.0, 104.0, 30.0, true),
+        Move::Blade => md(4, 3, 9, 10.0, 88.0, 28.0, false),
         Move::Slash => md(10, 3, 20, 12.0, 78.0, 15.0, false),
         Move::Slam => md(17, 5, 24, 15.0, 86.0, 20.0, true),
         Move::BossSlam => md(15, 5, 22, 17.0, 104.0, 24.0, true),
@@ -363,6 +369,24 @@ pub enum ItemKind {
     Feast,
     /// 分數
     Gem,
+    /// 武器：鈍器（鐵管、木棍、十字鎬…每一大關樣子不同），一揮就把人打倒
+    Bat,
+    /// 武器：刀類（小刀、冰柱、短劍…），出手快
+    Blade,
+}
+
+impl ItemKind {
+    pub fn is_weapon(self) -> bool {
+        matches!(self, ItemKind::Bat | ItemKind::Blade)
+    }
+    /// 武器能打中幾次
+    fn uses(self) -> i32 {
+        match self {
+            ItemKind::Bat => 8,
+            ItemKind::Blade => 10,
+            _ => 0,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -376,6 +400,9 @@ pub enum ShotKind {
     Dark,
     /// 月華的月光波
     Moon,
+    /// 玩家丟出去的武器
+    Bat,
+    Blade,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -393,6 +420,9 @@ pub struct Player {
     pub score: u32,
     /// 必殺氣（0..=SP_MAX）：普通攻擊打中、被打會集氣，滿了才能放必殺
     pub sp: i32,
+    /// 手上的武器、還能打中幾次
+    pub weapon: Option<ItemKind>,
+    pub weapon_uses: i32,
     /// 用完命、出局（下一小關會以 1 條命回來）
     pub out: bool,
     /// 連段第幾下（0 起算）
@@ -513,6 +543,9 @@ pub struct Item {
     pub y: f32,
     #[serde(skip)]
     vy: f32,
+    /// 武器剩下幾次（被打掉在地上的武器，撿回來接著用）
+    #[serde(skip)]
+    uses: i32,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -565,6 +598,8 @@ pub enum Event {
     NoSp { slot: usize },
     Grab { slot: usize },
     Throw { slot: usize },
+    /// 武器用完壞掉
+    WeaponBreak { x: f32, z: f32 },
     Land { x: f32, z: f32 },
     /// 跑步的腳步（揚起灰塵）
     Step { x: f32, z: f32 },
@@ -664,6 +699,8 @@ impl Match {
                     tap_timer: 0,
                     kos: 0,
                     sp: SP_START,
+                    weapon: None,
+                    weapon_uses: 0,
                 }
             })
             .collect();
@@ -812,6 +849,33 @@ impl Match {
         true
     }
 
+    /// 被打倒的玩家手上的武器掉在地上（剩下的次數留著）；短刀手被打倒有一半機會掉出他的刀
+    fn drop_weapons(&mut self) {
+        let mut drops = Vec::new();
+        for p in self.players.iter_mut() {
+            if p.body.act == Act::Fall && p.body.t == 0 {
+                if let Some(kind) = p.weapon.take() {
+                    drops.push((p.body.x, p.body.z, kind, p.weapon_uses));
+                }
+            }
+        }
+        for e in self.enemies.iter() {
+            if e.kind == Kind::Knife && e.body.act == Act::Dead && e.body.t == 1 && e.body.x as i32 % 2 == 0 {
+                drops.push((e.body.x, e.body.z, ItemKind::Blade, ItemKind::Blade.uses()));
+            }
+        }
+        for (x, z, kind, uses) in drops {
+            let id = self.new_id();
+            self.items.push(Item { id, kind, x, z, y: 30.0, vy: 4.0, uses });
+        }
+    }
+
+    /// 在地上放一個道具（測試、之後的關卡機關用）
+    pub fn spawn_item(&mut self, kind: ItemKind, x: f32, z: f32) {
+        let id = self.new_id();
+        self.items.push(Item { id, kind, x, z, y: 0.0, vy: 0.0, uses: kind.uses() });
+    }
+
     fn new_id(&mut self) -> u32 {
         self.next_id += 1;
         self.next_id
@@ -844,6 +908,7 @@ impl Match {
                 self.resolve_player_attacks();
                 self.resolve_enemy_attacks();
                 self.update_shots();
+                self.drop_weapons();
                 self.update_items();
                 self.spawn_pending();
                 self.update_camera();
@@ -895,6 +960,14 @@ impl Match {
 
     fn update_players(&mut self, inputs: &[Input], can_fight: bool) {
         let (left, right) = (self.camera + 24.0, self.camera + W - 24.0);
+        // 地上的武器（站在旁邊按攻擊就撿起來）
+        let weapons: Vec<(u32, f32, f32, ItemKind, i32)> = self
+            .items
+            .iter()
+            .filter(|it| it.kind.is_weapon() && it.y <= 0.0)
+            .map(|it| (it.id, it.x, it.z, it.kind, it.uses))
+            .collect();
+        let mut picked: Vec<u32> = Vec::new();
         // 打得到的敵人位置（出拳時自動上下對準用）
         let foes: Vec<(f32, f32)> = self
             .enemies
@@ -956,6 +1029,26 @@ impl Match {
                         b.vx = b.facing * speed * RUN_SPEED;
                         b.vz = inp.dz() * speed * Z_SPEED;
                         self.events.push(Event::Jump { slot });
+                    } else if inp.attack_pressed && p.weapon.is_some() {
+                        // 跑步中按攻擊：把武器丟出去（飛得遠、穿過一整排）
+                        let kind = p.weapon.take().unwrap_or(ItemKind::Bat);
+                        self.next_id += 1;
+                        self.shots.push(Shot {
+                            id: self.next_id,
+                            kind: if kind == ItemKind::Bat { ShotKind::Bat } else { ShotKind::Blade },
+                            x: b.x + b.facing * 40.0,
+                            z: b.z,
+                            y: 70.0,
+                            vx: b.facing * 11.0,
+                            vz: 0.0,
+                            life: 70,
+                            dmg: (18.0 * power) as i32,
+                            knock: true,
+                            owner: Some(slot),
+                            hits: Vec::new(),
+                        });
+                        b.attack(Move::Throw);
+                        self.events.push(Event::Throw { slot });
                     } else if inp.attack_pressed {
                         b.attack(Move::DashAttack);
                         b.vx = b.facing * speed * 1.7;
@@ -989,6 +1082,25 @@ impl Match {
                             b.facing = inp.dx();
                         }
                         self.events.push(Event::Jump { slot });
+                    } else if let Some(&(id, _, _, kind, uses)) = (inp.attack_pressed && p.weapon.is_none())
+                        .then(|| weapons.iter().find(|w| !picked.contains(&w.0) && (w.1 - b.x).abs() < 40.0 && (w.2 - b.z).abs() < 20.0))
+                        .flatten()
+                    {
+                        // 撿武器：彎腰一下
+                        picked.push(id);
+                        p.weapon = Some(kind);
+                        p.weapon_uses = uses;
+                        b.attack(Move::None);
+                        b.dur = 8;
+                        self.events.push(Event::Pickup { slot, kind });
+                    } else if inp.attack_pressed && p.weapon.is_some() {
+                        // 拿著武器：用武器打
+                        b.attack(if p.weapon == Some(ItemKind::Bat) { Move::Bat } else { Move::Blade });
+                        if inp.dx() != 0.0 {
+                            b.facing = inp.dx();
+                        }
+                        align_z(b, &foes);
+                        self.events.push(Event::Swing { slot });
                     } else if inp.attack_pressed {
                         // 上一下有打中，而且接得夠快：接下一段
                         let next = if p.chain_t > 0 && b.connected { (p.combo + 1) % 3 } else { 0 };
@@ -1235,6 +1347,7 @@ impl Match {
             b.x = b.x.clamp(left, right);
             b.z = b.z.clamp(Z_TOP, Z_BOTTOM);
         }
+        self.items.retain(|it| !picked.contains(&it.id));
     }
 
     // ---------- 敵人 ----------
@@ -1723,7 +1836,7 @@ impl Match {
                 p.body.hit_list.push(e.id);
                 landed = true;
                 if !special {
-                    let big = matches!(p.body.mv, Move::Kick | Move::DashAttack | Move::JumpKick);
+                    let big = matches!(p.body.mv, Move::Kick | Move::DashAttack | Move::JumpKick | Move::Bat);
                     gain_sp(p, if big { SP_BIG } else { SP_HIT });
                 }
                 let dmg = (d.dmg * p.stats.power) as i32;
@@ -1778,7 +1891,15 @@ impl Match {
                 self.events.push(Event::Hit { x: pr.x, y: pr.z - 40.0, big: false, by: Some(slot) });
             }
             if landed {
+                // 武器每一揮第一次打中扣一次（一揮打中好幾個人也只算一次），用完就壞掉
+                let first = !p.body.connected;
                 p.body.connected = true;
+                if first && matches!(p.body.mv, Move::Bat | Move::Blade) {
+                    p.weapon_uses -= 1;
+                    if p.weapon_uses <= 0 && p.weapon.take().is_some() {
+                        self.events.push(Event::WeaponBreak { x: p.body.x + p.body.facing * 50.0, z: p.body.z });
+                    }
+                }
             }
             self.hitstop = self.hitstop.max(hit_stop);
         }
@@ -1797,7 +1918,7 @@ impl Match {
         }
         for (x, z, kind) in drops {
             let id = self.new_id();
-            self.items.push(Item { id, kind, x, z, y: 30.0, vy: 4.0 });
+            self.items.push(Item { id, kind, x, z, y: 30.0, vy: 4.0, uses: kind.uses() });
             self.events.push(Event::Break { x, z });
         }
     }
@@ -1904,7 +2025,7 @@ impl Match {
                 continue;
             }
             for it in self.items.iter() {
-                if it.y > 0.0 || taken.contains(&it.id) || (it.x - p.body.x).abs() > 32.0 || (it.z - p.body.z).abs() > 16.0 {
+                if it.kind.is_weapon() || it.y > 0.0 || taken.contains(&it.id) || (it.x - p.body.x).abs() > 32.0 || (it.z - p.body.z).abs() > 16.0 {
                     continue;
                 }
                 // 血滿就不吃補血的（留給隊友）
@@ -1912,7 +2033,7 @@ impl Match {
                     ItemKind::Apple => p.body.max_hp / 4,
                     ItemKind::Meat => p.body.max_hp * 3 / 5,
                     ItemKind::Feast => p.body.max_hp,
-                    ItemKind::Gem => 0,
+                    ItemKind::Gem | ItemKind::Bat | ItemKind::Blade => 0,
                 };
                 if heal > 0 && p.body.hp >= p.body.max_hp {
                     continue;

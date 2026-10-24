@@ -355,6 +355,54 @@ mod run {
         assert_eq!((m.world, m.sub, m.phase), (0, 0, Phase::Intro));
     }
 
+    /// 武器：站在旁邊按攻擊撿起來、揮了用武器打、被打倒會掉在地上、跑步中按攻擊丟出去
+    #[test]
+    fn weapons_pick_swing_drop_throw() {
+        use crate::game::ItemKind;
+        let entrants = [Entrant { slot: 0, character: "aming" }];
+        let mut m = Match::new(&entrants, 0, Difficulty::Easy, 3, 1);
+        while m.phase != Phase::Play {
+            m.step(&[Input::default()]);
+        }
+        let (x, z) = (m.players[0].body.x, m.players[0].body.z);
+        m.spawn_item(ItemKind::Bat, x + 20.0, z);
+        let atk = Input { attack_pressed: true, ..Input::default() };
+        m.step(&[atk]);
+        assert_eq!(m.players[0].weapon, Some(ItemKind::Bat), "撿起來");
+        assert!(!m.items.iter().any(|it| it.kind == ItemKind::Bat), "地上的拿掉了");
+        for _ in 0..12 {
+            m.step(&[Input::default()]);
+        }
+        m.step(&[atk]);
+        assert_eq!(m.players[0].body.mv, Move::Bat, "拿著武器按攻擊是用武器打");
+        // 被打倒：武器掉在地上
+        for _ in 0..30 {
+            m.step(&[Input::default()]);
+        }
+        // （遊戲裡是在「玩家移動之後」被打倒；這裡在移動之前設，所以 t 從 -1 開始，移動時會加到 0）
+        m.players[0].body.act = Act::Fall;
+        m.players[0].body.t = -1;
+        m.players[0].body.y = 1.0;
+        m.players[0].body.vy = 5.0;
+        m.step(&[Input::default()]);
+        assert_eq!(m.players[0].weapon, None);
+        assert!(m.items.iter().any(|it| it.kind == ItemKind::Bat), "掉在地上");
+        // 跑步中按攻擊：丟出去
+        let mut m = Match::new(&entrants, 0, Difficulty::Easy, 3, 1);
+        while m.phase != Phase::Play {
+            m.step(&[Input::default()]);
+        }
+        m.players[0].weapon = Some(ItemKind::Blade);
+        m.players[0].weapon_uses = 5;
+        m.step(&[press(true, false, false)]);
+        m.step(&[Input::default()]);
+        m.step(&[press(true, false, false)]);
+        assert_eq!(m.players[0].body.act, Act::Run);
+        m.step(&[press(true, true, false)]);
+        assert_eq!(m.players[0].weapon, None);
+        assert_eq!(m.shots.len(), 1, "丟出去變成飛行道具");
+    }
+
     /// 必殺要集滿氣才能放，放完氣就歸零（不能一直放）
     #[test]
     fn special_needs_full_gauge() {
