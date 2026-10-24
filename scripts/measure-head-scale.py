@@ -36,6 +36,7 @@ else:
     BASE = os.path.join(root, 'public')
 MIN_SCORE = 0.55
 MIN_DIFF = 0.07
+DAMP = 0.6
 SKIP = {'idle', 'down', 'fall'}  # 躺著的頭轉 90 度，另外看
 
 
@@ -97,8 +98,13 @@ for cid, s in S.items():
                         best = (v, float(sc), rot)
         shown = best[1] * fix.get(f, 1)
         mark = ''
+        # 別的畫風的踢、衝刺（很寬的姿勢）用匯入時依交件實測高度算的倍數，不用頭比對（像素圖比對不準）
+        if STYLE and f in ('kick', 'dash'):
+            print(f'{cid:9} {f:9} 頭 ×{shown:.2f}（分數 {best[0]:.2f}）用匯入時的倍數 {fix.get(f, 1)}', flush=True)
+            continue
         if best[0] >= MIN_SCORE and abs(shown - 1) >= MIN_DIFF:
-            new = round(min(1.3, max(0.8, fix.get(f, 1) / shown)), 3)
+            # 別的畫風（尤其像素圖）樣板比對對傾身的姿勢會低估，只補一部分（照 PC-98 金爺 knee／throw 目視調的）
+            new = round(min(1.3, max(0.8, fix.get(f, 1) / shown ** (DAMP if STYLE else 1))), 3)
             mark = f'→ fix {fix.get(f, 1)} → {new}'
             if new == 1:
                 fix.pop(f, None)
