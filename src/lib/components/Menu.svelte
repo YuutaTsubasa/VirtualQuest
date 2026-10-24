@@ -53,14 +53,14 @@
   .menu-item {
     position: relative;
     border: 0;
-    border-bottom: 0.25cqh solid var(--navy);
+    border-bottom: 0.25cqh solid var(--edge);
     background: none;
     padding: 1.3cqh 2cqh 1.3cqh 7cqh;
     text-align: left;
     font-size: 4cqh;
     font-weight: 900;
     letter-spacing: 0.3em;
-    color: var(--navy);
+    color: var(--ink);
     white-space: nowrap;
     transition: padding 0.08s, background 0.08s;
   }
@@ -74,7 +74,7 @@
     border-bottom-color: transparent;
     outline: none;
     padding-left: 8cqh;
-    box-shadow: 0.5cqh 0.5cqh 0 var(--navy);
+    box-shadow: 0.5cqh 0.5cqh 0 var(--shade);
   }
   .menu-item:focus::before {
     content: '';

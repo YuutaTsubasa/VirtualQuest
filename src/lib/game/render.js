@@ -28,6 +28,7 @@ let cfg = currentConfig();
 // 墨黑 HUD 底、暖白字、青綠血條，低血量朱紅（art-work/ui-concept-v1/DESIGN.md）
 const pal = { text: '#f5efdf', ink: '#202329', flash: '#e9b85e', paper: '#fffbf1', cream: '#f5efdf', accent: '#d94b3d', teal: '#287f78', hp: '#2fbf9a', hpLow: '#d94b3d' };
 let palStyle = null;
+const slotColor = (slot) => pal.slots?.[slot] ?? SLOT_COLORS[slot];
 function updatePalette() {
   const style = document.documentElement.dataset.style ?? 'anime90';
   if (style === palStyle) return;
@@ -35,11 +36,16 @@ function updatePalette() {
   const css = getComputedStyle(document.documentElement);
   const v = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
   pal.text = v('--on-dark', '#fff');
-  pal.ink = v('--navy', '#202329');
+  pal.ink = v('--navy-deep', '#202329');
+  // 隊員牌、關卡標籤、魔王條的底（Game Boy 只能用四色）
+  pal.panel = v('--hud-panel', 'rgba(32,35,41,0.92)');
+  // 1P～4P 的顏色（Game Boy 只能用四色，其他畫風沒有設就用原本的）
+  pal.slots = SLOT_COLORS.map((c, i) => v(`--p${i + 1}`, c));
   pal.flash = v('--gold', '#e9b85e');
   pal.paper = v('--paper-white', '#fff');
   pal.accent = v('--accent', '#d94b3d');
   pal.hpLow = pal.accent;
+  pal.hp = v('--hud-hp', '#2fbf9a');
   pal.cream = v('--cream', '#f5efdf');
   pal.teal = v('--teal', '#287f78');
 }
@@ -385,7 +391,7 @@ function drawSlotMarker(g, p, cam, you, cpu) {
   if (p.out || p.act === 'dead') return;
   const x = p.x - cam;
   const y = p.z - p.y - FIG_H - 6;
-  const color = SLOT_COLORS[p.slot];
+  const color = slotColor(p.slot);
   g.fillStyle = color;
   g.beginPath();
   g.moveTo(x - 9, y - 8);
@@ -481,7 +487,7 @@ function drawAim(g, e, x, w) {
   const p = aimers.find((p) => Math.abs(p.z - e.z) <= AIM_Z && Math.abs(p.x - e.x) <= AIM_X * (e.kind === 'boss' ? 1.4 : 1));
   if (!p) return;
   g.save();
-  g.strokeStyle = SLOT_COLORS[p.slot];
+  g.strokeStyle = slotColor(p.slot);
   g.globalAlpha = 0.85;
   g.lineWidth = 3;
   g.beginPath();
@@ -878,8 +884,8 @@ const CARD = { w: 228, h: 58, gap: 8, top: 8 };
 function drawPlayerPanel(g, p, names, cpu, frame) {
   const x = 10 + p.slot * (CARD.w + CARD.gap);
   const y = CARD.top;
-  const color = SLOT_COLORS[p.slot];
-  g.fillStyle = 'rgba(32,35,41,0.92)';
+  const color = slotColor(p.slot);
+  g.fillStyle = pal.panel;
   g.fillRect(x, y, CARD.w, CARD.h);
   g.strokeStyle = 'rgba(245,239,223,0.55)';
   g.lineWidth = 1.5;
@@ -943,7 +949,7 @@ function drawStageTag(g, match) {
   const text = `${t(w.name)}   ${stageLabel(match.world, match.sub)} ${t(w.subs[match.sub])}`;
   g.font = `900 14px ${FONT}`;
   const tw = g.measureText(text).width;
-  brush(g, 8, CARD.top + CARD.h + 8, tw + 34, 24, 'rgba(32,35,41,0.85)');
+  brush(g, 8, CARD.top + CARD.h + 8, tw + 34, 24, pal.panel);
   g.textAlign = 'left';
   g.textBaseline = 'middle';
   g.fillStyle = pal.text;
@@ -979,7 +985,7 @@ function drawChapter(g, match, alpha) {
   g.globalAlpha = alpha;
   const slide = (1 - Math.min(1, alpha)) * -60;
   g.translate(slide, 0);
-  brush(g, W / 2 - 250, H / 2 - 74, 500, 74, 'rgba(32,35,41,0.92)');
+  brush(g, W / 2 - 250, H / 2 - 74, 500, 74, pal.panel);
   outlinedText(g, t(w.name), W / 2, H / 2 - 37, 40, pal.cream);
   g.fillStyle = pal.accent;
   g.fillRect(W / 2 - 170, H / 2 + 8, 340, 34);
@@ -1081,7 +1087,7 @@ function drawHud(g, match, opts) {
   } else if (match.phase === 'over') {
     g.save();
     g.globalAlpha = Math.min(1, match.timer / 30);
-    brush(g, W / 2 - 230, H / 2 - 44, 460, 88, 'rgba(32,35,41,0.92)');
+    brush(g, W / 2 - 230, H / 2 - 44, 460, 88, pal.panel);
     outlinedText(g, 'GAME OVER', W / 2, H / 2, 52, pal.accent);
     g.restore();
   } else if (match.phase === 'ending') {

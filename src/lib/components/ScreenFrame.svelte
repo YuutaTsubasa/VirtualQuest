@@ -98,17 +98,17 @@
     position: absolute;
     inset: 12% -2% 4% 0;
     z-index: -1;
-    background: var(--navy);
+    background: var(--ink-fill);
     clip-path: polygon(2% 18%, 10% 4%, 30% 10%, 55% 0, 80% 8%, 100% 2%, 94% 38%, 99% 64%, 90% 100%, 60% 90%, 34% 100%, 8% 92%, 0 70%, 4% 46%);
   }
   .brush-title .a {
     color: var(--on-dark);
-    -webkit-text-stroke: 0.35cqh var(--navy);
+    -webkit-text-stroke: 0.35cqh var(--edge);
     paint-order: stroke fill;
   }
   .brush-title .b {
     color: var(--accent);
-    -webkit-text-stroke: 0.35cqh var(--navy);
+    -webkit-text-stroke: 0.35cqh var(--edge);
     paint-order: stroke fill;
     text-shadow: 0.3cqh 0.3cqh 0 var(--on-dark);
   }

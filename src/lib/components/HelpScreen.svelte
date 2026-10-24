@@ -95,7 +95,7 @@
     margin: 0 auto 0.4cqh;
   }
   tbody th {
-    background: var(--navy);
+    background: var(--ink-fill);
     color: var(--on-dark);
     padding: 1cqh 2.4cqh 1cqh 1.6cqh;
     white-space: nowrap;
@@ -103,8 +103,8 @@
   }
   tbody td {
     background: var(--paper-white);
-    border-top: 0.3cqh solid var(--navy);
-    border-bottom: 0.3cqh solid var(--navy);
+    border-top: 0.3cqh solid var(--edge);
+    border-bottom: 0.3cqh solid var(--edge);
     text-align: center;
     padding: 1cqh 0.6cqh;
   }

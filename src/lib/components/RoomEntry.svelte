@@ -263,7 +263,7 @@
     gap: 1.4cqh;
     padding: 4cqh 4cqw 3.6cqh;
     background: var(--cream);
-    border: 0.45cqh solid var(--navy);
+    border: 0.45cqh solid var(--edge);
     box-shadow: 1cqh 1cqh 0 var(--navy-deep);
     text-align: center;
   }
@@ -282,14 +282,14 @@
     font-weight: 900;
     letter-spacing: 0.25em;
     padding: 0.2cqh 4cqh;
-    border: 0.3cqh solid var(--navy);
+    border: 0.3cqh solid var(--edge);
     background: var(--paper-white);
   }
   .ring {
     width: 8cqh;
     height: 8cqh;
     border-radius: 50%;
-    border: 1.4cqh solid #b9d6cf;
+    border: 1.4cqh solid var(--teal-soft);
     border-top-color: var(--teal);
     animation: ring 1s linear infinite;
   }
@@ -298,7 +298,7 @@
     height: 8cqh;
     border-radius: 50%;
     background: var(--accent);
-    color: #fff;
+    color: var(--on-dark);
     display: grid;
     place-items: center;
     font-size: 5.4cqh;
@@ -341,7 +341,7 @@
     width: 3cqh;
     height: 3cqh;
     border-radius: 50%;
-    background: var(--navy);
+    background: var(--ink-fill);
     color: var(--on-dark);
     display: grid;
     place-items: center;
@@ -364,17 +364,17 @@
     display: flex;
     gap: 1.6cqh;
     align-items: center;
-    border-top: 0.35cqh solid var(--navy);
+    border-top: 0.35cqh solid var(--edge);
     padding-top: 1.4cqh;
   }
   .frame-pic {
     width: 13cqh;
     height: 13cqh;
     flex: none;
-    border: var(--line) solid var(--navy);
+    border: var(--line) solid var(--edge);
     background:
-      radial-gradient(rgba(217, 75, 61, 0.3) 22%, transparent 26%) 0 0 / 1cqh 1cqh,
-      #f3e6cf;
+      radial-gradient(color-mix(in srgb, var(--accent) 30%, transparent) 22%, transparent 26%) 0 0 / 1cqh 1cqh,
+      var(--cream-deep);
     overflow: hidden;
   }
   .frame-pic img {
@@ -425,7 +425,7 @@
     flex: 1;
     max-width: 10cqw;
     height: 0.25cqh;
-    background: var(--navy);
+    background: var(--ink-fill);
   }
   .actions {
     display: flex;

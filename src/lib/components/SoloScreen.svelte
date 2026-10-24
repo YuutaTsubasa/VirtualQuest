@@ -166,7 +166,7 @@
   .tag {
     font-size: 2.6cqh;
     font-weight: 900;
-    border-left: 0.35cqh solid var(--navy);
+    border-left: 0.35cqh solid var(--edge);
     padding-left: 2.4cqh;
     white-space: nowrap;
   }
@@ -179,7 +179,7 @@
   .stage-art {
     position: relative;
     flex: 1;
-    border: 0.35cqh solid var(--navy);
+    border: 0.35cqh solid var(--edge);
     background-position: center 70%;
     background-size: cover;
     overflow: hidden;
@@ -196,7 +196,7 @@
     animation: pop 0.25s ease-out;
   }
   .who {
-    background: var(--navy);
+    background: var(--ink-fill);
     color: var(--on-dark);
     font-weight: 900;
     font-size: 3cqh;
@@ -207,7 +207,7 @@
     z-index: 1;
   }
   .who.cpu {
-    background: #1b6b5a;
+    background: var(--teal);
   }
   .who.p2 {
     background: var(--accent);
@@ -224,7 +224,7 @@
   }
   .caption {
     background: var(--cream);
-    border: 0.35cqh solid var(--navy);
+    border: 0.35cqh solid var(--edge);
     text-align: center;
     font-weight: 900;
     font-size: 3.2cqh;

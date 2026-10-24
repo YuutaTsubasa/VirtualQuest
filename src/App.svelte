@@ -463,7 +463,7 @@
   .result-pic {
     width: 20cqh;
     height: 20cqh;
-    border: 0.5cqh solid var(--navy);
+    border: 0.5cqh solid var(--edge);
     outline: 0.35cqh solid var(--gold);
     outline-offset: -1cqh;
     background: linear-gradient(#ffe9a8, #ffb3c8);

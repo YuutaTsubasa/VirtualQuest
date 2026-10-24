@@ -25,9 +25,10 @@ const fileSets = Object.fromEntries(
 // 選用的插圖：只用該風格自己交的（不借 90 年代版，免得畫風混在一起）；沒有時畫面改用角色動作圖拼
 export const OPTIONAL = new Set(['ui/title-scene.webp', 'ui/mode-solo.webp', 'ui/mode-party.webp', 'ui/mode-watch.webp', 'ui/icons/watch.webp']);
 
-// 一種風格完整的檔案數：11 位角色 ×（5 表情＋1 圖集）＋特效 3＋介面 4（含 Logo）＋圖示 10
-// （關卡背景、敵人、魔王的圖還在請美術畫，交件後再加進來）
-export const EXPECTED_FILES = 11 * 6 + 3 + 4 + 10;
+// 各畫風共用、不另外畫的（Logo 沿用 UI Concept v1 的；半身像框是程式畫的）
+export const SHARED = new Set(['ui/logo.webp', 'ui/portrait-frame.webp', 'ui/portrait-selected.webp']);
+// 一種風格完整的檔案數：anime90 實際有的每一張（角色、敵人、魔王、背景、道具、特效、介面），扣掉選用插圖與共用的
+export const EXPECTED_FILES = [...(fileSets.anime90 ?? [])].filter((f) => !OPTIONAL.has(f) && !SHARED.has(f)).length || 1;
 
 /** 這個風格有沒有這張圖（anime90 的基本圖一律當作有） */
 export function hasAsset(style, path) {
@@ -58,7 +59,7 @@ export function styleUrls(style, base = '/') {
 /** 這個風格已經交了多少（給選風格畫面顯示「製作中」） */
 export function styleProgress(style) {
   if (style === DEFAULT_STYLE) return 1;
-  const have = [...(fileSets[style] ?? [])].filter((f) => !OPTIONAL.has(f)).length;
+  const have = [...(fileSets[style] ?? [])].filter((f) => !OPTIONAL.has(f) && !SHARED.has(f)).length;
   return Math.min(1, have / EXPECTED_FILES);
 }
 

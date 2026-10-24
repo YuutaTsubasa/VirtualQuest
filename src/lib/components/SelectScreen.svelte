@@ -149,7 +149,7 @@
           </div>
         {/each}
       </div>
-      <div class="special" style:--sp={open ? current.specialColor : 'var(--navy)'}>
+      <div class="special" style:--sp={open ? current.specialColor : 'var(--edge)'}>
         <b><span>{t('必殺技')}</span>{open ? current.specialName : '？？？'}</b>
         <small>{open ? current.specialDesc : ''}</small>
       </div>
@@ -221,10 +221,10 @@
   /* 中間的大頭像：網點底的漫畫格，左下壓一個毛筆名字 */
   .hero {
     position: relative;
-    border: 0.42cqh solid var(--navy);
+    border: 0.42cqh solid var(--edge);
     background:
-      radial-gradient(rgba(40, 127, 120, 0.35) 22%, transparent 26%) 0 0 / 1.2cqh 1.2cqh,
-      linear-gradient(160deg, #d7e8e2, #f5efdf 70%);
+      radial-gradient(color-mix(in srgb, var(--teal) 35%, transparent) 22%, transparent 26%) 0 0 / 1.2cqh 1.2cqh,
+      linear-gradient(160deg, var(--teal-soft), var(--cream) 70%);
     overflow: hidden;
     display: flex;
     align-items: flex-end;
@@ -253,7 +253,7 @@
     align-items: flex-start;
   }
   .name-brush b {
-    background: var(--navy);
+    background: var(--ink-fill);
     color: var(--on-dark);
     font-size: 6cqh;
     font-style: italic;
@@ -265,7 +265,7 @@
   .name-brush small {
     margin-top: 0.4cqh;
     background: var(--cream);
-    border: 0.25cqh solid var(--navy);
+    border: 0.25cqh solid var(--edge);
     padding: 0.2cqh 1.2cqh;
     font-size: 2cqh;
     font-weight: 800;
@@ -283,7 +283,7 @@
     align-self: flex-start;
     margin: 0;
     padding: 0.4cqh 5cqh 0.4cqh 1.8cqh;
-    background: var(--navy);
+    background: var(--ink-fill);
     color: var(--on-dark);
     font-size: 3.2cqh;
     font-weight: 900;
@@ -296,7 +296,7 @@
   }
   .stats .stat {
     padding: 0.4cqh 0;
-    border-bottom: 0.2cqh solid var(--navy);
+    border-bottom: 0.2cqh solid var(--edge);
   }
   .special {
     display: flex;
@@ -312,7 +312,7 @@
   .special b span {
     margin-right: 1cqw;
     padding: 0.1cqh 0.8cqw;
-    background: var(--navy);
+    background: var(--ink-fill);
     color: var(--on-dark);
     font-size: 1.9cqh;
   }
@@ -358,7 +358,7 @@
     left: -0.3cqh;
     top: -1.8cqh;
     background: var(--c);
-    color: #fff;
+    color: var(--on-dark);
     font-weight: 900;
     font-size: 2.2cqh;
     padding: 0 1.2cqh 0 0.8cqh;
@@ -369,7 +369,7 @@
     width: 9cqh;
     height: 7.4cqh;
     overflow: hidden;
-    background: #efe6cf;
+    background: var(--cream-deep);
     display: grid;
     place-items: center;
     font-size: 3.4cqh;
@@ -397,7 +397,7 @@
     font-weight: 900;
     font-size: 2cqh;
     padding: 0.4cqh 1.2cqh;
-    border: 0.25cqh solid var(--navy);
+    border: 0.25cqh solid var(--edge);
     white-space: nowrap;
   }
   .slot em.ok {
@@ -406,7 +406,7 @@
     border-color: var(--accent);
   }
   .slot em.cpu {
-    background: var(--navy);
+    background: var(--ink-fill);
     color: var(--on-dark);
   }
   @keyframes pulse {

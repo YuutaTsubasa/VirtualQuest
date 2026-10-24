@@ -107,10 +107,10 @@
     width: 78cqw;
     max-width: 96vw;
     font-size: 2.4cqh;
-    color: var(--navy);
+    color: var(--ink);
   }
   .settings::backdrop {
-    background: rgba(22, 24, 29, 0.62);
+    background: var(--scrim);
   }
   .settings > :global(.panel) {
     box-shadow: 1cqh 1cqh 0 var(--navy-deep);
@@ -151,10 +151,10 @@
     align-items: center;
     gap: 0.6cqh;
     padding: 0.8cqh;
-    border: 0.4cqh solid var(--navy);
+    border: 0.4cqh solid var(--edge);
     border-radius: 0.8cqh;
     background: var(--paper-white);
-    color: var(--navy);
+    color: var(--ink);
     font: inherit;
     cursor: pointer;
   }
@@ -175,8 +175,8 @@
     width: 100%;
     aspect-ratio: 1;
     background:
-      radial-gradient(rgba(40, 127, 120, 0.3) 22%, transparent 26%) 0 0 / 1cqh 1cqh,
-      #e6efe9;
+      radial-gradient(color-mix(in srgb, var(--teal) 30%, transparent) 22%, transparent 26%) 0 0 / 1cqh 1cqh,
+      var(--teal-soft);
     overflow: hidden;
   }
   .pic img {
@@ -196,7 +196,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: var(--navy);
+    background: var(--ink-fill);
     color: var(--on-dark);
     font-size: 1.6cqh;
     text-align: center;

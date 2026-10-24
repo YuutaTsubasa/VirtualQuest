@@ -38,7 +38,7 @@
     display: grid;
     grid-template-columns: 4cqh 1fr 4cqh;
     align-items: center;
-    border: 0.25cqh solid var(--navy);
+    border: 0.25cqh solid var(--edge);
     background: var(--paper-white);
     min-width: 0;
   }
@@ -68,10 +68,10 @@
     border-bottom: 1cqh solid transparent;
   }
   .left::before {
-    border-right: 1.4cqh solid var(--navy);
+    border-right: 1.4cqh solid var(--edge);
   }
   .right::before {
-    border-left: 1.4cqh solid var(--navy);
+    border-left: 1.4cqh solid var(--edge);
   }
   .arrow:hover:not(:disabled)::before {
     filter: drop-shadow(0 0 0 var(--accent));

@@ -26,10 +26,18 @@
   /* 墨線粗細與實色陰影距離（1920×1080 設計稿的 3 px／6 px） */
   --line: 0.32cqh;
   --drop: 0.6cqh;
+  /* 墨色依用途分開：其他畫風（skins.css）可以讓字、框、陰影、墨色色塊各用不同顏色（例如深色介面的 PC-98） */
   --ink: var(--navy);
+  --edge: var(--navy);
+  --shade: var(--navy);
+  --ink-fill: var(--navy);
+  /* 紙上的網點、蓋在遊戲畫面上的遮罩、按鈕滑過時的底色 */
+  --dots: rgba(32, 35, 41, 0.16);
+  --scrim: rgba(22, 24, 29, 0.62);
+  --face-hover: #fff8e6;
   --paper: var(--cream);
   /* 手把鍵盤（從 TaiwanMahjong 搬來的 ControlsKeyboard）用的顏色 */
-  --text: var(--navy);
+  --text: var(--ink);
   --panel-solid: var(--cream);
   --muted: #6b6a66;
   --red: var(--accent);
@@ -42,7 +50,7 @@ html, body {
   margin: 0;
   height: 100%;
   background: var(--navy-deep);
-  color: var(--navy);
+  color: var(--ink);
   overflow: hidden;
 }
 
@@ -76,7 +84,7 @@ html, body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(rgba(32, 35, 41, 0.16) 22%, transparent 26%) 0 0 / 1.3cqh 1.3cqh,
+    radial-gradient(var(--dots) 22%, transparent 26%) 0 0 / 1.3cqh 1.3cqh,
     var(--cream);
 }
 .paper-bg::after {
@@ -97,7 +105,7 @@ html, body {
   font-size: 2.6cqh;
 }
 /* 疊在遊戲畫面上的視窗（暫停、結果）：墨黑半透明遮罩 */
-.screen.overlay { background: rgba(22, 24, 29, 0.62); }
+.screen.overlay { background: var(--scrim); }
 
 /* ---------- 共用：版面 ---------- */
 
@@ -128,7 +136,7 @@ html, body {
 
 button, select {
   font: inherit;
-  color: var(--navy);
+  color: var(--ink);
   cursor: pointer;
 }
 button:disabled { opacity: 0.5; cursor: default; }
@@ -136,9 +144,9 @@ button:disabled { opacity: 0.5; cursor: default; }
 /* 直角按鈕：墨框＋紙面＋右下實色陰影。按下時往陰影方向壓下去 */
 .vbtn {
   --face: var(--cream);
-  --fg: var(--navy);
+  --fg: var(--ink);
   position: relative;
-  border: var(--line) solid var(--navy);
+  border: var(--line) solid var(--edge);
   background: var(--face);
   color: var(--fg);
   padding: 1cqh 4cqh;
@@ -148,15 +156,15 @@ button:disabled { opacity: 0.5; cursor: default; }
   letter-spacing: 0.2em;
   text-indent: 0.2em;
   white-space: nowrap;
-  box-shadow: var(--drop) var(--drop) 0 var(--navy);
+  box-shadow: var(--drop) var(--drop) 0 var(--shade);
   transition: transform 0.06s, box-shadow 0.06s, background 0.08s;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 1.2cqh;
 }
-.vbtn:hover:not(:disabled) { --face: #fff8e6; }
-.vbtn:active:not(:disabled) { transform: translate(var(--drop), var(--drop)); box-shadow: 0 0 0 var(--navy); }
+.vbtn:hover:not(:disabled) { --face: var(--face-hover); }
+.vbtn:active:not(:disabled) { transform: translate(var(--drop), var(--drop)); box-shadow: 0 0 0 var(--shade); }
 /* 次要的強調（複製、更換角色、加入電腦隊友…）：青綠 */
 .vbtn.gold,
 .vbtn.active {
@@ -165,7 +173,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 }
 .vbtn.gold:hover:not(:disabled),
 .vbtn.active:hover:not(:disabled) { --face: #2f938b; }
-.vbtn.small { min-height: 5.2cqh; padding: 0.5cqh 2.4cqh; font-size: 2.3cqh; letter-spacing: 0.1em; text-indent: 0.1em; box-shadow: 0.4cqh 0.4cqh 0 var(--navy); }
+.vbtn.small { min-height: 5.2cqh; padding: 0.5cqh 2.4cqh; font-size: 2.3cqh; letter-spacing: 0.1em; text-indent: 0.1em; box-shadow: 0.4cqh 0.4cqh 0 var(--shade); }
 .vbtn.small:active:not(:disabled) { transform: translate(0.4cqh, 0.4cqh); }
 /* 選單：目前選到的那顆前面有 ▶ */
 .vbtn.arrow:is(:hover, :focus-visible, .active)::after,
@@ -191,7 +199,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   clip-path: polygon(0.8cqh 0, 100% 0.6cqh, calc(100% - 0.6cqh) 100%, 0 calc(100% - 0.4cqh));
   box-shadow: none;
   border-width: 0.45cqh;
-  filter: drop-shadow(var(--drop) var(--drop) 0 var(--navy));
+  filter: drop-shadow(var(--drop) var(--drop) 0 var(--shade));
 }
 .vbtn.primary:hover:not(:disabled) { --face: #e65a4b; }
 .vbtn.primary:active:not(:disabled) { filter: none; }
@@ -204,14 +212,14 @@ button:disabled { opacity: 0.5; cursor: default; }
 .panel {
   position: relative;
   background: var(--cream);
-  border: 0.42cqh solid var(--navy);
-  box-shadow: var(--drop) var(--drop) 0 rgba(32, 35, 41, 0.85);
+  border: 0.42cqh solid var(--edge);
+  box-shadow: var(--drop) var(--drop) 0 var(--shade);
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 /* 自己的那一格：朱紅框 */
-.panel.gold-frame { border-color: var(--accent); box-shadow: var(--drop) var(--drop) 0 var(--navy), inset 0 0 0 0.3cqh var(--accent); }
+.panel.gold-frame { border-color: var(--accent); box-shadow: var(--drop) var(--drop) 0 var(--shade), inset 0 0 0 0.3cqh var(--accent); }
 /* 面板標題：左上角的朱紅毛筆條，壓在框線上 */
 .panel-head {
   position: relative;
@@ -251,7 +259,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   min-width: 2cqw;
   max-width: 8cqw;
   height: 0.25cqh;
-  background: var(--navy);
+  background: var(--ink-fill);
 }
 
 /* 按鍵帽（Esc、Enter、↑↓）：提示列裡的小黑底字 */
@@ -259,7 +267,7 @@ kbd {
   display: inline-block;
   min-width: 3.4cqh;
   padding: 0.1cqh 0.9cqh;
-  background: var(--navy);
+  background: var(--ink-fill);
   color: var(--on-dark);
   font: inherit;
   font-size: 0.9em;
@@ -275,9 +283,9 @@ kbd {
 input, select.vsel {
   font: inherit;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--ink);
   background: var(--paper-white);
-  border: var(--line) solid var(--navy);
+  border: var(--line) solid var(--edge);
   border-radius: 0;
   padding: 0.7cqh 1.4cqh;
 }
@@ -287,7 +295,7 @@ input::placeholder { color: #a7a196; }
 /* 說明框：淡青綠底 */
 .note {
   background: var(--teal-soft);
-  border: 0.25cqh solid rgba(40, 127, 120, 0.45);
+  border: 0.25cqh solid color-mix(in srgb, var(--teal) 45%, transparent);
   color: #1d5d58;
   font-weight: 800;
   font-size: 2.1cqh;
@@ -301,18 +309,18 @@ input::placeholder { color: #a7a196; }
 .card {
   position: relative;
   padding: 0;
-  border: 0.3cqh solid var(--navy);
+  border: 0.3cqh solid var(--edge);
   background: var(--paper-white);
   aspect-ratio: 1 / 1.12;
   display: flex;
   flex-direction: column;
   transition: transform 0.06s;
 }
-.card img { width: 100%; flex: 1; min-height: 0; object-fit: cover; object-position: center 12%; display: block; background: #efe6cf; }
+.card img { width: 100%; flex: 1; min-height: 0; object-fit: cover; object-position: center 12%; display: block; background: var(--cream-deep); }
 .card > span:not(.tags):not(.lock) {
   background: var(--paper-white);
-  border-top: 0.25cqh solid var(--navy);
-  color: var(--navy);
+  border-top: 0.25cqh solid var(--edge);
+  color: var(--ink);
   font-weight: 900;
   font-size: 2cqh;
   letter-spacing: 0.1em;
@@ -333,7 +341,7 @@ input::placeholder { color: #a7a196; }
   border-top: 1.4cqh solid transparent;
   border-bottom: 1.4cqh solid transparent;
   rotate: 30deg;
-  filter: drop-shadow(0.2cqh 0.2cqh 0 var(--navy));
+  filter: drop-shadow(0.2cqh 0.2cqh 0 var(--shade));
   z-index: 2;
 }
 .card.locked img { filter: brightness(0) opacity(0.55); }
@@ -346,7 +354,7 @@ input::placeholder { color: #a7a196; }
 }
 .card .tag {
   background: var(--slot, var(--accent));
-  color: #fff;
+  color: var(--on-dark);
   font-style: normal;
   font-weight: 900;
   padding: 0 0.7cqh;
@@ -358,7 +366,7 @@ input::placeholder { color: #a7a196; }
 /* 能力值條：五格方塊，右邊數字 */
 .stat { display: grid; grid-template-columns: minmax(7cqh, max-content) 1fr 3cqh; column-gap: 1.2cqh; align-items: center; font-size: 2.4cqh; font-weight: 900; letter-spacing: 0.2em; }
 .stat .bar { display: flex; gap: 0.6cqh; }
-.stat .bar i { flex: 1; height: 2.6cqh; background: var(--paper-white); border: 0.25cqh solid var(--navy); }
+.stat .bar i { flex: 1; height: 2.6cqh; background: var(--paper-white); border: 0.25cqh solid var(--edge); }
 .stat .bar i.on { background: var(--accent); }
 .stat b { text-align: right; letter-spacing: 0; }
 
@@ -377,12 +385,12 @@ input::placeholder { color: #a7a196; }
 }
 .toast {
   background: var(--cream);
-  color: var(--navy);
+  color: var(--ink);
   font-weight: 800;
   padding: 1cqh 2.4cqh 1cqh 2cqh;
-  border: var(--line) solid var(--navy);
+  border: var(--line) solid var(--edge);
   border-left: 1.2cqh solid var(--accent);
-  box-shadow: 0.5cqh 0.5cqh 0 var(--navy);
+  box-shadow: 0.5cqh 0.5cqh 0 var(--shade);
   font-size: 2.4cqh;
 }
 .toast.ok { border-left-color: var(--teal); }
@@ -398,8 +406,8 @@ input::placeholder { color: #a7a196; }
   background: var(--teal);
   color: var(--on-dark);
   padding: 1.2cqh 3cqh;
-  border: var(--line) solid var(--navy);
-  box-shadow: 0.5cqh 0.5cqh 0 var(--navy);
+  border: var(--line) solid var(--edge);
+  box-shadow: 0.5cqh 0.5cqh 0 var(--shade);
   font-weight: 800;
   font-size: 2.6cqh;
   letter-spacing: 0.1em;
@@ -456,88 +464,7 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 0.3cqh var(--accent
   }
 }
 
-/* ---------- 畫風：介面配色與字體 ----------
-   主色來自各風格圖素包的交件留言（art-inbox/messages）；還沒交的先參考 TaiwanMahjong 的 themes.css。
-   --navy 是墨色（框線、文字），--cream 是紙／面板底，--accent 是主要行動色，--gold 是少量提示色。 */
-
-:root[data-style='pc98'] {
-  /* 背景 #111329、面板 #24203e、文字 #fae8cd、選取 #ffd69a、邊框 #9b80b4 */
-  --navy: #24203e;
-  --navy-deep: #111329;
-  --navy-soft: #5b4f86;
-  --cream: #fae8cd;
-  --gold: #ffd69a;
-  --gold-deep: #d9a05a;
-  --gold-line: #9b80b4;
-  --stripe: #9b80b4;
-  --accent: #6fd3c1;
-  --font: 'MingLiU', '細明體', 'MS Gothic', 'Cascadia Mono', monospace;
-}
-:root[data-style='msdos'] {
-  /* 背景 #101828、面板 #243c7a、文字 #f6f1d8、選取 #ffd23f、邊框 #9ca8b8 */
-  --navy: #243c7a;
-  --navy-deep: #101828;
-  --navy-soft: #4a62a8;
-  --cream: #f6f1d8;
-  --gold: #ffd23f;
-  --gold-deep: #d9a800;
-  --gold-line: #9ca8b8;
-  --stripe: #9ca8b8;
-  --accent: #ff5555;
-  --font: 'Cascadia Mono', 'Consolas', 'MingLiU', '細明體', monospace;
-}
-:root[data-style='taiwan-print'] {
-  /* 墨藍 #102044、青綠 #128C96、朱紅 #E94B32、暖紙 #FFF1C2、金黃 #F6C334 */
-  --navy: #102044;
-  --navy-deep: #0a1530;
-  --navy-soft: #128c96;
-  --cream: #fff1c2;
-  --gold: #f6c334;
-  --gold-deep: #e94b32;
-  --gold-line: #f6c334;
-  --stripe: #128c96;
-  --accent: #e94b32;
-  --sea: #128c96;
-  --font: 'DFKai-SB', '標楷體', 'Kaiti TC', 'Microsoft JhengHei', serif;
-}
-:root[data-style='gameboy'] {
-  /* 最深 #0f380f、深 #306230、中亮 #8bac0f、最亮 #9bbc0f（只用這四色） */
-  --navy: #0f380f;
-  --navy-deep: #0f380f;
-  --navy-soft: #306230;
-  --cream: #9bbc0f;
-  --gold: #8bac0f;
-  --gold-deep: #306230;
-  --gold-line: #8bac0f;
-  --stripe: #306230;
-  --accent: #0f380f;
-  --sea: #0f380f;
-  --ok: #306230;
-  --red: #0f380f;
-  --on-dark: #9bbc0f;
-  --paper-white: #9bbc0f;
-  --hud-portrait: #8bac0f;
-  --font: 'MingLiU', '細明體', monospace;
-}
-:root[data-style='modern-paint'] {
-  /* 深藍 #15458F、天空藍 #3EA8EF、奶油 #FFF3D6、金色 #F4C558、墨色 #173351 */
-  --navy: #15458f;
-  --navy-deep: #173351;
-  --navy-soft: #3ea8ef;
-  --cream: #fff3d6;
-  --gold: #f4c558;
-  --gold-deep: #e0a83a;
-  --gold-line: #3ea8ef;
-  --stripe: #bfe3fa;
-  --accent: #ff8fa3;
-}
-/* 像素風格：直角、不要圓角與模糊陰影 */
-:root:is([data-style='pc98'], [data-style='msdos'], [data-style='gameboy']) :is(.panel, .card, input, select.vsel, .toast) {
-  border-radius: 0;
-}
-:root:is([data-style='pc98'], [data-style='msdos'], [data-style='gameboy']) img {
-  image-rendering: pixelated;
-}
+/* ---------- 畫風：其他五種畫風的色票與外觀在 src/skins.css ---------- */
 
 /* 英文、日文：中文排版用的寬字距拿掉（按鈕、標題原本用 letter-spacing＋text-indent 撐開） */
 :root:not(:lang(zh)) :is(*, *::before, *::after) {

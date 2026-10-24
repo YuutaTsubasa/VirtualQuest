@@ -41,7 +41,7 @@
     letter-spacing: 0.15em;
     line-height: 1.1;
     clip-path: polygon(0 10%, 4% 0, 90% 6%, 100% 0, 95% 45%, 100% 70%, 93% 100%, 5% 90%, 0 100%);
-    filter: drop-shadow(0.5cqh 0.5cqh 0 var(--navy));
+    filter: drop-shadow(0.5cqh 0.5cqh 0 var(--shade));
   }
   p {
     margin: 0;

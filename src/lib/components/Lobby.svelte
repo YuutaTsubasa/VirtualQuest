@@ -244,14 +244,14 @@
     top: -0.4cqh;
     z-index: 2;
     background: var(--c);
-    color: #fff;
+    color: var(--on-dark);
     font-size: 4.4cqh;
     font-weight: 900;
     font-style: italic;
     padding: 0 3cqh 0 1.2cqh;
     line-height: 1.15;
     clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%);
-    text-shadow: 0.25cqh 0.25cqh 0 var(--navy);
+    text-shadow: 0.25cqh 0.25cqh 0 var(--shade);
   }
   .pic {
     position: relative;
@@ -282,7 +282,7 @@
     translate: -50% -50%;
     width: 9cqh;
     height: 1.6cqh;
-    background: var(--navy);
+    background: var(--ink-fill);
   }
   .pic.plus::after {
     width: 1.6cqh;
@@ -312,7 +312,7 @@
     color: var(--navy-soft);
   }
   .role {
-    background: var(--navy);
+    background: var(--ink-fill);
     color: var(--on-dark);
     font-weight: 900;
     font-size: 2cqh;
@@ -341,7 +341,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.8cqh;
-    border-top: 0.2cqh solid var(--navy);
+    border-top: 0.2cqh solid var(--edge);
     padding-top: 1cqh;
   }
   .seat-actions:empty {
@@ -353,7 +353,7 @@
     box-shadow: 0.4cqh 0.4cqh 0 var(--teal);
   }
   .dark {
-    --face: var(--navy);
+    --face: var(--ink-fill);
     --fg: var(--on-dark);
   }
 
@@ -390,7 +390,7 @@
     font-weight: 900;
     letter-spacing: 0.25em;
     padding: 0.2cqh 1cqh;
-    border: var(--line) solid var(--navy);
+    border: var(--line) solid var(--edge);
     background: var(--paper-white);
     user-select: text;
   }
@@ -412,7 +412,7 @@
     flex: 1;
     min-width: 0;
     background: var(--paper-white);
-    border: 0.3cqh solid var(--navy);
+    border: 0.3cqh solid var(--edge);
     padding: 0.5cqh 1cqh;
     font-size: 2.2cqh;
     font-weight: 700;
@@ -424,7 +424,7 @@
     display: flex;
     gap: 1.2cqh;
     align-items: center;
-    border: 0.3cqh solid var(--navy);
+    border: 0.3cqh solid var(--edge);
     border-left: 1cqh solid var(--gold);
     padding: 0.8cqh 1.2cqh;
   }
@@ -454,7 +454,7 @@
     flex-wrap: wrap;
   }
   .tabs button {
-    border: 0.25cqh solid var(--navy);
+    border: 0.25cqh solid var(--edge);
     background: var(--paper-white);
     font-weight: 800;
     font-size: 1.8cqh;
@@ -491,7 +491,7 @@
     font-size: 2cqh;
     line-height: 1.5;
     background: var(--paper-white);
-    border: 0.25cqh solid var(--navy);
+    border: 0.25cqh solid var(--edge);
   }
   .chat .sys {
     color: var(--muted);
@@ -512,7 +512,7 @@
     width: 3cqh;
     height: 3cqh;
     border-radius: 50%;
-    background: var(--navy);
+    background: var(--ink-fill);
     color: var(--on-dark);
     display: grid;
     place-items: center;
@@ -537,7 +537,7 @@
     max-width: 92vw;
   }
   .char-dialog::backdrop {
-    background: rgba(22, 24, 29, 0.62);
+    background: var(--scrim);
   }
   .char-dialog .panel-body {
     min-height: 40cqh;

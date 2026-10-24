@@ -105,7 +105,7 @@
   .hero {
     position: absolute;
     bottom: 0;
-    filter: drop-shadow(0.6cqh 0.6cqh 0 rgba(32, 35, 41, 0.55));
+    filter: drop-shadow(0.6cqh 0.6cqh 0 var(--shade));
     pointer-events: none;
   }
   .hero.back-left {

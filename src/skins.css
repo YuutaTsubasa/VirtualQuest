@@ -1,499 +1,206 @@
 /* ---------- 畫風外觀（skin） ----------
-   app.css 是 90 年代的介面（切角按鈕、斜線裝飾、米白面板）。其他五種風格除了換顏色，
-   這裡還換掉形狀與質感：按鈕、面板、標題條、標題橫幅、提示列、輸入框、角色卡。
-   每種風格只要定義下面這組 --sk-* 變數，共用規則會套上去；特別的部分再各自補。
-   氣氛描述來自各風格的交件留言（art-inbox/messages）。 */
+   app.css 是 90 年代版（UI Concept v1：墨黑框、暖白紙、朱紅主按鈕、青綠點綴、右下實色陰影）。
+   介面全部用色票變數畫，所以其他五種畫風在這裡覆寫色票就會整套換掉；形狀、質感不同的地方再各自補幾條。
 
-/* ===== 共用：非 90 年代的風格不要切角與斜線 ===== */
-:root:is([data-style='pc98'], [data-style='msdos'], [data-style='gameboy'], [data-style='taiwan-print'], [data-style='modern-paint']) {
-  /* 按鈕 */
-  & .vbtn {
-    --face: var(--sk-face);
-    clip-path: none;
-    background: transparent;
-    border: var(--sk-btn-border);
-    border-radius: var(--sk-btn-radius);
-    box-shadow: var(--sk-btn-shadow);
-    color: var(--sk-btn-text);
-    font-family: var(--font);
-  }
-  & .vbtn::before {
-    inset: 0;
-    clip-path: none;
-    border-radius: inherit;
-    background: var(--face);
-  }
-  & .vbtn:is(.gold, .active, .primary, :hover:not(:disabled)) {
-    --face: var(--sk-face-on);
-    color: var(--sk-btn-text-on);
-  }
-  &[data-input='key'] .vbtn:focus-visible,
-  &[data-input='pad'] .vbtn:focus {
-    --face: var(--sk-face-on);
-    color: var(--sk-btn-text-on);
-  }
-  &[data-input='touch'] .vbtn:hover:not(:focus):not(.gold):not(.primary):not(.active) {
-    --face: var(--sk-face);
-    color: var(--sk-btn-text);
-  }
-  & .vbtn:active:not(:disabled) {
-    box-shadow: var(--sk-btn-shadow-pressed, none);
-  }
-  & .vbtn.arrow:is(:hover, :focus-visible, .active)::after,
-  &[data-input='pad'] .vbtn.arrow:focus::after {
-    border-left-color: var(--sk-btn-text-on);
-  }
-  & .vbtn.primary::after {
-    border-left-color: var(--sk-btn-text-on);
-  }
-  & .vbtn.back > .tri {
-    border-right-color: var(--sk-btn-text);
-  }
+   色票的意思（app.css 開頭）：
+     --cream 紙／面板底  --cream-deep 深一點的紙  --paper-white 卡片、輸入框  --navy-deep 整頁最外面的底
+     --ink 字  --edge 框線  --shade 右下的實色陰影  --ink-fill 墨色色塊（標題條、分頁）  --on-dark 色塊上的字
+     --accent 主要按鈕（朱紅）  --teal 次要（青綠）  --teal-soft 淡青綠底  --gold 選取、提示  --muted 次要文字
+     --dots 紙上的網點  --scrim 蓋在遊戲畫面上的遮罩  --face-hover 按鈕滑過  --navy-soft 鎖住、灰掉的格子
+   遊戲畫面（canvas）上的 HUD 也讀這些色票（src/lib/game/render.js 的 pal）。
+   色票來自各畫風交件留言與 retro-anime-game-kit 的風格表。 */
 
-  /* 面板與標題條 */
-  & .panel {
-    background: var(--sk-panel-bg);
-    border: var(--sk-panel-border);
-    border-radius: var(--sk-panel-radius);
-    box-shadow: var(--sk-panel-shadow);
-  }
-  & .panel.gold-frame,
-  & .style-card.selected {
-    border-color: var(--sk-highlight);
-    box-shadow: var(--sk-panel-shadow), 0 0 0 0.4cqh var(--sk-highlight);
-  }
-  & :is(.panel-head, .dialog-title) {
-    clip-path: none;
-    background: var(--sk-head-bg);
-    color: var(--sk-head-text);
-    border-radius: var(--sk-head-radius);
-    border-bottom: var(--sk-head-border, none);
-    text-shadow: var(--sk-head-shadow, none);
-  }
-  & :is(.panel-head, .dialog-title)::before,
-  & :is(.panel-head, .dialog-title)::after {
-    content: none;
-  }
-  & .dialog-title h2 {
-    color: var(--sk-head-text);
-  }
-  & .dialog-title p {
-    color: var(--sk-highlight);
-  }
-
-  /* 標題橫幅（每個選單畫面右上角） */
-  & .banner {
-    clip-path: none;
-    filter: none;
-    background: transparent;
-    border: var(--sk-banner-border);
-    border-radius: var(--sk-banner-radius);
-    box-shadow: var(--sk-banner-shadow);
-  }
-  & .banner::before {
-    inset: 0;
-    clip-path: none;
-    border-radius: inherit;
-    background: var(--sk-banner-bg);
-  }
-  & .banner h2 {
-    color: var(--sk-banner-title);
-    text-shadow: var(--sk-banner-title-shadow);
-    font-family: var(--font);
-  }
-  & .banner p {
-    background: var(--sk-banner-sub-bg);
-    color: var(--sk-banner-sub-text);
-    border-color: var(--sk-banner-sub-line);
-  }
-  & .frame-head::after {
-    background: var(--sk-rule);
-    border-color: var(--sk-rule-line);
-  }
-
-  /* 提示列 */
-  & .hint-bar {
-    clip-path: none;
-    background: var(--sk-hint-bg);
-    color: var(--sk-hint-text);
-    border: var(--sk-hint-border);
-    border-radius: var(--sk-hint-radius);
-  }
-  & .hint-bar::before,
-  & .hint-bar::after {
-    content: none;
-  }
-
-  /* 輸入框 */
-  & :is(input, select.vsel) {
-    background: var(--sk-input-bg);
-    color: var(--sk-input-text);
-    border: var(--sk-input-border);
-    border-radius: var(--sk-input-radius);
-    font-family: var(--font);
-  }
-  & input::placeholder {
-    color: var(--sk-placeholder, #9aa3ba);
-  }
-
-  /* 角色卡 */
-  & .card {
-    border: var(--sk-card-border);
-    border-radius: var(--sk-card-radius);
-    background: var(--sk-card-bg);
-  }
-  & .card span {
-    background: var(--sk-card-label-bg);
-    color: var(--sk-card-label-text);
-  }
-  & .card.selected,
-  & .card.looking:not(.selected) {
-    border-color: var(--sk-highlight);
-  }
-  & .card.selected {
-    box-shadow: 0 0 0 0.45cqh var(--sk-highlight);
-  }
-  & .card.selected::after {
-    background: var(--sk-highlight);
-    color: var(--sk-highlight-text);
-  }
-  & .stat .bar i {
-    transform: none;
-    border-color: var(--sk-panel-line);
-    background: var(--sk-stat-off);
-  }
-  & .stat .bar i.on {
-    background: var(--sk-stat-on);
-  }
-}
-
-/* ===== MS-DOS：灰色立體斜邊的對話框、深藍標題列、亮黃選取 ===== */
-:root[data-style='msdos'] {
-  --sk-bevel: #f4f6fa #4a5568 #4a5568 #f4f6fa;
-  --sk-face: #c8ccd4;
-  --sk-face-on: #ffd23f;
-  --sk-btn-text: #101828;
-  --sk-btn-text-on: #101828;
-  --sk-btn-border: 0.5cqh solid;
-  --sk-btn-radius: 0;
-  --sk-btn-shadow: 0.7cqh 0.7cqh 0 #000;
-  --sk-btn-shadow-pressed: 0.2cqh 0.2cqh 0 #000;
-  --sk-panel-bg: #c8ccd4;
-  --sk-panel-border: 0.5cqh solid;
-  --sk-panel-radius: 0;
-  --sk-panel-shadow: 1cqh 1cqh 0 rgba(0, 0, 0, 0.7);
-  --sk-panel-line: #4a5568;
-  --sk-head-bg: #243c7a;
-  --sk-head-text: #f6f1d8;
-  --sk-head-radius: 0;
-  --sk-banner-bg: #243c7a;
-  --sk-banner-border: 0.7cqh double #c8ccd4;
-  --sk-banner-radius: 0;
-  --sk-banner-shadow: 1cqh 1cqh 0 #000;
-  --sk-banner-title: #ffd23f;
-  --sk-banner-title-shadow: 0.4cqh 0.4cqh 0 #000;
-  --sk-banner-sub-bg: #101828;
-  --sk-banner-sub-text: #f6f1d8;
-  --sk-banner-sub-line: #9ca8b8;
-  --sk-rule: #9ca8b8;
-  --sk-rule-line: #4a5568;
-  --sk-hint-bg: #101828;
-  --sk-hint-text: #f6f1d8;
-  --sk-hint-border: 0.3cqh solid #9ca8b8;
-  --sk-hint-radius: 0;
-  --sk-input-bg: #101828;
-  --sk-input-text: #ffd23f;
-  --sk-placeholder: #9ca8b8;
-  --sk-input-border: 0.4cqh solid;
-  --sk-input-radius: 0;
-  --sk-card-border: 0.4cqh solid #4a5568;
-  --sk-card-radius: 0;
-  --sk-card-bg: #243c7a;
-  --sk-card-label-bg: #243c7a;
-  --sk-card-label-text: #f6f1d8;
-  --sk-highlight: #ffd23f;
-  --sk-highlight-text: #101828;
-  --sk-stat-off: #9ca8b8;
-  --sk-stat-on: #243c7a;
-  --navy-soft: #243c7a;
-
-  /* 立體斜邊：左上亮、右下暗 */
-  & :is(.vbtn, .panel) {
-    border-color: var(--sk-bevel);
-  }
-  & :is(input, select.vsel) {
-    border-color: #4a5568 #f4f6fa #f4f6fa #4a5568;
-  }
-  & :is(.panel-head, .dialog-title) {
-    margin: 0.5cqh 0.5cqh 0;
-    text-align: left;
-    padding-left: 2cqh;
-    letter-spacing: 0.1em;
-  }
-  & :is(.panel-head, .dialog-title)::before {
-    content: '■';
-    position: static;
-    margin-right: 1.4cqh;
-    background: none;
-    color: #9ca8b8;
-  }
-}
-
-/* ===== PC-98：深紫視窗、薰衣草雙線框、暖白文字、淡金選取 ===== */
+/* ===== PC-98：深靛紫的面板、米色字、薰衣草雙線框、玫瑰色主按鈕 ===== */
 :root[data-style='pc98'] {
-  --sk-face: #24203e;
-  --sk-face-on: #ffd69a;
-  --sk-btn-text: #fae8cd;
-  --sk-btn-text-on: #24203e;
-  --sk-btn-border: 0.6cqh double #9b80b4;
-  --sk-btn-radius: 0.3cqh;
-  --sk-btn-shadow: 0.6cqh 0.6cqh 0 #090d1c;
-  --sk-panel-bg: #24203e;
-  --sk-panel-border: 0.7cqh double #9b80b4;
-  --sk-panel-radius: 0.3cqh;
-  --sk-panel-shadow: 0.8cqh 0.8cqh 0 #090d1c;
-  --sk-panel-line: #9b80b4;
-  --sk-head-bg: transparent;
-  --sk-head-text: #ffd69a;
-  --sk-head-radius: 0;
-  --sk-head-border: 0.35cqh double #9b80b4;
-  --sk-banner-bg: #24203e;
-  --sk-banner-border: 0.8cqh double #9b80b4;
-  --sk-banner-radius: 0.4cqh;
-  --sk-banner-shadow: 0.9cqh 0.9cqh 0 #090d1c;
-  --sk-banner-title: #fae8cd;
-  --sk-banner-title-shadow: 0.35cqh 0.35cqh 0 #6fd3c1;
-  --sk-banner-sub-bg: transparent;
-  --sk-banner-sub-text: #ffd69a;
-  --sk-banner-sub-line: #9b80b4;
-  --sk-rule: #9b80b4;
-  --sk-rule-line: #24203e;
-  --sk-hint-bg: #24203e;
-  --sk-hint-text: #fae8cd;
-  --sk-hint-border: 0.5cqh double #9b80b4;
-  --sk-hint-radius: 0.3cqh;
-  --sk-input-bg: #111329;
-  --sk-input-text: #fae8cd;
-  --sk-placeholder: #8a7fae;
-  --sk-input-border: 0.3cqh solid #9b80b4;
-  --sk-input-radius: 0;
-  --sk-card-border: 0.35cqh solid #9b80b4;
-  --sk-card-radius: 0.2cqh;
-  --sk-card-bg: #111329;
-  --sk-card-label-bg: #111329;
-  --sk-card-label-text: #fae8cd;
-  --sk-highlight: #ffd69a;
-  --sk-highlight-text: #24203e;
-  --sk-stat-off: #111329;
-  --sk-stat-on: #6fd3c1;
-
-  /* 深色視窗裡的字改成暖白（面板內的 --navy 是「文字色」） */
-  & :is(.panel, .dialog) {
-    --navy: #fae8cd;
-    --navy-soft: #c9b8e8;
-    --muted: #b8acd4;
-    --cream: #24203e;
-    --on-dark: #24203e;
-    --paper-white: #111329;
-    color: #fae8cd;
-  }
-  & :is(.panel-head, .dialog-title) {
-    margin: 0.8cqh 1.6cqh 0;
-    padding-bottom: 0.6cqh;
-  }
-  & :is(.plate, .role, .badge) {
-    color: #24203e;
-  }
-  & .plate {
-    background: #fae8cd;
-  }
+  --navy: #fae8cd;
+  --ink: #fae8cd;
+  --edge: #9b80b4;
+  --shade: #08091a;
+  --ink-fill: #5b4f86;
+  --on-dark: #fae8cd;
+  --cream: #24203e;
+  --cream-deep: #1b1832;
+  --paper-white: #2f2952;
+  --navy-deep: #111329;
+  --navy-soft: #4a4270;
+  --accent: #d9587a;
+  --teal: #3f9e95;
+  --teal-soft: #232b48;
+  --gold: #ffd69a;
+  --gold-deep: #d9a05a;
+  --muted: #b3a6c9;
+  --dots: rgba(155, 128, 180, 0.22);
+  --scrim: rgba(8, 9, 26, 0.72);
+  --face-hover: #3a3266;
+  --hud-panel: rgba(17, 19, 41, 0.92);
+  --font: 'MingLiU', '細明體', 'PMingLiU', 'MS Mincho', serif;
+}
+/* 薰衣草雙線框 */
+:root[data-style='pc98'] :is(.panel, .vbtn, .card) {
+  outline: 0.25cqh solid var(--edge);
+  outline-offset: -0.9cqh;
+}
+:root[data-style='pc98'] .vbtn.small {
+  outline-offset: -0.6cqh;
 }
 
-/* ===== Game Boy：四色綠、粗方形像素框線、沒有漸層和陰影 ===== */
-:root[data-style='gameboy'] {
-  --sk-face: #8bac0f;
-  --sk-face-on: #0f380f;
-  --sk-btn-text: #0f380f;
-  --sk-btn-text-on: #9bbc0f;
-  --sk-btn-border: 0.6cqh solid #0f380f;
-  --sk-btn-radius: 0;
-  --sk-btn-shadow: inset 0 0 0 0.35cqh #306230;
-  --sk-panel-bg: #9bbc0f;
-  --sk-panel-border: 0.7cqh solid #0f380f;
-  --sk-panel-radius: 0;
-  --sk-panel-shadow: inset 0 0 0 0.45cqh #306230, 0.7cqh 0.7cqh 0 #306230;
-  --sk-panel-line: #0f380f;
-  --sk-head-bg: #306230;
-  --sk-head-text: #9bbc0f;
-  --sk-head-radius: 0;
-  --sk-banner-bg: #0f380f;
-  --sk-banner-border: 0.7cqh solid #306230;
-  --sk-banner-radius: 0;
-  --sk-banner-shadow: 0.7cqh 0.7cqh 0 #0f380f;
-  --sk-banner-title: #9bbc0f;
-  --sk-banner-title-shadow: 0.4cqh 0.4cqh 0 #306230;
-  --sk-banner-sub-bg: #306230;
-  --sk-banner-sub-text: #9bbc0f;
-  --sk-banner-sub-line: #8bac0f;
-  --sk-rule: #306230;
-  --sk-rule-line: #0f380f;
-  --sk-hint-bg: #8bac0f;
-  --sk-hint-text: #0f380f;
-  --sk-hint-border: 0.5cqh solid #0f380f;
-  --sk-hint-radius: 0;
-  --sk-input-bg: #9bbc0f;
-  --sk-input-text: #0f380f;
-  --sk-placeholder: #306230;
-  --sk-input-border: 0.5cqh solid #0f380f;
-  --sk-input-radius: 0;
-  --sk-card-border: 0.5cqh solid #0f380f;
-  --sk-card-radius: 0;
-  --sk-card-bg: #8bac0f;
-  --sk-card-label-bg: #0f380f;
-  --sk-card-label-text: #9bbc0f;
-  --sk-highlight: #306230;
-  --sk-highlight-text: #9bbc0f;
-  --sk-stat-off: #9bbc0f;
-  --sk-stat-on: #306230;
-
-  /* 只用四色：把其他地方的漸層、半透明陰影、彩色徽章都收掉 */
-  & :is(.who, .who.cpu, .who.p2, .badge, .role, .card .tag, .toast) {
-    background: #0f380f;
-    color: #9bbc0f;
-  }
-  & :is(.frame-pic, .portrait, .result-pic, .pic, .stage-art) {
-    background: #8bac0f;
-  }
-  & .screen.overlay {
-    background: rgba(15, 56, 15, 0.6);
-  }
-  & :is(.vs, .result-score) {
-    color: #9bbc0f;
-    -webkit-text-stroke-color: #0f380f;
-  }
-  & * {
-    text-shadow: none;
-  }
+/* ===== MS-DOS：VGA 深藍面板、灰色立體斜邊按鈕、亮黃選取 ===== */
+:root[data-style='msdos'] {
+  --navy: #f6f1d8;
+  --ink: #f6f1d8;
+  --edge: #9ca8b8;
+  --shade: #000000;
+  --ink-fill: #0000a8;
+  --on-dark: #ffffff;
+  --cream: #243c7a;
+  --cream-deep: #1a2d5e;
+  --paper-white: #2d4a94;
+  --navy-deep: #101828;
+  --navy-soft: #4a5a78;
+  --accent: #a80000;
+  --teal: #00a8a8;
+  --teal-soft: #1a3866;
+  --gold: #ffd23f;
+  --gold-deep: #d9a800;
+  --muted: #a8b4c4;
+  --dots: rgba(156, 168, 184, 0.16);
+  --scrim: rgba(0, 0, 0, 0.7);
+  --face-hover: #34569e;
+  --hud-panel: rgba(16, 24, 40, 0.94);
+  --font: 'Cascadia Mono', 'Consolas', 'MingLiU', '細明體', monospace;
+}
+/* 灰色立體斜邊：左上亮、右下暗，按下去反過來 */
+:root[data-style='msdos'] :is(.vbtn, .panel, .card, input, select.vsel) {
+  border-color: #dfe6ee #4a5568 #4a5568 #dfe6ee;
+}
+:root[data-style='msdos'] .vbtn:active:not(:disabled) {
+  border-color: #4a5568 #dfe6ee #dfe6ee #4a5568;
+}
+:root[data-style='msdos'] :is(.vbtn.arrow.active, .vbtn.arrow:focus-visible) {
+  --face: var(--gold);
+  --fg: #101828;
 }
 
-/* ===== 台式印刷：暖紙色、網點、粗墨框、紅／青套色偏移 ===== */
+/* ===== 台式印刷：暖色海報紙、墨藍線、朱紅錯版陰影、紅色網點、標楷體 ===== */
 :root[data-style='taiwan-print'] {
-  --halftone: radial-gradient(rgba(16, 32, 68, 0.13) 24%, transparent 27%) 0 0 / 0.9cqh 0.9cqh;
-  --halftone-red: radial-gradient(rgba(233, 75, 50, 0.22) 24%, transparent 27%) 0 0 / 0.9cqh 0.9cqh;
-  --sk-face: var(--halftone), #fff1c2;
-  --sk-face-on: var(--halftone-red), #f6c334;
-  --sk-btn-text: #102044;
-  --sk-btn-text-on: #102044;
-  --sk-btn-border: 0.5cqh solid #102044;
-  --sk-btn-radius: 0.3cqh;
-  --sk-btn-shadow: 0.7cqh 0.7cqh 0 #e94b32, -0.3cqh -0.3cqh 0 rgba(18, 140, 150, 0.6);
-  --sk-btn-shadow-pressed: 0.2cqh 0.2cqh 0 #e94b32;
-  --sk-panel-bg: var(--halftone), #fff1c2;
-  --sk-panel-border: 0.6cqh solid #102044;
-  --sk-panel-radius: 0.4cqh;
-  --sk-panel-shadow: 0.9cqh 0.9cqh 0 #e94b32, -0.35cqh -0.35cqh 0 rgba(18, 140, 150, 0.55);
-  --sk-panel-line: #102044;
-  --sk-head-bg: #128c96;
-  --sk-head-text: #fff1c2;
-  --sk-head-radius: 0.2cqh;
-  --sk-head-border: 0.4cqh solid #102044;
-  --sk-head-shadow: 0.3cqh 0.3cqh 0 #e94b32;
-  --sk-banner-bg: var(--halftone), #e94b32;
-  --sk-banner-border: 0.6cqh solid #102044;
-  --sk-banner-radius: 0.4cqh;
-  --sk-banner-shadow: 1cqh 1cqh 0 #128c96;
-  --sk-banner-title: #fff1c2;
-  --sk-banner-title-shadow: 0.45cqh 0.45cqh 0 #102044, -0.25cqh -0.25cqh 0 #f6c334;
-  --sk-banner-sub-bg: #102044;
-  --sk-banner-sub-text: #f6c334;
-  --sk-banner-sub-line: #fff1c2;
-  --sk-rule: repeating-linear-gradient(90deg, #e94b32 0 4cqh, #f6c334 4cqh 8cqh, #128c96 8cqh 12cqh);
-  --sk-rule-line: #102044;
-  --sk-hint-bg: var(--halftone), #fff1c2;
-  --sk-hint-text: #102044;
-  --sk-hint-border: 0.4cqh solid #102044;
-  --sk-hint-radius: 0.3cqh;
-  --sk-input-bg: #fffaf0;
-  --sk-input-text: #102044;
-  --sk-input-border: 0.4cqh solid #102044;
-  --sk-input-radius: 0.2cqh;
-  --sk-card-border: 0.45cqh solid #102044;
-  --sk-card-radius: 0.3cqh;
-  --sk-card-bg: var(--halftone), #f6c334;
-  --sk-card-label-bg: #102044;
-  --sk-card-label-text: #fff1c2;
-  --sk-highlight: #e94b32;
-  --sk-highlight-text: #fff1c2;
-  --sk-stat-off: #fff1c2;
-  --sk-stat-on: #e94b32;
-
-  & .banner h2 {
-    letter-spacing: 0.25em;
-  }
+  --navy: #102044;
+  --ink: #102044;
+  --edge: #102044;
+  --shade: #e94b32;
+  --ink-fill: #102044;
+  --on-dark: #fff1c2;
+  --cream: #fff1c2;
+  --cream-deep: #f5dfa0;
+  --paper-white: #fff8dc;
+  --navy-deep: #0a1530;
+  --navy-soft: #6f7a8f;
+  --accent: #e94b32;
+  --teal: #128c96;
+  --teal-soft: #d3ece6;
+  --gold: #f6c334;
+  --gold-deep: #e94b32;
+  --muted: #5a5f70;
+  --dots: rgba(233, 75, 50, 0.24);
+  --scrim: rgba(10, 21, 48, 0.66);
+  --face-hover: #ffe9a8;
+  --hud-panel: rgba(16, 32, 68, 0.92);
+  --line: 0.42cqh;
+  --font: 'DFKai-SB', '標楷體', 'BiauKai', 'Kaiti TC', 'KaiTi', serif;
 }
 
-/* ===== 動漫電影：清透的藍色面板、細框、圓角、柔和光暈 ===== */
-:root[data-style='modern-paint'] {
-  --sk-face: linear-gradient(#ffffff, #fff3d6);
-  --sk-face-on: linear-gradient(#fff2c6, #f4c558);
-  --sk-btn-text: #173351;
-  --sk-btn-text-on: #173351;
-  --sk-btn-border: 0.25cqh solid rgba(21, 69, 143, 0.35);
-  --sk-btn-radius: 99cqh;
-  --sk-btn-shadow: 0 0.6cqh 1.6cqh rgba(21, 69, 143, 0.22), inset 0 0.2cqh 0 rgba(255, 255, 255, 0.9);
-  --sk-btn-shadow-pressed: 0 0.2cqh 0.6cqh rgba(21, 69, 143, 0.3);
-  --sk-panel-bg: rgba(255, 249, 236, 0.82);
-  --sk-panel-border: 0.25cqh solid rgba(255, 255, 255, 0.9);
-  --sk-panel-radius: 2cqh;
-  --sk-panel-shadow: 0 1.2cqh 3.2cqh rgba(10, 36, 80, 0.28), 0 0 0 0.2cqh rgba(21, 69, 143, 0.25);
-  --sk-panel-line: rgba(21, 69, 143, 0.4);
-  --sk-head-bg: linear-gradient(90deg, #15458f, #3ea8ef);
-  --sk-head-text: #ffffff;
-  --sk-head-radius: 1.4cqh;
-  --sk-head-shadow: 0 0.2cqh 0.6cqh rgba(0, 0, 0, 0.25);
-  --sk-banner-bg: linear-gradient(135deg, rgba(21, 69, 143, 0.92), rgba(62, 168, 239, 0.86));
-  --sk-banner-border: 0.3cqh solid rgba(255, 255, 255, 0.8);
-  --sk-banner-radius: 2.6cqh;
-  --sk-banner-shadow: 0 1.2cqh 3cqh rgba(10, 36, 80, 0.35), 0 0 2.4cqh rgba(244, 197, 88, 0.35);
-  --sk-banner-title: #ffffff;
-  --sk-banner-title-shadow: 0 0.3cqh 1.2cqh rgba(10, 36, 80, 0.5);
-  --sk-banner-sub-bg: transparent;
-  --sk-banner-sub-text: #ffe5b4;
-  --sk-banner-sub-line: transparent;
-  --sk-rule: linear-gradient(90deg, transparent, #f4c558 20%, #3ea8ef 80%, transparent);
-  --sk-rule-line: transparent;
-  --sk-hint-bg: rgba(255, 249, 236, 0.8);
-  --sk-hint-text: #173351;
-  --sk-hint-border: 0.2cqh solid rgba(255, 255, 255, 0.9);
-  --sk-hint-radius: 99cqh;
-  --sk-input-bg: rgba(255, 255, 255, 0.92);
-  --sk-input-text: #173351;
-  --sk-input-border: 0.25cqh solid rgba(21, 69, 143, 0.35);
-  --sk-input-radius: 1.2cqh;
-  --sk-card-border: 0.3cqh solid rgba(255, 255, 255, 0.95);
-  --sk-card-radius: 1.2cqh;
-  --sk-card-bg: linear-gradient(#3ea8ef, #a9dcff);
-  --sk-card-label-bg: linear-gradient(90deg, #15458f, #3ea8ef);
-  --sk-card-label-text: #ffffff;
-  --sk-highlight: #f4c558;
-  --sk-highlight-text: #173351;
-  --sk-stat-off: rgba(21, 69, 143, 0.12);
-  --sk-stat-on: linear-gradient(90deg, #3ea8ef, #f4c558);
+/* ===== Game Boy：只有四種綠 ===== */
+:root[data-style='gameboy'] {
+  --navy: #0f380f;
+  --ink: #0f380f;
+  --edge: #0f380f;
+  --shade: #306230;
+  --ink-fill: #0f380f;
+  --on-dark: #9bbc0f;
+  --cream: #9bbc0f;
+  --cream-deep: #8bac0f;
+  --paper-white: #9bbc0f;
+  --navy-deep: #0f380f;
+  --navy-soft: #306230;
+  --accent: #306230;
+  --accent2: #306230;
+  --teal: #306230;
+  --teal-soft: #8bac0f;
+  --sea: #306230;
+  --ok: #306230;
+  --red: #0f380f;
+  --gold: #8bac0f;
+  --gold-deep: #306230;
+  --gold-line: #306230;
+  --stripe: #306230;
+  --muted: #306230;
+  --hud-portrait: #8bac0f;
+  --dots: #8bac0f;
+  --scrim: rgba(15, 56, 15, 0.8);
+  --face-hover: #8bac0f;
+  --hud-panel: #0f380f;
+  --hud-hp: #8bac0f;
+  --font: 'MingLiU', '細明體', monospace;
+}
+/* 四色以外的東西（模糊陰影、半透明網點、濾鏡）拿掉 */
+:root[data-style='gameboy'] :is(.panel, .vbtn, .card, .toast) {
+  filter: none;
+}
+/* 1P～4P 的顏色也只能用四色（元件用 inline style 給 --c／--slot，所以要 !important）；遊戲畫面讀 --p1～--p4 */
+:root[data-style='gameboy'] {
+  --p1: #0f380f;
+  --p2: #306230;
+  --p3: #0f380f;
+  --p4: #306230;
+}
+:root[data-style='gameboy'] :is(.slot, .seat) {
+  --c: #0f380f !important;
+}
+:root[data-style='gameboy'] .tag {
+  --slot: #0f380f !important;
+}
+/* Logo 先用濾鏡壓成綠色（四色版的 Logo 請 Codex 在介面包一起畫） */
+:root[data-style='gameboy'] img.logo {
+  filter: grayscale(1) sepia(1) hue-rotate(45deg) saturate(2.2) brightness(0.75) contrast(1.4);
+}
 
-  & .panel {
-    backdrop-filter: blur(1.2cqh) saturate(1.2);
-  }
-  & .hint-bar {
-    backdrop-filter: blur(1cqh);
-  }
-  & .vbtn:is(.gold, .active, .primary, :hover:not(:disabled)) {
-    box-shadow: 0 0.6cqh 2cqh rgba(244, 197, 88, 0.55), inset 0 0.2cqh 0 rgba(255, 255, 255, 0.9);
-  }
-  & .card {
-    box-shadow: 0 0.6cqh 1.4cqh rgba(10, 36, 80, 0.25);
-  }
-  & .stat .bar i {
-    border-radius: 99cqh;
-    border-width: 0.15cqh;
-  }
+/* ===== 動漫電影：奶油底、天空藍、細線、柔和的光 ===== */
+:root[data-style='modern-paint'] {
+  --navy: #173351;
+  --ink: #173351;
+  --edge: #15458f;
+  --shade: rgba(21, 69, 143, 0.28);
+  --ink-fill: #15458f;
+  --on-dark: #fff3d6;
+  --cream: #fff3d6;
+  --cream-deep: #f3e3bf;
+  --paper-white: #fffaf0;
+  --navy-deep: #0d2647;
+  --navy-soft: #7d8ea8;
+  --accent: #e8576b;
+  --teal: #3ea8ef;
+  --teal-soft: #d9eefc;
+  --gold: #f4c558;
+  --gold-deep: #e0a83a;
+  --muted: #5d6f8c;
+  --dots: rgba(62, 168, 239, 0.2);
+  --scrim: rgba(13, 38, 71, 0.55);
+  --face-hover: #fffdf6;
+  --hud-panel: rgba(13, 38, 71, 0.82);
+  --line: 0.22cqh;
+}
+/* 陰影改成柔和的光暈 */
+:root[data-style='modern-paint'] :is(.panel, .vbtn, .card) {
+  box-shadow: 0 0.6cqh 2cqh var(--shade);
+}
+
+/* ===== 像素風格共用：直角、像素放大不模糊、字不要反鋸齒 ===== */
+:root:is([data-style='pc98'], [data-style='msdos'], [data-style='gameboy']) {
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+:root:is([data-style='pc98'], [data-style='msdos'], [data-style='gameboy']) :is(.panel, .card, .vbtn, input, select.vsel, .toast) {
+  border-radius: 0;
+}
+:root:is([data-style='pc98'], [data-style='msdos'], [data-style='gameboy']) img {
+  image-rendering: pixelated;
 }

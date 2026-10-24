@@ -25,9 +25,9 @@
     height: 8cqh;
     flex: none;
     padding: 0.8cqh;
-    border: var(--line) solid var(--navy);
+    border: var(--line) solid var(--edge);
     background: var(--cream);
-    box-shadow: 0.5cqh 0.5cqh 0 var(--navy);
+    box-shadow: 0.5cqh 0.5cqh 0 var(--shade);
     transition: transform 0.15s;
   }
   .settings-btn:hover {

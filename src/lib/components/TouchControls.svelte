@@ -135,7 +135,7 @@
     pointer-events: auto;
     box-shadow: none;
     background: var(--cream);
-    border: 0.4cqh solid var(--navy);
+    border: 0.4cqh solid var(--edge);
   }
   .pause img {
     width: 70%;

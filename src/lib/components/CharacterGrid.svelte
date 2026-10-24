@@ -76,7 +76,7 @@
     flex: 1;
     display: grid;
     place-items: center;
-    background: #4a4f5a;
+    background: var(--navy-soft);
   }
   .lock img {
     width: 55%;
