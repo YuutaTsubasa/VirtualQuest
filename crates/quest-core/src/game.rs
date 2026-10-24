@@ -386,6 +386,8 @@ pub struct Player {
     pub body: Body,
     pub lives: i32,
     pub score: u32,
+    /// 必殺氣（0..=SP_MAX）：普通攻擊打中、被打會集氣，滿了才能放必殺
+    pub sp: i32,
     /// 用完命、出局（下一小關會以 1 條命回來）
     pub out: bool,
     /// 連段第幾下（0 起算）
@@ -545,6 +547,8 @@ pub enum Event {
     Hit { x: f32, y: f32, big: bool, by: Option<usize> },
     Hurt { slot: usize, x: f32, y: f32, big: bool },
     Special { slot: usize },
+    /// 按了必殺但氣不夠
+    NoSp { slot: usize },
     Grab { slot: usize },
     Throw { slot: usize },
     Land { x: f32, z: f32 },
@@ -637,6 +641,7 @@ impl Match {
                     tap_dir: 0.0,
                     tap_timer: 0,
                     kos: 0,
+                    sp: SP_START,
                 }
             })
             .collect();
@@ -776,6 +781,14 @@ impl Match {
                 self.update_camera();
                 self.update_waves();
                 self.check_over();
+                // 被打也會集氣（被圍著打的時候比較快能放必殺脫身）
+                for e in &self.events {
+                    if let Event::Hurt { slot, .. } = *e {
+                        if let Some(p) = self.players.iter_mut().find(|p| p.slot == slot) {
+                            gain_sp(p, SP_HURT);
+                        }
+                    }
+                }
             }
             Phase::Clear => {
                 self.timer -= 1;
@@ -831,6 +844,10 @@ impl Match {
             let speed = p.stats.speed;
             let sp = p.special;
             let power = p.stats.power;
+            let ready = p.sp >= SP_MAX;
+            if inp.special_pressed && !ready && matches!(p.body.act, Act::Stand | Act::Walk | Act::Run) {
+                self.events.push(Event::NoSp { slot });
+            }
             let b = &mut p.body;
             b.t += 1;
             b.inv = (b.inv - 1).max(0);
@@ -853,8 +870,9 @@ impl Match {
             match b.act {
                 Act::Run => {
                     // 放開方向、或按了反方向：停下來
-                    if inp.special_pressed || (inp.attack_pressed && inp.jump_pressed) {
+                    if ready && (inp.special_pressed || (inp.attack_pressed && inp.jump_pressed)) {
                         begin_special(b, &sp);
+                        p.sp = 0;
                         self.events.push(Event::Special { slot });
                     } else if inp.jump_pressed {
                         // 跑步跳：跳得比較遠
@@ -883,8 +901,9 @@ impl Match {
                     self.events.push(Event::Step { x: b.x, z: b.z });
                 }
                 Act::Stand | Act::Walk => {
-                    if inp.special_pressed || (inp.attack_pressed && inp.jump_pressed) {
+                    if ready && (inp.special_pressed || (inp.attack_pressed && inp.jump_pressed)) {
                         begin_special(b, &sp);
+                        p.sp = 0;
                         self.events.push(Event::Special { slot });
                     } else if inp.jump_pressed {
                         b.set(Act::Jump, 0);
@@ -973,8 +992,6 @@ impl Match {
                                 owner: Some(slot),
                                 hits: Vec::new(),
                             });
-                            let cost = (b.max_hp as f32 * 0.06) as i32;
-                            b.hp = (b.hp - cost).max(1);
                         }
                         if sp.quake {
                             self.events.push(Event::Quake { x: b.x, z: b.z });
@@ -1079,6 +1096,7 @@ impl Match {
                             b.hold = None;
                             b.attack(Move::Throw);
                             p.score += dmg as u32 * 10;
+                            p.sp = (p.sp + SP_BIG).min(SP_MAX);
                             self.events.push(Event::Throw { slot });
                         } else {
                             p.knees += 1;
@@ -1089,6 +1107,7 @@ impl Match {
                             b.mv = Move::Knee;
                             b.dur = b.t + 10;
                             p.score += dmg as u32 * 10;
+                            p.sp = (p.sp + SP_HIT).min(SP_MAX);
                             self.events.push(Event::Hit { x: e.body.x, y: e.body.z - 70.0, big: false, by: Some(slot) });
                         }
                     } else if b.t > 110 {
@@ -1106,6 +1125,7 @@ impl Match {
                         if p.lives > 0 {
                             // 從畫面上方掉回來
                             b.hp = b.max_hp;
+                            p.sp = p.sp.max(SP_START);
                             b.x = (self.camera + 160.0).max(b.x.min(self.camera + W - 160.0));
                             b.z = (Z_TOP + Z_BOTTOM) / 2.0;
                             b.y = 420.0;
@@ -1597,6 +1617,10 @@ impl Match {
                 }
                 p.body.hit_list.push(e.id);
                 landed = true;
+                if !special {
+                    let big = matches!(p.body.mv, Move::Kick | Move::DashAttack | Move::JumpKick);
+                    gain_sp(p, if big { SP_BIG } else { SP_HIT });
+                }
                 let dmg = (d.dmg * p.stats.power) as i32;
                 let dir = if d.omni { (e.body.x - p.body.x).signum() } else { p.body.facing };
                 let was_alive = e.body.hp > 0;
@@ -1645,11 +1669,6 @@ impl Match {
                 self.events.push(Event::Hit { x: pr.x, y: pr.z - 40.0, big: false, by: Some(slot) });
             }
             if landed {
-                // 必殺技第一次打中才扣自己的血（不會扣到死）
-                if p.body.mv == Move::Special && !p.body.connected {
-                    let cost = (p.body.max_hp as f32 * 0.06) as i32;
-                    p.body.hp = (p.body.hp - cost).max(1);
-                }
                 p.body.connected = true;
             }
         }
@@ -1866,6 +1885,21 @@ impl Match {
             self.events.push(Event::Over);
         }
     }
+}
+
+/// 必殺氣：滿了才能放必殺，放一次用光
+pub const SP_MAX: i32 = 100;
+/// 開場、掉命回來時有半條，馬上就能靠攻擊集滿
+const SP_START: i32 = 50;
+/// 普通攻擊打中一個敵人
+const SP_HIT: i32 = 5;
+/// 連段第三下、衝刺攻擊、跳踢、膝擊、丟人打中
+const SP_BIG: i32 = 9;
+/// 自己被打
+const SP_HURT: i32 = 6;
+
+fn gain_sp(p: &mut Player, n: i32) {
+    p.sp = (p.sp + n).min(SP_MAX);
 }
 
 /// 開始放必殺

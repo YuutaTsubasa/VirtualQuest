@@ -141,6 +141,14 @@ export function handleEvents(match) {
         }
         break;
       }
+      case 'nosp': {
+        // 氣不夠還按必殺：提示一下（同一個人不要一直跳字）
+        const p = playerOf(match, e.slot);
+        if (p && !floaters.some((f) => f.noSp === p.slot)) {
+          floaters.push({ x: p.x, y: p.z - 150, text: t('必殺氣不夠！'), life: 40, max: 40, color: '#c9ccd4', noSp: p.slot });
+        }
+        break;
+      }
       case 'stage': {
         const p = randomPlayer(match);
         if (p) say(p.slot, pickLine(p.character, 'go'), 140);
@@ -781,6 +789,21 @@ function hpBar(g, x, y, w, h, hp, max, frame = 0) {
   g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
 }
 
+// 必殺氣：杏黃，集滿了換成角色的必殺顏色並閃一下（滿了才能放必殺）
+const SP_MAX = 100;
+function spBar(g, x, y, w, h, sp, color, frame) {
+  g.fillStyle = '#3a3e46';
+  g.fillRect(x, y, w, h);
+  const full = sp >= SP_MAX;
+  g.fillStyle = full ? (Math.floor(frame / 8) % 2 ? '#ffffff' : color) : pal.flash;
+  g.fillRect(x, y, w * Math.min(1, sp / SP_MAX), h);
+  if (full) {
+    g.strokeStyle = color;
+    g.lineWidth = 1.5;
+    g.strokeRect(x - 0.5, y - 0.5, w + 1, h + 1);
+  }
+}
+
 // 毛筆刷過的長方形（標籤、章）：邊緣微微不齊
 function brush(g, x, y, w, h, color) {
   g.fillStyle = color;
@@ -853,13 +876,14 @@ function drawPlayerPanel(g, p, names, cpu, frame) {
     outlinedText(g, 'GAME OVER', x + 140, y + 40, 15, '#ff8b7e');
     return;
   }
-  hpBar(g, tx, y + 27, CARD.w - 70, 10, p.hp, p.maxHp, frame);
+  hpBar(g, tx, y + 25, CARD.w - 70, 9, p.hp, p.maxHp, frame);
+  spBar(g, tx, y + 36, CARD.w - 70, 5, p.sp ?? 0, p.character.specialColor, frame);
   g.font = `800 13px ${FONT}`;
   g.fillStyle = pal.text;
-  g.fillText(`♥ ×${Math.max(0, p.lives)}`, tx, y + 48);
+  g.fillText(`♥ ×${Math.max(0, p.lives)}`, tx, y + 49);
   g.textAlign = 'right';
   g.font = `900 14px ${FONT}`;
-  g.fillText(String(p.score).padStart(7, '0'), x + CARD.w - 8, y + 48);
+  g.fillText(String(p.score).padStart(7, '0'), x + CARD.w - 8, y + 49);
 }
 
 // 隊員牌下面的關卡標籤：「白色都市　1-1 白色大道」

@@ -42,11 +42,7 @@ export default {
   連段: 'Combo',
   跳踢: 'Jump kick',
   抓摔: 'Grab & throw',
-  '：敵人被打得搖晃時走過去就會抓住，按攻擊膝擊，第三下（或按反方向＋攻擊）丟出去，能撞倒其他敵人。':
-    ': Walk into a staggered enemy to grab them. Attack to knee; the third hit (or back + attack) throws them into other enemies.',
   '打破路上的箱子會掉出補血的食物或寶石。': 'Break crates along the way for healing food or gems.',
-  '一個人玩時方向鍵＋Z 攻擊、X 跳、C 必殺也可以；多人同樂時第 1 支手把是 1P、第 2 支是 2P，依此類推。':
-    'Solo, you can also use arrow keys + Z attack, X jump, C special. In party mode, gamepad 1 is 1P, gamepad 2 is 2P, and so on.',
   '打倒第一大關的魔王，會有隱藏角色加入。': 'Defeat the World 1 boss and a hidden character joins.',
 
   // 大廳、闖關設定
@@ -253,9 +249,12 @@ export default {
 
   // 跑步
   '跑步': 'Run',
-  '：連按攻擊，打中後接第二、三下，第三下會把敵人踢倒。單挑時傷害最高。': 'Tap attack; after a hit, chain the 2nd and 3rd blows — the 3rd kicks the enemy down. Best damage one-on-one.',
-  '：連按兩下左右（搖桿往同一邊推兩下）就會跑；跑步中按攻擊是衝刺攻擊，可以衝過一整排敵人（打空的話收招很久）、按跳跳得更遠。': 'Double-tap left or right (or push the stick twice) to run. Attack while running for a dash attack that plows through a whole line (long recovery if it whiffs); jump while running to leap farther.',
-  '：跳起來在空中按攻擊。用來接近、躲開包圍；傷害比連段低，落地也比較慢，魔王會用上勾拳打下來。': 'Press attack in mid-air. Good for closing in or escaping a crowd; weaker than a combo with slower landing, and bosses will uppercut you out of the air.',
-  '：每個人不同（選角色畫面看得到），被包圍時用（攻擊＋跳一起按也可以），打中會扣一點自己的體力。': 'Different for every character (see the select screen). Use it when surrounded (attack + jump together also works); landing it costs a little of your own HP.',
-  '：拳頭打他不會停下來，要用踢、跳踢、衝刺攻擊或丟人去撞。': 'Punches won’t stagger them — use kicks, jump kicks, dash attacks, or throw someone into them.',
+  '：連按攻擊打三下，第三下把敵人踢倒。單挑時傷害最高。': ': Tap attack for a three-hit combo; the third hit kicks them down. Best damage one-on-one.',
+  '：連按兩下左右就會跑。跑步中按攻擊是衝刺攻擊，能穿過一整排（打空收招很久）。': ': Double-tap left/right to run. Attack while running to dash through a whole line (long recovery on a miss).',
+  '：空中按攻擊。用來接近或逃出包圍，傷害較低，魔王會對空。': ': Attack in mid-air. For closing in or escaping; weaker, and bosses will knock you down.',
+  '：敵人搖晃時走過去抓住，按攻擊膝擊，第三下丟出去撞倒別人。': ': Walk into a staggered enemy to grab, attack to knee; the third throws them into others.',
+  '：每人不同。普通攻擊打中、被打都會集必殺氣，集滿才能放。': ': Unique to each character. Landing normal attacks and taking hits fill the gauge; it fires only when full.',
+  '：拳頭打不停他，用踢、跳踢、衝刺或丟人。': ': Punches won’t stop them — use kicks, jump kicks, dashes or throws.',
+  '一個人玩也能用方向鍵＋Z／X／C；手把依序是 1P、2P…': 'Solo players can also use the arrows + Z/X/C; gamepads are 1P, 2P… in order.',
+  '必殺氣不夠！': 'Gauge not full!',
 };

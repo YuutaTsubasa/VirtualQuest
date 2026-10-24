@@ -284,4 +284,23 @@ mod run {
         m.step(&[Input::default()]);
         assert_eq!(m.players[0].body.act, Act::Stand);
     }
+
+    /// 必殺要集滿氣才能放，放完氣就歸零（不能一直放）
+    #[test]
+    fn special_needs_full_gauge() {
+        let entrants = [Entrant { slot: 0, character: "xiaocui" }];
+        let mut m = Match::new(&entrants, 0, Difficulty::Easy, 3, 1);
+        while m.phase != Phase::Play {
+            m.step(&[Input::default()]);
+        }
+        let sp = Input { special_pressed: true, ..Input::default() };
+        assert!(m.players[0].sp < crate::game::SP_MAX);
+        m.step(&[sp]);
+        assert_ne!(m.players[0].body.mv, Move::Special, "氣不夠不能放");
+        m.players[0].sp = crate::game::SP_MAX;
+        m.step(&[Input::default()]);
+        m.step(&[sp]);
+        assert_eq!(m.players[0].body.mv, Move::Special);
+        assert_eq!(m.players[0].sp, 0);
+    }
 }

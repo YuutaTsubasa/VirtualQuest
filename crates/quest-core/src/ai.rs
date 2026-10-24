@@ -2,7 +2,7 @@
 //! 沒有敵人就跟著往右走（打箱子、跟上「GO →」）。
 //! 輸出跟真人一樣的 `Input`，所以模擬不用分辨誰是電腦。
 
-use crate::game::{Act, ItemKind, Match, Phase, Input, W};
+use crate::game::{Act, ItemKind, Match, Phase, Input, SP_MAX, W};
 use crate::characters::Reach;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -167,8 +167,8 @@ impl Ai {
             })
             .count();
         let need = 2;
-        if crowd >= need && self.special_cool == 0 && b.hp as f32 > b.max_hp as f32 * 0.25 && matches!(b.act, Act::Stand | Act::Walk) {
-            self.special_cool = 200;
+        if crowd >= need && me.sp >= SP_MAX && self.special_cool == 0 && matches!(b.act, Act::Stand | Act::Walk) {
+            self.special_cool = 60;
             if self.rng.gen_bool(cfg.special) {
                 out = Input { special_pressed: true, ..Input::default() };
             }
