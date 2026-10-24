@@ -2,6 +2,12 @@
 """把 ChatGPT 交的 90 年代美術包（art-inbox/<主題>/ 或 .zip）接進遊戲。
 
 用法：python scripts/import-quest-art.py art-inbox/anime90-trial
+      python scripts/import-quest-art.py art-inbox/pc98-characters.zip --style pc98
+
+--style（pc98 msdos taiwan-print gameboy modern-paint）：別的畫風。圖放 public/styles/<風格>/，
+  圖集的格子順序、欄數跟 anime90 完全一樣（遊戲的打擊判定、動作都不用改），只有格子大小與補償倍數
+  記在 sheets.json 的 styles.<風格>。像素風格用最近鄰縮回邏輯解析度（pc98／msdos 256、gameboy 128）、
+  無損 WebP，像素不會糊。這次沒交、這個畫風也還沒有的格子先借 anime90 的那一格（會印出來）。
 
 交件的結構見 art-inbox/README.md：
   characters/<id>/sprites/<動作>.png        512×512，腳底 (256, 496)
@@ -38,6 +44,11 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PUBLIC = os.path.join(ROOT, 'public')
 SHEETS = os.path.join(ROOT, 'src', 'lib', 'game', 'sheets.json')
+ANIME90_PUBLIC = PUBLIC
+STYLES = ['pc98', 'msdos', 'taiwan-print', 'gameboy', 'modern-paint']
+# 像素風格：交件是邏輯解析度 × 整數倍，接的時候縮回邏輯解析度（角色 512 → 256／128，魔王 768 → 384／192）
+PIXEL_DIV = {'pc98': 2, 'msdos': 2, 'gameboy': 4}
+STYLE = None  # main() 依 --style 設定
 MANIFEST = os.path.join(ROOT, 'src', 'lib', 'style-assets.json')
 
 CHARACTER_FRAMES = ['idle', 'walk1', 'walk2', 'punch1', 'punch2', 'kick', 'jump', 'jumpkick',
@@ -71,6 +82,7 @@ def load(path):
 
 
 def save(im, rel, lossless=False):
+    lossless = lossless or STYLE in PIXEL_DIV
     out = os.path.join(PUBLIC, rel)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     if lossless:
@@ -139,24 +151,78 @@ def kept_fix(before, names, folder):
     return {f: v for f, v in (before or {}).get('fix', {}).items() if f not in redrawn}
 
 
-def strip(frames, folder, cell, cols=None, keep=None):
+def strip(frames, folder, cell, cols=None, keep=None, exact=False):
     """把有的格子排成圖集；回傳（圖, 實際有的格子名, 欄數）。
-    keep：原本圖集裡的格子，這次沒交的就沿用（例如只補交跑步 3 格）"""
+    keep：原本圖集裡的格子，這次沒交的就沿用（例如只補交跑步 3 格）
+    exact：別的畫風——格子固定照 frames 的順序（anime90 那張圖集的順序），沒有的從 keep 借"""
     keep = keep or {}
     new = {f for f in frames if os.path.exists(os.path.join(folder, f + '.png'))}
     if not new:
         return None, [], 0
-    names = [f for f in frames if f in new or f in keep]
+    names = list(frames) if exact else [f for f in frames if f in new or f in keep]
+    resample = Image.NEAREST if STYLE in PIXEL_DIV else Image.LANCZOS
     cols = cols or len(names)
     rows = (len(names) + cols - 1) // cols
     sheet = Image.new('RGBA', (cell * cols, cell * rows), (0, 0, 0, 0))
     for i, name in enumerate(names):
         if name in new:
-            im = load(os.path.join(folder, name + '.png')).resize((cell, cell), Image.LANCZOS)
+            im = load(os.path.join(folder, name + '.png')).resize((cell, cell), resample)
+        elif name in keep:
+            im = keep[name].resize((cell, cell), resample)
         else:
-            im = keep[name].resize((cell, cell), Image.LANCZOS)
+            continue
         sheet.paste(im, ((i % cols) * cell, (i // cols) * cell))
     return sheet, names, cols
+
+
+def style_atlas(sheets, group, key, folder, metrics, prefix, kind, table, written):
+    """別的畫風的一張圖集：格子順序、欄數照 anime90；格子大小、倍數記在 sheets.styles.<風格>"""
+    base = sheets[group].get(key)
+    if not base:
+        print(f'  ！{group}/{key}：anime90 還沒有這張圖集，先接 anime90')
+        return
+    styles = sheets.setdefault('styles', {}).setdefault(STYLE, {}).setdefault(group, {})
+    before = styles.get(key)
+    div = PIXEL_DIV.get(STYLE, 1)
+    # 像素風格：交件 512／768 → 邏輯 256／128、384／192；其他照 anime90 的格子大小
+    cell = (512 if group != 'bosses' else 768) // div if div > 1 else base['cell']
+    # 這個畫風之前已經接過的格子（補交幾格時沿用）
+    mine = old_cells_at(os.path.join(PUBLIC, base['src']), before['cell'], base['cols'], base['frames']) if before else {}
+    anime = old_cells_at(os.path.join(ANIME90_PUBLIC, base['src']), base['cell'], base['cols'], base['frames'])
+    borrowed = [f for f in base['frames'] if f not in mine and not os.path.exists(os.path.join(folder, f + '.png'))]
+    sheet, names, cols = strip(base['frames'], folder, cell, cols=base['cols'], keep={**anime, **mine}, exact=True)
+    if not sheet:
+        return
+    if borrowed:
+        print(f'  ！{group}/{key} 還沒有 {borrowed}，先借 anime90 的')
+    written.append(save(sheet, base['src']))
+    entry = {'cell': cell}
+    fix = {**kept_fix(before, names, folder), **fixes(names, heights(metrics, prefix), table)}
+    if fix:
+        entry['fix'] = fix
+    k = sheet_scale(metrics, prefix, kind)
+    if k > 1:
+        entry['scale'] = k
+    elif (before or {}).get('scale'):
+        entry['scale'] = before['scale']
+    styles[key] = entry
+
+
+def pixel_down(im, div=None):
+    """像素風格：交件是邏輯解析度 × 整數倍，縮回邏輯解析度（最近鄰，像素不會糊）"""
+    div = div or PIXEL_DIV.get(STYLE, 1)
+    if STYLE not in PIXEL_DIV or div <= 1:
+        return im
+    return im.resize((im.width // div, im.height // div), Image.NEAREST)
+
+
+def old_cells_at(path, cell, cols, frames):
+    """某張圖集拆回一格一格（別的畫風用：格子大小跟 anime90 不一樣）"""
+    if not os.path.exists(path):
+        return {}
+    atlas = Image.open(path).convert('RGBA')
+    return {name: atlas.crop(((i % cols) * cell, (i // cols) * cell, (i % cols + 1) * cell, (i // cols + 1) * cell))
+            for i, name in enumerate(frames)}
 
 
 def main(src):
@@ -181,6 +247,9 @@ def main(src):
     chars = os.path.join(src, 'characters')
     for cid in sorted(os.listdir(chars)) if os.path.isdir(chars) else []:
         folder = os.path.join(chars, cid, 'sprites')
+        if STYLE:
+            style_atlas(sheets, 'characters', cid, folder, metrics, f'characters/{cid}/sprites/', 'character', FIX_CHARACTER, written)
+            continue
         before = sheets['characters'].get(cid)
         sheet, names, cols = strip(CHARACTER_FRAMES, folder, CELL, cols=8, keep=old_cells(before))
         if sheet:
@@ -202,6 +271,9 @@ def main(src):
         for kind in sorted(os.listdir(os.path.join(enemies, world))):
             folder = os.path.join(enemies, world, kind)
             key = f'{world}/{kind}'
+            if STYLE:
+                style_atlas(sheets, 'enemies', key, folder, metrics, f'enemies/{world}/{kind}/', kind, FIX_ENEMY, written)
+                continue
             before = sheets['enemies'].get(key)
             # 補交幾格（例如只補走路 2 格）時，原本的格子、倍數都留著
             sheet, names, cols = strip(ENEMY_FRAMES, folder, CELL, keep=old_cells(before))
@@ -221,6 +293,9 @@ def main(src):
     bosses = os.path.join(src, 'bosses')
     for world in sorted(os.listdir(bosses)) if os.path.isdir(bosses) else []:
         folder = os.path.join(bosses, world)
+        if STYLE:
+            style_atlas(sheets, 'bosses', world, folder, metrics, f'bosses/{world}/', 'boss', FIX_BOSS, written)
+            continue
         before = sheets['bosses'].get(world)
         sheet, names, cols = strip(BOSS_FRAMES, folder, BOSS_CELL, cols=6, keep=old_cells(before))
         if sheet:
@@ -245,6 +320,7 @@ def main(src):
         for layer in layers:
             im = Image.open(os.path.join(env, stage, layer + '.png'))
             im = im.convert('RGB') if layer == 'far' else load(os.path.join(env, stage, layer + '.png'))
+            im = pixel_down(im, 4)
             written.append(save(im, f'stages/{stage}/{layer}.webp'))
         if stage not in sheets['stages']:
             sheets['stages'].append(stage)
@@ -254,7 +330,7 @@ def main(src):
         for f in sorted(os.listdir(props)):
             if f.endswith('.png'):
                 name = f[:-4]
-                written.append(save(load(os.path.join(props, f)), f'props/{name}.webp'))
+                written.append(save(pixel_down(load(os.path.join(props, f))), f'props/{name}.webp'))
                 if name not in sheets['props']:
                     sheets['props'].append(name)
         for sub, key in (('items', 'items'), ('shots', 'shots')):
@@ -262,27 +338,47 @@ def main(src):
             for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
                 if f.endswith('.png'):
                     name = f[:-4]
-                    written.append(save(load(os.path.join(d, f)), f'props/{sub}/{name}.webp'))
+                    written.append(save(pixel_down(load(os.path.join(d, f))), f'props/{sub}/{name}.webp'))
                     if name not in sheets[key]:
                         sheets[key].append(name)
+
+    ui = os.path.join(src, 'ui')
+    if STYLE and os.path.isdir(ui):
+        for dirpath, _, files in os.walk(ui):
+            for f in sorted(files):
+                if f.endswith('.png'):
+                    rel = os.path.relpath(os.path.join(dirpath, f), src)[:-4] + '.webp'
+                    im = Image.open(os.path.join(dirpath, f))
+                    opaque = f.startswith(('title-scene', 'mode-'))
+                    im = im.convert('RGB') if opaque else load(os.path.join(dirpath, f))
+                    written.append(save(pixel_down(im), rel.replace(os.sep, '/')))
 
     for k in ('stages', 'props', 'items', 'shots'):
         sheets[k].sort()
     json.dump(sheets, open(SHEETS, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
 
     manifest = json.load(open(MANIFEST, encoding='utf-8'))
-    files = set(manifest['styles']['anime90']['files'])
+    style_id = STYLE or 'anime90'
+    files = set(manifest['styles'][style_id].get('files', []))
     files.update(written)
-    manifest['styles']['anime90']['files'] = sorted(files)
+    manifest['styles'][style_id]['files'] = sorted(files)
     open(MANIFEST, 'w', encoding='utf-8').write(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
     print(f'接了 {len(written)} 張圖，sheets.json 與 style-assets.json 已更新')
     if os.path.isdir(chars):
-        print('有角色動作圖：記得跑 python scripts/measure-head-scale.py --write，修正各格頭的大小')
+        print(f'有角色動作圖：記得跑 python scripts/measure-head-scale.py --write{" --style " + STYLE if STYLE else ""}，修正各格頭的大小')
     if tmp:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
+    args = sys.argv[1:]
+    if '--style' in args:
+        i = args.index('--style')
+        STYLE = args[i + 1]
+        del args[i:i + 2]
+        if STYLE not in STYLES:
+            sys.exit(f'不認得的畫風 {STYLE}：{STYLES}')
+        PUBLIC = os.path.join(ROOT, 'public', 'styles', STYLE)
+    if len(args) != 1:
         sys.exit(__doc__)
-    main(sys.argv[1])
+    main(args[0])

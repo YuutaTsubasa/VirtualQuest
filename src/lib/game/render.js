@@ -8,7 +8,8 @@ import { pickLine } from './characters.js';
 import { WORLDS, stageLabel } from './stages.js';
 import { drawScenery, drawAmbient } from './scenery.js';
 import SHEETS from './sheets.json' with { type: 'json' };
-import { asset, currentConfig } from '../art-style.svelte.js';
+import { asset, currentConfig, artStyle } from '../art-style.svelte.js';
+import { hasAsset } from '../style-assets.js';
 import { loadImage } from '../preload.svelte.js';
 import { t, displayName } from '../i18n.svelte.js';
 
@@ -207,6 +208,21 @@ const blinking = (b, frame) => b.inv > 0 && Math.floor(frame / 3) % 2 === 0;
 // 動作圖集（scripts/import-quest-art.py 產生，格子清單在 sheets.json）：
 // 角色／敵人每格在遊戲裡畫 CELL_H 高、魔王 BOSS_H 高；腳底在格子的 496/512（= 744/768）。
 const CELL_H = 200;
+
+// 動作圖集：別的畫風的格子順序跟 anime90 一樣，只有格子大小與補償倍數不同（sheets.json 的 styles.<畫風>）。
+// 這個畫風還沒有這張圖集就用 anime90 的（倍數也用 anime90 的）
+const styledCache = new Map();
+function sheetOf(group, key) {
+  const base = SHEETS[group]?.[key];
+  if (!base) return base;
+  const style = artStyle.id;
+  const id = `${style}|${group}|${key}`;
+  if (!styledCache.has(id)) {
+    const own = SHEETS.styles?.[style]?.[group]?.[key];
+    styledCache.set(id, own && hasAsset(style, base.src) ? { ...base, fix: {}, scale: undefined, ...own } : base);
+  }
+  return styledCache.get(id);
+}
 const BOSS_H = 300;
 const ANCHOR = 496 / 512;
 // 人物大約多高（頭上標記、對話泡泡的位置用）
@@ -326,7 +342,7 @@ function drawPlayer(g, match, p, cam) {
   drawSpecialAura(g, p, x);
   if (p.act === 'dead' && Math.floor(p.t / 4) % 2 === 0) return;
   if (blinking(p, match.frame)) return;
-  const sheet = SHEETS.characters?.[p.character.id];
+  const sheet = sheetOf('characters', p.character.id);
   if (sheet) {
     // 出拳時往前一點點、被打時往後退一點
     let lunge = 0;
@@ -430,7 +446,7 @@ function enemyPose(e, sheet) {
 function drawEnemySprite(g, match, e, x) {
   const world = WORLDS[match.world].id;
   const boss = e.kind === 'boss';
-  const sheet = boss ? SHEETS.bosses?.[world] : SHEETS.enemies?.[`${world}/${e.kind}`];
+  const sheet = boss ? sheetOf('bosses', world) : sheetOf('enemies', `${world}/${e.kind}`);
   if (!sheet) return false;
   const pose = enemyPose(e, sheet);
   const h = (boss ? BOSS_H : CELL_H) * (e.elite ? 1.25 : 1);
