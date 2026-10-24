@@ -461,7 +461,6 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 0.3cqh var(--accent
    --navy 是墨色（框線、文字），--cream 是紙／面板底，--accent 是主要行動色，--gold 是少量提示色。 */
 
 :root[data-style='pc98'] {
-  --ribbon-y: 0.356;
   /* 背景 #111329、面板 #24203e、文字 #fae8cd、選取 #ffd69a、邊框 #9b80b4 */
   --navy: #24203e;
   --navy-deep: #111329;
@@ -475,7 +474,6 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 0.3cqh var(--accent
   --font: 'MingLiU', '細明體', 'MS Gothic', 'Cascadia Mono', monospace;
 }
 :root[data-style='msdos'] {
-  --ribbon-y: 0.306;
   /* 背景 #101828、面板 #243c7a、文字 #f6f1d8、選取 #ffd23f、邊框 #9ca8b8 */
   --navy: #243c7a;
   --navy-deep: #101828;
@@ -489,7 +487,6 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 0.3cqh var(--accent
   --font: 'Cascadia Mono', 'Consolas', 'MingLiU', '細明體', monospace;
 }
 :root[data-style='taiwan-print'] {
-  --ribbon-y: 0.319;
   /* 墨藍 #102044、青綠 #128C96、朱紅 #E94B32、暖紙 #FFF1C2、金黃 #F6C334 */
   --navy: #102044;
   --navy-deep: #0a1530;
@@ -504,7 +501,6 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 0.3cqh var(--accent
   --font: 'DFKai-SB', '標楷體', 'Kaiti TC', 'Microsoft JhengHei', serif;
 }
 :root[data-style='gameboy'] {
-  --ribbon-y: 0.315;
   /* 最深 #0f380f、深 #306230、中亮 #8bac0f、最亮 #9bbc0f（只用這四色） */
   --navy: #0f380f;
   --navy-deep: #0f380f;
@@ -524,7 +520,6 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 0.3cqh var(--accent
   --font: 'MingLiU', '細明體', monospace;
 }
 :root[data-style='modern-paint'] {
-  --ribbon-y: 0.383;
   /* 深藍 #15458F、天空藍 #3EA8EF、奶油 #FFF3D6、金色 #F4C558、墨色 #173351 */
   --navy: #15458f;
   --navy-deep: #173351;

@@ -407,18 +407,19 @@
     display: block;
   }
   .ribbon span {
-    /* 文字對齊緞帶中間那條黃色底（各風格的圖不一樣高，見 app.css 的 --ribbon-y） */
+    /* 文字放在朱紅毛筆刷的安全區中間（中心 y 是圖高的 57.32%，見美術交件留言）；
+       之後別的畫風交自己的緞帶，再在 app.css 用 --ribbon-y / --ribbon-ink 調 */
     position: absolute;
     left: 0;
     right: 0;
-    top: calc(var(--ribbon-y, 0.333) * 100%);
+    top: calc(var(--ribbon-y, 0.5732) * 100%);
     translate: 0 -50%;
     text-align: center;
     line-height: 1;
     font-size: 5.4cqh;
     font-weight: 900;
     letter-spacing: 0.12em;
-    color: var(--navy);
+    color: var(--ribbon-ink, #f5efdf);
   }
   .result-stage {
     margin: 0;

@@ -23,10 +23,11 @@
 <section class="screen title">
   <div class="paper-bg"></div>
 
-  <div class="art">
-    {#if scene}
-      <img class="menu-bg" src={scene} alt="" />
-    {:else}
+  {#if scene}
+    <!-- 正式主視覺：整張鋪滿，左邊 38% 本身就是暖白空白（放 Logo 和選單） -->
+    <img class="menu-bg scene" src={scene} alt="" />
+  {:else}
+    <div class="art">
       <!-- 後排兩位放在上面那一格裡，被分格的斜邊切掉，像漫畫格 -->
       <div class="cell main">
         <WorldScene world={0} />
@@ -38,8 +39,8 @@
       <div class="cell sea"><WorldScene world={2} /></div>
       <div class="cell lava"><WorldScene world={4} /></div>
       <img class="hero front" src={heroes[2].c.portraits[heroes[2].face]} alt={heroes[2].c.name} draggable="false" />
-    {/if}
-  </div>
+    </div>
+  {/if}
 
   <div class="side">
     <div class="logo-box"><Logo size="big" /></div>
@@ -53,6 +54,10 @@
   .title {
     align-items: stretch;
     justify-content: stretch;
+  }
+  /* 寬螢幕裁上下、窄螢幕從左邊裁（右邊的角色優先留著） */
+  .scene {
+    object-position: 100% 50%;
   }
   /* 右邊插畫：左緣是毛筆刷過的斜邊 */
   .art {

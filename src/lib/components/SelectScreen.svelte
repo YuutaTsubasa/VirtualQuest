@@ -149,9 +149,8 @@
           </div>
         {/each}
       </div>
-      <h3 class="ink-tab">{t('必殺技')}</h3>
       <div class="special" style:--sp={open ? current.specialColor : 'var(--navy)'}>
-        <b>{open ? current.specialName : '？？？'}</b>
+        <b><span>{t('必殺技')}</span>{open ? current.specialName : '？？？'}</b>
         <small>{open ? current.specialDesc : ''}</small>
       </div>
       <h3 class="ink-tab">{t('闖關設定')}</h3>
@@ -310,6 +309,13 @@
     font-size: 2.4cqh;
     font-weight: 900;
   }
+  .special b span {
+    margin-right: 1cqw;
+    padding: 0.1cqh 0.8cqw;
+    background: var(--navy);
+    color: var(--on-dark);
+    font-size: 1.9cqh;
+  }
   .special small {
     font-size: 1.9cqh;
     line-height: 1.35;
@@ -317,7 +323,7 @@
   .settings {
     display: grid;
     grid-template-columns: max-content 1fr;
-    gap: 0.8cqh 1.6cqw;
+    gap: 0.5cqh 1.6cqw;
     align-items: center;
     font-size: 2.3cqh;
     font-weight: 900;
