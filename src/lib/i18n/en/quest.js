@@ -254,4 +254,8 @@ export default {
   '開房後取得 5 碼房號與分享連結，邀請朋友一起闖關！': 'You’ll get a 5-character room code and share link — invite friends to quest together!',
   '關閉分頁會結束房間': 'Closing this tab ends the room',
   '集結夥伴': 'Assemble the Team',
+
+  // 跑步
+  '跑步': 'Run',
+  '：連按兩下左右（搖桿往同一邊推兩下）就會跑；跑步中按攻擊是衝刺攻擊、按跳跳得更遠。': ': Double-tap left or right (or flick the stick twice) to run. Attack while running for a dash attack; jump while running to leap farther.',
 };

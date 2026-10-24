@@ -56,6 +56,8 @@ pub struct Ai {
     /// 想打的方向（-1／1），0 = 不打
     fight: f32,
     jump_kick: i32,
+    /// 跑步用的連按兩下：還剩幾格（放開、按、放開，之後照常按住就跑起來）
+    dash_tap: i32,
 }
 
 impl Ai {
@@ -70,6 +72,7 @@ impl Ai {
             goal: None,
             fight: 0.0,
             jump_kick: 0,
+            dash_tap: 0,
         }
     }
 
@@ -113,6 +116,21 @@ impl Ai {
         if dx.abs() > 6.0 {
             out.left = dx < 0.0;
             out.right = dx > 0.0;
+        }
+        // 離目標很遠：連按兩下跑過去（跑步中按住同一個方向就會一直跑）
+        if b.act == Act::Run && dx.abs() < 90.0 {
+            out.left = false;
+            out.right = false;
+        } else if self.dash_tap > 0 {
+            // 放開 → 按一下 → 放開，下一格照常按住就是第二下
+            self.dash_tap -= 1;
+            let press = self.dash_tap == 1;
+            out.left = press && dx < 0.0;
+            out.right = press && dx > 0.0;
+        } else if dx.abs() > 260.0 && matches!(b.act, Act::Stand | Act::Walk) && self.rng.gen_bool(0.5) {
+            self.dash_tap = 3;
+            out.left = false;
+            out.right = false;
         }
         if dz.abs() > 4.0 {
             out.up = dz < 0.0;

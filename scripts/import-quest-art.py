@@ -41,12 +41,14 @@ SHEETS = os.path.join(ROOT, 'src', 'lib', 'game', 'sheets.json')
 MANIFEST = os.path.join(ROOT, 'src', 'lib', 'style-assets.json')
 
 CHARACTER_FRAMES = ['idle', 'walk1', 'walk2', 'punch1', 'punch2', 'kick', 'jump', 'jumpkick',
-                    'special', 'grab', 'knee', 'throw', 'hurt', 'fall', 'down', 'win']
+                    'special', 'grab', 'knee', 'throw', 'hurt', 'fall', 'down', 'win',
+                    # 跑步與衝刺攻擊（後來加的，requests/2026-10-24-0910-anime90-run-frames.md）
+                    'run1', 'run2', 'dash']
 ENEMY_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'attack', 'hurt', 'fall', 'down', 'charge']
 BOSS_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'slam', 'hurt', 'fall', 'down', 'charge', 'leap', 'cast', 'vanish']
 CELL = 400
 # 哪些格子要依實際高度放大回來：目標高度＝這張圖集 idle 的高度 × 比例；最多放大幾倍
-FIX_CHARACTER = {'kick': 0.925}
+FIX_CHARACTER = {'kick': 0.925, 'dash': 0.85}
 # charge 常常是壓肩低頭的姿勢，只補到站立高度的 80%
 FIX_ENEMY = {'attack': 0.9, 'windup': 0.95, 'charge': 0.8, 'walk1': 0.95, 'walk2': 0.95}
 # 魔王的 slam／cast 常常是故意蹲低的姿勢（例如森林巨熊雙掌觸地），不能照 idle 高度放大，只補 charge
@@ -116,16 +118,35 @@ def sheet_scale(metrics, prefix, kind):
     return round(k, 3) if k > 1.03 else 1.0
 
 
-def strip(frames, folder, cell, cols=None):
-    """把有的格子排成圖集；回傳（圖, 實際有的格子名, 欄數）"""
-    names = [f for f in frames if os.path.exists(os.path.join(folder, f + '.png'))]
-    if not names:
+def old_cells(entry):
+    """已經接過的圖集拆回一格一格：{動作: 圖}（補交幾格時，其他格沿用原本的）"""
+    if not entry:
+        return {}
+    path = os.path.join(PUBLIC, entry['src'])
+    if not os.path.exists(path):
+        return {}
+    atlas = Image.open(path).convert('RGBA')
+    c, cols = entry['cell'], entry['cols']
+    return {name: atlas.crop(((i % cols) * c, (i // cols) * c, (i % cols + 1) * c, (i // cols + 1) * c))
+            for i, name in enumerate(entry['frames'])}
+
+
+def strip(frames, folder, cell, cols=None, keep=None):
+    """把有的格子排成圖集；回傳（圖, 實際有的格子名, 欄數）。
+    keep：原本圖集裡的格子，這次沒交的就沿用（例如只補交跑步 3 格）"""
+    keep = keep or {}
+    new = {f for f in frames if os.path.exists(os.path.join(folder, f + '.png'))}
+    if not new:
         return None, [], 0
+    names = [f for f in frames if f in new or f in keep]
     cols = cols or len(names)
     rows = (len(names) + cols - 1) // cols
     sheet = Image.new('RGBA', (cell * cols, cell * rows), (0, 0, 0, 0))
     for i, name in enumerate(names):
-        im = load(os.path.join(folder, name + '.png')).resize((cell, cell), Image.LANCZOS)
+        if name in new:
+            im = load(os.path.join(folder, name + '.png')).resize((cell, cell), Image.LANCZOS)
+        else:
+            im = keep[name].resize((cell, cell), Image.LANCZOS)
         sheet.paste(im, ((i % cols) * cell, (i // cols) * cell))
     return sheet, names, cols
 
@@ -152,13 +173,17 @@ def main(src):
     chars = os.path.join(src, 'characters')
     for cid in sorted(os.listdir(chars)) if os.path.isdir(chars) else []:
         folder = os.path.join(chars, cid, 'sprites')
-        sheet, names, cols = strip(CHARACTER_FRAMES, folder, CELL, cols=8)
+        before = sheets['characters'].get(cid)
+        sheet, names, cols = strip(CHARACTER_FRAMES, folder, CELL, cols=8, keep=old_cells(before))
         if sheet:
             written.append(save(sheet, f'sprites/{cid}.webp'))
             sheets['characters'][cid] = {'src': f'sprites/{cid}.webp', 'frames': names, 'cols': cols, 'cell': CELL}
-            fix = fixes(names, heights(metrics, f'characters/{cid}/sprites/'), FIX_CHARACTER)
+            # 補交幾格時，原本那些格的放大倍數也要留著
+            fix = {**(before or {}).get('fix', {}), **fixes(names, heights(metrics, f'characters/{cid}/sprites/'), FIX_CHARACTER)}
             if fix:
                 sheets['characters'][cid]['fix'] = fix
+            if (before or {}).get('scale'):
+                sheets['characters'][cid]['scale'] = before['scale']
             k = sheet_scale(metrics, f'characters/{cid}/sprites/', 'character')
             if k > 1:
                 sheets['characters'][cid]['scale'] = k

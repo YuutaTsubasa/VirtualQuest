@@ -198,3 +198,62 @@ mod no_stall {
         }
     }
 }
+
+#[cfg(test)]
+mod run {
+    use crate::ai::Difficulty;
+    use crate::game::{Act, Entrant, Input, Match, Move, Phase};
+
+    fn press(right: bool, attack: bool, jump: bool) -> Input {
+        Input { right, attack_pressed: attack, jump_pressed: jump, ..Input::default() }
+    }
+
+    /// 連按兩下右：跑起來、跑得比走路快；跑步中按攻擊是衝刺攻擊、按跳是跑步跳
+    #[test]
+    fn double_tap_runs() {
+        let entrants = [Entrant { slot: 0, character: "xiaochun" }];
+        let mut m = Match::new(&entrants, 0, Difficulty::Easy, 3, 1);
+        while m.phase != Phase::Play {
+            m.step(&[Input::default()]);
+        }
+        let x0 = m.players[0].body.x;
+        for _ in 0..10 {
+            m.step(&[press(true, false, false)]);
+        }
+        let walked = m.players[0].body.x - x0;
+        assert_eq!(m.players[0].body.act, Act::Walk);
+        // 放開、再按：跑
+        m.step(&[Input::default()]);
+        m.step(&[press(true, false, false)]);
+        assert_eq!(m.players[0].body.act, Act::Run);
+        let x1 = m.players[0].body.x;
+        for _ in 0..10 {
+            m.step(&[press(true, false, false)]);
+        }
+        assert!(m.players[0].body.x - x1 > walked * 1.5, "跑步應該比走路快");
+        m.step(&[press(true, true, false)]);
+        assert_eq!(m.players[0].body.mv, Move::DashAttack);
+        // 等衝刺攻擊結束，再跑一次、跳
+        for _ in 0..40 {
+            m.step(&[Input::default()]);
+        }
+        m.step(&[press(true, false, false)]);
+        m.step(&[Input::default()]);
+        m.step(&[press(true, false, false)]);
+        assert_eq!(m.players[0].body.act, Act::Run);
+        m.step(&[press(true, false, true)]);
+        assert_eq!(m.players[0].body.act, Act::Jump);
+        // 放開方向就停下來
+        let entrants = [Entrant { slot: 0, character: "aming" }];
+        let mut m = Match::new(&entrants, 0, Difficulty::Easy, 3, 1);
+        while m.phase != Phase::Play {
+            m.step(&[Input::default()]);
+        }
+        m.step(&[press(true, false, false)]);
+        m.step(&[Input::default()]);
+        m.step(&[press(true, false, false)]);
+        assert_eq!(m.players[0].body.act, Act::Run);
+        m.step(&[Input::default()]);
+        assert_eq!(m.players[0].body.act, Act::Stand);
+    }
+}

@@ -102,6 +102,9 @@ export function handleEvents(match) {
         burst(e.x, e.y, '#ff8a8a', 6, 5, 16, 0);
         if (e.big) shake = Math.max(shake, 8);
         break;
+      case 'step':
+        effect('dust', e.x, e.z - 8, 70, 16, { alpha: 0.5, flip: Math.random() < 0.5 });
+        break;
       case 'land':
         effect('dust', e.x, e.z - 10, 110, 22, { alpha: 0.6, flip: Math.random() < 0.5 });
         break;
@@ -218,11 +221,16 @@ function drawFrame(g, sheet, frame, x, y, h, facing, { fallback = 'idle', flash 
 }
 
 // 清版動作專用圖集（16 格）的動作
-function poseOf(p) {
+function poseOf(p, sheet) {
   switch (p.act) {
     case 'walk':
       return Math.floor(p.t / 9) % 2 ? 'walk1' : 'walk2';
+    case 'run':
+      // 還沒有跑步圖：用走路的兩格、換得快一點
+      if (sheet?.frames.includes('run1')) return Math.floor(p.t / 6) % 2 ? 'run1' : 'run2';
+      return Math.floor(p.t / 5) % 2 ? 'walk1' : 'walk2';
     case 'attack':
+      if (p.mv === 'dashAttack') return sheet?.frames.includes('dash') ? 'dash' : 'kick';
       return { jab: 'punch1', jab2: 'punch2', kick: 'kick', special: 'special', throw: 'throw' }[p.mv] ?? 'idle';
     case 'grab':
       return p.mv === 'knee' ? 'knee' : 'grab';
@@ -252,6 +260,8 @@ function legacyPose(p) {
   switch (p.act) {
     case 'walk':
       return Math.floor(p.t / 9) % 2 ? 'run1' : 'run2';
+    case 'run':
+      return Math.floor(p.t / 5) % 2 ? 'run1' : 'run2';
     case 'attack':
       return p.mv === 'none' ? 'idle' : 'spike';
     case 'grab':
@@ -286,7 +296,10 @@ function drawPlayer(g, match, p, cam) {
     let lunge = 0;
     if (p.act === 'attack' && p.mv !== 'none') lunge = Math.min(p.t, 4) * 1.2;
     if (p.act === 'hurt') lunge = -Math.max(0, 6 - p.t) * 1.5;
-    drawFrame(g, sheet, poseOf(p), x + lunge * p.facing, p.z - p.y, CELL_H, p.facing, { flash: p.flash });
+    const pose = poseOf(p, sheet);
+    // 借用走路圖跑步時身體往前傾一點，看起來比較像在跑
+    const lean = p.act === 'run' && !sheet.frames.includes('run1') ? 0.12 : 0;
+    drawFrame(g, sheet, pose, x + lunge * p.facing, p.z - p.y, CELL_H, p.facing, { flash: p.flash, rotate: lean });
     return;
   }
   const img = p.character.sprite ? loadImage(p.character.spriteSrc) : null;

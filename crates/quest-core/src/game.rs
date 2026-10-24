@@ -30,6 +30,10 @@ const CLEAR_FRAMES: i32 = 200;
 const RESPAWN_FRAMES: i32 = 70;
 /// 一次能有幾隻敵人圍著同一個玩家打（其他的在旁邊繞）
 const ATTACKERS_PER_PLAYER: usize = 2;
+/// 跑步：連按兩下左右，第二下要在這麼多格以內
+const DOUBLE_TAP: i32 = 14;
+/// 跑步比走路快幾倍
+const RUN_SPEED: f32 = 1.9;
 
 /// 一個玩家在這個影格的輸入
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -72,6 +76,8 @@ impl Input {
 pub enum Act {
     Stand,
     Walk,
+    /// 跑步（連按兩下左右）
+    Run,
     Attack,
     Jump,
     Hurt,
@@ -105,6 +111,8 @@ pub enum Move {
     Jab,
     Jab2,
     Kick,
+    /// 跑步中按攻擊：往前衝的一擊（會把敵人撞倒）
+    DashAttack,
     JumpKick,
     Special,
     Knee,
@@ -141,6 +149,7 @@ fn move_data(m: Move) -> MoveData {
         Move::Jab => md(4, 3, 8, 6.0, 64.0, 16.0, false),
         Move::Jab2 => md(4, 3, 9, 7.0, 66.0, 16.0, false),
         Move::Kick => md(6, 4, 15, 12.0, 76.0, 18.0, true),
+        Move::DashAttack => md(3, 9, 16, 12.0, 72.0, 18.0, true),
         Move::JumpKick => md(3, 60, 0, 13.0, 70.0, 18.0, true),
         Move::Special => MoveData { omni: true, ..md(3, 14, 14, 14.0, 100.0, 24.0, true) },
         Move::Knee => md(0, 1, 9, 8.0, 50.0, 20.0, false),
@@ -375,6 +384,13 @@ pub struct Player {
     chain_t: i32,
     #[serde(skip)]
     knees: u32,
+    /// 連按兩下判定：上一格的左右、上一次按下的方向、還剩幾格可以按第二下
+    #[serde(skip)]
+    prev_dx: f32,
+    #[serde(skip)]
+    tap_dir: f32,
+    #[serde(skip)]
+    tap_timer: i32,
     /// 剛剛被誰抓、被誰打（給台詞用）
     #[serde(skip)]
     pub kos: u32,
@@ -512,6 +528,8 @@ pub enum Event {
     Grab { slot: usize },
     Throw { slot: usize },
     Land { x: f32, z: f32 },
+    /// 跑步的腳步（揚起灰塵）
+    Step { x: f32, z: f32 },
     Ko { x: f32, z: f32, boss: bool, by: Option<usize> },
     Break { x: f32, z: f32 },
     Pickup { slot: usize, kind: ItemKind },
@@ -594,6 +612,9 @@ impl Match {
                     combo: 0,
                     chain_t: 0,
                     knees: 0,
+                    prev_dx: 0.0,
+                    tap_dir: 0.0,
+                    tap_timer: 0,
                     kos: 0,
                 }
             })
@@ -792,7 +813,53 @@ impl Match {
             b.inv = (b.inv - 1).max(0);
             b.flash = (b.flash - 1).max(0);
             p.chain_t = (p.chain_t - 1).max(0);
+            // 連按兩下左右：放開後很快又按同一個方向
+            let dx_now = inp.dx();
+            let mut double_tap = false;
+            p.tap_timer = (p.tap_timer - 1).max(0);
+            if dx_now != 0.0 && p.prev_dx == 0.0 {
+                if p.tap_timer > 0 && p.tap_dir == dx_now {
+                    double_tap = true;
+                    p.tap_timer = 0;
+                } else {
+                    p.tap_dir = dx_now;
+                    p.tap_timer = DOUBLE_TAP;
+                }
+            }
+            p.prev_dx = dx_now;
             match b.act {
+                Act::Run => {
+                    // 放開方向、或按了反方向：停下來
+                    if inp.special_pressed || (inp.attack_pressed && inp.jump_pressed) {
+                        b.attack(Move::Special);
+                        b.inv = 22;
+                        self.events.push(Event::Special { slot });
+                    } else if inp.jump_pressed {
+                        // 跑步跳：跳得比較遠
+                        b.set(Act::Jump, 0);
+                        b.vy = JUMP_V;
+                        b.vx = b.facing * speed * RUN_SPEED;
+                        b.vz = inp.dz() * speed * Z_SPEED;
+                        self.events.push(Event::Jump { slot });
+                    } else if inp.attack_pressed {
+                        b.attack(Move::DashAttack);
+                        b.vx = b.facing * speed * 1.7;
+                        self.events.push(Event::Swing { slot });
+                    } else if inp.dx() != b.facing {
+                        b.set(if inp.dx() != 0.0 || inp.dz() != 0.0 { Act::Walk } else { Act::Stand }, 0);
+                    } else {
+                        b.x += b.facing * speed * RUN_SPEED;
+                        b.z += inp.dz() * speed * Z_SPEED;
+                        if b.t % 10 == 0 {
+                            self.events.push(Event::Step { x: b.x, z: b.z });
+                        }
+                    }
+                }
+                Act::Stand | Act::Walk if double_tap => {
+                    b.facing = dx_now;
+                    b.set(Act::Run, 0);
+                    self.events.push(Event::Step { x: b.x, z: b.z });
+                }
                 Act::Stand | Act::Walk => {
                     if inp.special_pressed || (inp.attack_pressed && inp.jump_pressed) {
                         b.attack(Move::Special);
