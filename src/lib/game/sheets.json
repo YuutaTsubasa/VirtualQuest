@@ -575,6 +575,77 @@
       "fix": {
         "attack": 1.059
       }
+    },
+    "mine/brute": {
+      "src": "enemies/mine/brute.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down",
+        "charge"
+      ],
+      "cols": 9,
+      "cell": 400,
+      "fix": {
+        "attack": 1.45,
+        "windup": 1.021,
+        "charge": 1.082,
+        "walk1": 1.061
+      },
+      "scale": 1.04
+    },
+    "mine/knife": {
+      "src": "enemies/mine/knife.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400
+    },
+    "mine/thrower": {
+      "src": "enemies/mine/thrower.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400
+    },
+    "mine/thug": {
+      "src": "enemies/mine/thug.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "attack": 1.069
+      }
     }
   },
   "bosses": {
@@ -650,6 +721,24 @@
       ],
       "cols": 6,
       "cell": 600
+    },
+    "mine": {
+      "src": "bosses/mine.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "slam",
+        "hurt",
+        "fall",
+        "down",
+        "charge",
+        "leap",
+        "cast"
+      ],
+      "cols": 6,
+      "cell": 600
     }
   },
   "stages": [
@@ -662,6 +751,9 @@
     "ice-1",
     "ice-2",
     "ice-3",
+    "mine-1",
+    "mine-2",
+    "mine-3",
     "sea-1",
     "sea-2",
     "sea-3"
@@ -670,6 +762,7 @@
     "city-crate",
     "forest-crate",
     "ice-crate",
+    "mine-crate",
     "sea-crate"
   ],
   "items": [
@@ -679,8 +772,10 @@
     "meat"
   ],
   "shots": [
+    "bomb",
     "bottle",
     "bubble",
+    "fire",
     "ice",
     "ink",
     "snowball",
