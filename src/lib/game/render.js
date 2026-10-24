@@ -455,17 +455,38 @@ function drawEnemySprite(g, match, e, x) {
   return true;
 }
 
+// 對準提示：敵人跟真人玩家前後對齊、而且在打得到的距離內，影子外圈亮出玩家的顏色
+// （數值跟 crates/quest-core 的刺拳判定差不多：上下 28、前後 70＋身體寬）
+let aimers = [];
+const AIM_Z = 28;
+const AIM_X = 110;
+function drawAim(g, e, x, w) {
+  if (!['stand', 'walk', 'attack', 'hurt', 'charge'].includes(e.act)) return;
+  const p = aimers.find((p) => Math.abs(p.z - e.z) <= AIM_Z && Math.abs(p.x - e.x) <= AIM_X * (e.kind === 'boss' ? 1.4 : 1));
+  if (!p) return;
+  g.save();
+  g.strokeStyle = SLOT_COLORS[p.slot];
+  g.globalAlpha = 0.85;
+  g.lineWidth = 3;
+  g.beginPath();
+  g.ellipse(x, e.z + 2, w, 9, 0, 0, Math.PI * 2);
+  g.stroke();
+  g.restore();
+}
+
 function drawEnemy(g, match, e, cam) {
   const x = e.x - cam;
   const look = enemyLook(match, e);
   const sheetScale = e.kind === 'boss' ? 1.6 : e.elite ? 1.25 : 1;
   if (SHEETS.enemies?.[`${WORLDS[match.world].id}/${e.kind}`] || (e.kind === 'boss' && SHEETS.bosses?.[WORLDS[match.world].id])) {
     shadow(g, x, e.z, e.y, 34 * sheetScale);
+    drawAim(g, e, x, 34 * sheetScale);
     if (e.act === 'dead' && Math.floor(e.t / 4) % 2 === 0) return;
     if (drawEnemySprite(g, match, e, x)) return;
   }
   const s = look.scale;
   shadow(g, x, e.z, e.y, 30 * s);
+  drawAim(g, e, x, 30 * s);
   if (e.act === 'dead' && Math.floor(e.t / 4) % 2 === 0) return;
   if (e.act === 'vanish' && e.t > 6 && e.t < 34) {
     // 瞬移中：只剩紫色的煙
@@ -1078,6 +1099,8 @@ export function draw(canvas, match, opts = {}) {
   const cam = match.camera;
   drawScenery(g, match.world, match.sub, cam, SCALE);
 
+  // 真人玩家（連線時只算自己）：對準提示用
+  aimers = match.players.filter((p) => !p.out && (opts.you != null ? p.slot === opts.you : !opts.cpu?.[p.slot]));
   // 依前後（z）排序：靠後的先畫
   const things = [];
   for (const pr of match.props) things.push([pr.z, () => drawProp(g, match, pr, cam)]);

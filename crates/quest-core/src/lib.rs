@@ -170,6 +170,8 @@ mod balance {
     #[ignore]
     fn trading() {
         let (mut hit, mut hurt, mut traded, mut finish, mut frames) = (0, 0, 0, 0, 0);
+        // 出招幾次、幾次一下都沒打中
+        let (mut swings, mut whiffs) = (0, 0);
         for (id, ..) in crate::characters::CHARACTERS.iter().take(10) {
             let entrants = [Entrant { slot: 0, character: id }];
             let mut m = Match::new(&entrants, 0, Difficulty::Normal, 3, 7);
@@ -177,7 +179,17 @@ mod balance {
             for _ in 0..60 * 300 {
                 let inp = ai.think(&m);
                 let was = (m.players[0].body.act, m.players[0].body.mv);
+                let was_t = m.players[0].body.t;
+                let was_hit = m.players[0].body.connected;
                 m.step(&[inp]);
+                // 一招結束（換成別的動作或重新出招）時，看它有沒有打中
+                let now = &m.players[0].body;
+                if was.0 == crate::game::Act::Attack && matches!(was.1, crate::game::Move::Jab | crate::game::Move::Jab2 | crate::game::Move::Kick) && (now.act != crate::game::Act::Attack || now.t < was_t) {
+                    swings += 1;
+                    if !was_hit {
+                        whiffs += 1;
+                    }
+                }
                 frames += 1;
                 for e in &m.events {
                     match e {
@@ -201,7 +213,7 @@ mod balance {
                 }
             }
         }
-        println!("打中 {hit}、被打 {hurt}（每打中 10 下被打 {:.1} 下）、出招中被打斷 {traded}（佔被打 {:.0}%）、連段打滿 {finish}、{} 秒", hurt as f32 * 10.0 / hit as f32, traded as f32 * 100.0 / hurt.max(1) as f32, frames / 60);
+        println!("打中 {hit}、被打 {hurt}（每打中 10 下被打 {:.1} 下）、出招中被打斷 {traded}（佔被打 {:.0}%）、連段打滿 {finish}、出拳腳 {swings} 次揮空 {:.0}%、{} 秒", hurt as f32 * 10.0 / hit as f32, traded as f32 * 100.0 / hurt.max(1) as f32, whiffs as f32 * 100.0 / swings.max(1) as f32, frames / 60);
     }
 
     /// 每個角色自己打 1-1：必殺放了幾次、必殺打中幾下

@@ -149,14 +149,14 @@ const fn md(startup: i32, active: i32, recover: i32, dmg: f32, far: f32, zr: f32
 fn move_data(m: Move) -> MoveData {
     match m {
         Move::None | Move::Throw | Move::Shoot => md(0, 0, 18, 0.0, 0.0, 0.0, false),
-        Move::Jab => md(4, 3, 8, 6.0, 64.0, 24.0, false),
-        Move::Jab2 => md(4, 3, 9, 7.0, 66.0, 24.0, false),
+        Move::Jab => md(4, 3, 8, 6.0, 70.0, 28.0, false),
+        Move::Jab2 => md(4, 3, 9, 7.0, 74.0, 28.0, false),
         // 連段收尾：單挑時傷害最高的打法
-        Move::Kick => md(6, 4, 15, 14.0, 76.0, 26.0, true),
+        Move::Kick => md(6, 4, 15, 14.0, 92.0, 30.0, true),
         // 衝刺攻擊：打得久一點，衝過一整排都打得到（打空的話收招會更久，見 update_players）
-        Move::DashAttack => md(3, 12, 16, 12.0, 72.0, 26.0, true),
+        Move::DashAttack => md(3, 12, 16, 12.0, 82.0, 30.0, true),
         // 跳踢：接近、脫身用，傷害比連段低
-        Move::JumpKick => md(3, 60, 0, 9.0, 70.0, 26.0, true),
+        Move::JumpKick => md(3, 60, 0, 9.0, 78.0, 30.0, true),
         // 魔王的對空上勾拳：看到玩家在身邊跳起來就打下來
         Move::Uppercut => md(5, 7, 18, 14.0, 100.0, 26.0, true),
         Move::Special => MoveData { omni: true, ..md(3, 14, 14, 14.0, 100.0, 24.0, true) },
@@ -281,15 +281,16 @@ impl Body {
         }
     }
 
-    fn reaches(&self, d: &MoveData, x: f32, z: f32, y: f32) -> bool {
+    /// r：對方身體的半寬（從身體中心到邊緣）
+    fn reaches(&self, d: &MoveData, x: f32, z: f32, y: f32, r: f32) -> bool {
         if (z - self.z).abs() > d.zr || (y - self.y).abs() > 90.0 {
             return false;
         }
         if d.omni {
-            return (x - self.x).abs() <= d.far;
+            return (x - self.x).abs() <= d.far + r;
         }
         let ahead = (x - self.x) * self.facing;
-        ahead >= d.near && ahead <= d.far
+        ahead >= d.near - r && ahead <= d.far + r
     }
 
     /// 空中的移動與落地；回傳這一格是不是剛落地
@@ -453,6 +454,15 @@ impl Enemy {
     /// 已經走進畫面、可以被打
     pub fn brain_entered(&self) -> bool {
         self.brain.entered
+    }
+    /// 身體半寬（被打的判定量到這裡）：照畫面上的身體寬度，菁英大一號
+    fn body_r(&self) -> f32 {
+        let r = match self.kind {
+            Kind::Boss => 46.0,
+            Kind::Brute => 34.0,
+            _ => 24.0,
+        };
+        if self.elite { r * 1.25 } else { r }
     }
     fn reach(&self) -> f32 {
         match self.kind {
@@ -1686,7 +1696,7 @@ impl Match {
                 if !eb.vulnerable() || eb.act == Act::Held || !e.brain.entered || p.body.hit_list.contains(&e.id) {
                     continue;
                 }
-                if !p.body.reaches(&d, eb.x, eb.z, eb.y) {
+                if !p.body.reaches(&d, eb.x, eb.z, eb.y, e.body_r()) {
                     continue;
                 }
                 p.body.hit_list.push(e.id);
@@ -1738,7 +1748,7 @@ impl Match {
             }
             // 箱子
             for pr in self.props.iter_mut() {
-                if pr.hp <= 0 || p.body.hit_list.contains(&pr.id) || !p.body.reaches(&d, pr.x, pr.z, 0.0) {
+                if pr.hp <= 0 || p.body.hit_list.contains(&pr.id) || !p.body.reaches(&d, pr.x, pr.z, 0.0, PROP_R) {
                     continue;
                 }
                 p.body.hit_list.push(pr.id);
@@ -1785,7 +1795,7 @@ impl Match {
                 if p.out || !pb.vulnerable() || e.body.hit_list.contains(&(p.slot as u32)) {
                     continue;
                 }
-                if !e.body.reaches(&d, pb.x, pb.z, pb.y) {
+                if !e.body.reaches(&d, pb.x, pb.z, pb.y, PLAYER_R) {
                     continue;
                 }
                 e.body.hit_list.push(p.slot as u32);
@@ -1968,14 +1978,17 @@ impl Match {
 }
 
 /// 出拳時：前方打得到的距離內、上下差一點點的敵人，自動往他那邊對齊（上下很難完全對準）
-const ALIGN_RANGE: f32 = 40.0;
-const ALIGN_STEP: f32 = 12.0;
+const ALIGN_RANGE: f32 = 48.0;
+const ALIGN_STEP: f32 = 18.0;
+/// 玩家、箱子的身體半寬（敵人打玩家只算一點點，不要比以前容易被打到）
+const PLAYER_R: f32 = 8.0;
+const PROP_R: f32 = 22.0;
 fn align_z(b: &mut Body, foes: &[(f32, f32)]) {
     let near = foes
         .iter()
         .filter(|(x, z)| {
             let ahead = (x - b.x) * b.facing;
-            ahead > -10.0 && ahead < 100.0 && (z - b.z).abs() < ALIGN_RANGE
+            ahead > -10.0 && ahead < 120.0 && (z - b.z).abs() < ALIGN_RANGE
         })
         .min_by(|a, c| (a.0 - b.x).abs().total_cmp(&(c.0 - b.x).abs()));
     if let Some(&(_, z)) = near {
