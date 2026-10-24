@@ -121,6 +121,8 @@ pub enum Move {
     Slam,
     BossSlam,
     Uppercut,
+    /// 雜兵的拳頭（比玩家的刺拳慢很多）
+    Punch,
     Shoot,
 }
 
@@ -159,7 +161,9 @@ fn move_data(m: Move) -> MoveData {
         Move::Uppercut => md(5, 7, 18, 14.0, 100.0, 26.0, true),
         Move::Special => MoveData { omni: true, ..md(3, 14, 14, 14.0, 100.0, 24.0, true) },
         Move::Knee => md(0, 1, 9, 8.0, 50.0, 20.0, false),
-        Move::Slash => md(7, 3, 20, 8.0, 78.0, 15.0, false),
+        // 雜兵的拳頭：起手 12 格，手會先往後拉（看到就先打他，打中就能打斷）
+        Move::Punch => md(12, 4, 16, 10.0, 64.0, 16.0, false),
+        Move::Slash => md(10, 3, 20, 12.0, 78.0, 15.0, false),
         Move::Slam => md(17, 5, 24, 15.0, 86.0, 20.0, true),
         Move::BossSlam => md(15, 5, 22, 17.0, 104.0, 24.0, true),
     }
@@ -609,6 +613,11 @@ pub struct Match {
     start_lives: i32,
     #[serde(skip)]
     go_from: f32,
+    /// 打擊停頓剩幾格；停頓中按的鍵先存起來，停完再用（不會吃掉連段的按鍵）
+    #[serde(skip)]
+    hitstop: i32,
+    #[serde(skip)]
+    buffered: Vec<Input>,
 }
 
 /// 每位參加者：(座位 slot, 角色 id)
@@ -673,6 +682,8 @@ impl Match {
             rng: SmallRng::seed_from_u64(seed),
             start_lives: lives.max(1),
             go_from: 0.0,
+            hitstop: 0,
+            buffered: Vec::new(),
         };
         m.load_stage(world, 0);
         m
@@ -732,6 +743,27 @@ impl Match {
         self.events.push(Event::Stage { world, sub });
     }
 
+    /// 打擊停頓中按下的鍵先記著
+    fn buffer(&mut self, inputs: &[Input]) {
+        self.buffered.resize(inputs.len(), Input::default());
+        for (b, i) in self.buffered.iter_mut().zip(inputs) {
+            b.attack_pressed |= i.attack_pressed;
+            b.jump_pressed |= i.jump_pressed;
+            b.special_pressed |= i.special_pressed;
+        }
+    }
+
+    /// 停頓結束：把記著的按鍵併進這一格
+    fn take_buffered(&mut self, inputs: &[Input]) -> Vec<Input> {
+        let mut out = inputs.to_vec();
+        for (o, b) in out.iter_mut().zip(self.buffered.drain(..)) {
+            o.attack_pressed |= b.attack_pressed;
+            o.jump_pressed |= b.jump_pressed;
+            o.special_pressed |= b.special_pressed;
+        }
+        out
+    }
+
     /// 全軍覆沒後接關：從這一小關重來，每人命數回滿
     pub fn continue_game(&mut self) -> bool {
         if self.phase != Phase::Over {
@@ -770,7 +802,12 @@ impl Match {
                     self.phase = Phase::Play;
                 }
             }
+            Phase::Play if self.hitstop > 0 => {
+                self.hitstop -= 1;
+                self.buffer(inputs);
+            }
             Phase::Play => {
+                let inputs = &self.take_buffered(inputs);
                 self.update_players(inputs, true);
                 self.update_enemies();
                 self.resolve_player_attacks();
@@ -1208,6 +1245,18 @@ impl Match {
             }
         }
 
+        // 正在出手的敵人：每位玩家的左右兩邊各最多一隻在打他（雙截龍式的輪流上，不會一群一起打；
+        // 被前後包夾才會兩邊一起來，所以站位很重要）。簡單只有一隻
+        let per_side = self.difficulty != Difficulty::Easy;
+        let side_of = |ex: f32, k: usize| usize::from(ex > targets[k].0);
+        let mut swinging = vec![[0usize; 2]; targets.len()];
+        for (i, e) in self.enemies.iter().enumerate() {
+            if let Some(k) = target_of[i] {
+                if e.body.act == Act::Attack && e.body.mv != Move::None && e.kind != Kind::Thrower {
+                    swinging[k][side_of(e.body.x, k)] += 1;
+                }
+            }
+        }
         let cam = self.camera;
         let (cool_lo, cool_hi) = match self.difficulty {
             Difficulty::Easy => (70, 140),
@@ -1219,6 +1268,7 @@ impl Match {
         let mut summons = 0;
         for i in 0..self.enemies.len() {
             let target = target_of[i].map(|k| targets[k]);
+            let target_k = target_of[i];
             let e = &mut self.enemies[i];
             let reach = e.reach();
             let b = &mut e.body;
@@ -1337,16 +1387,19 @@ impl Match {
                     }
                     // 進攻
                     let in_range = dx.abs() <= reach && dz.abs() <= 12.0;
-                    if (engaged[i] || e.kind == Kind::Thrower) && in_range && e.brain.cool <= 0 {
+                    let turn = e.kind == Kind::Boss
+                        || e.kind == Kind::Thrower
+                        || target_k.is_some_and(|k| {
+                            let n = swinging[k];
+                            if per_side { n[side_of(b.x, k)] == 0 } else { n[0] + n[1] == 0 }
+                        });
+                    if (engaged[i] || e.kind == Kind::Thrower) && in_range && e.brain.cool <= 0 && turn {
+                        if let Some(k) = target_k {
+                            swinging[k][side_of(b.x, k)] += 1;
+                        }
                         b.facing = dx.signum();
                         let mv = match e.kind {
-                            Kind::Thug | Kind::Thrower => {
-                                if r < 0.5 {
-                                    Move::Jab
-                                } else {
-                                    Move::Jab2
-                                }
-                            }
+                            Kind::Thug | Kind::Thrower => Move::Punch,
                             Kind::Knife => Move::Slash,
                             Kind::Brute => Move::Slam,
                             Kind::Boss => Move::BossSlam,
@@ -1513,6 +1566,7 @@ impl Match {
                     let armor = e.armor > 0;
                     e.body.take_hit(10, true, dir, armor);
                     e.last_by = by;
+                    stunned(e);
                     self.events.push(Event::Hit { x: e.body.x, y: e.body.z - 60.0, big: true, by });
                 }
             }
@@ -1597,6 +1651,7 @@ impl Match {
             }
             let sp = p.special;
             let special = p.body.mv == Move::Special && p.body.act == Act::Attack;
+            let mut hit_stop = 0;
             let d = if special { special_window(&p.body, &sp) } else { p.body.active_move() };
             let Some(d) = d else { continue };
             let slot = p.slot;
@@ -1630,6 +1685,10 @@ impl Match {
                 let knock = d.knock && last_hit;
                 e.body.take_hit(dmg, knock, dir, armor);
                 e.last_by = Some(slot);
+                stunned(e);
+                if !special {
+                    hit_stop = hit_stop.max(if knock { HITSTOP_BIG } else { HITSTOP });
+                }
                 if special && knock && !armor && e.body.act == Act::Fall {
                     if sp.push > 0.0 {
                         e.body.vx = dir * sp.push;
@@ -1671,6 +1730,7 @@ impl Match {
             if landed {
                 p.body.connected = true;
             }
+            self.hitstop = self.hitstop.max(hit_stop);
         }
         // 打破的箱子掉出道具
         let mut drops = Vec::new();
@@ -1744,6 +1804,7 @@ impl Match {
                     let armor = e.armor > 0;
                     e.body.take_hit(s.dmg, s.knock, s.vx.signum(), armor);
                     e.last_by = Some(slot);
+                    stunned(e);
                     events.push(Event::Hit { x: e.body.x, y: e.body.z - 70.0, big: true, by: Some(slot) });
                     if let Some(p) = self.players.iter_mut().find(|p| p.slot == slot) {
                         p.score += s.dmg as u32 * 10;
@@ -1885,6 +1946,22 @@ impl Match {
             self.events.push(Event::Over);
         }
     }
+}
+
+/// 打中的停頓格數（一般／把人打倒）
+const HITSTOP: i32 = 3;
+const HITSTOP_BIG: i32 = 6;
+/// 敵人被打到的硬直格數（玩家連段三下中間不會被他掙脫）
+const ENEMY_HURT: i32 = 22;
+/// 敵人被打之後至少等多久才會出手
+const ENEMY_RECOVER: i32 = 40;
+
+/// 敵人被打中：硬直長一點，恢復後也不會立刻反擊
+fn stunned(e: &mut Enemy) {
+    if e.body.act == Act::Hurt {
+        e.body.dur = ENEMY_HURT;
+    }
+    e.brain.cool = e.brain.cool.max(ENEMY_RECOVER);
 }
 
 /// 必殺氣：滿了才能放必殺，放一次用光

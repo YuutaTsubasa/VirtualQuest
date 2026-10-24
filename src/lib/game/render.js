@@ -385,7 +385,8 @@ function enemyPose(e) {
     case 'attack': {
       // 魔王跳起來落地後的硬直（沒有招式）：用蹲低的 slam 那格當落地的衝擊
       if (e.mv === 'none') return e.kind === 'boss' ? 'slam' : 'idle';
-      const windup = e.t < (e.mv === 'slam' || e.mv === 'bossSlam' ? 15 : e.mv === 'shoot' ? 12 : 6);
+      // 起手格數跟 crates/quest-core 的 move_data 一致：起手時擺出拉手的姿勢，看得出來要打了
+      const windup = e.t < ({ slam: 15, bossSlam: 15, shoot: 12, punch: 12, slash: 10, uppercut: 5 }[e.mv] ?? 6);
       if (windup) return 'windup';
       return e.kind === 'boss' ? 'slam' : 'attack';
     }

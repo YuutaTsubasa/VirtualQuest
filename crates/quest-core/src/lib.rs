@@ -165,6 +165,45 @@ mod balance {
         }
     }
 
+    /// 換血程度：打中幾下、被打幾下、在自己出招中被打斷幾次（互打）、連段打滿三下幾次
+    #[test]
+    #[ignore]
+    fn trading() {
+        let (mut hit, mut hurt, mut traded, mut finish, mut frames) = (0, 0, 0, 0, 0);
+        for (id, ..) in crate::characters::CHARACTERS.iter().take(10) {
+            let entrants = [Entrant { slot: 0, character: id }];
+            let mut m = Match::new(&entrants, 0, Difficulty::Normal, 3, 7);
+            let mut ai = Ai::new(0, Difficulty::Hard, 11);
+            for _ in 0..60 * 300 {
+                let inp = ai.think(&m);
+                let was = (m.players[0].body.act, m.players[0].body.mv);
+                m.step(&[inp]);
+                frames += 1;
+                for e in &m.events {
+                    match e {
+                        Event::Hit { by: Some(0), .. } => {
+                            hit += 1;
+                            if m.players[0].body.mv == crate::game::Move::Kick {
+                                finish += 1;
+                            }
+                        }
+                        Event::Hurt { slot: 0, .. } => {
+                            hurt += 1;
+                            if was.0 == crate::game::Act::Attack && was.1 != crate::game::Move::None {
+                                traded += 1;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                if m.world > 0 || m.phase == Phase::Over {
+                    break;
+                }
+            }
+        }
+        println!("打中 {hit}、被打 {hurt}（每打中 10 下被打 {:.1} 下）、出招中被打斷 {traded}（佔被打 {:.0}%）、連段打滿 {finish}、{} 秒", hurt as f32 * 10.0 / hit as f32, traded as f32 * 100.0 / hurt.max(1) as f32, frames / 60);
+    }
+
     /// 每個角色自己打 1-1：必殺放了幾次、必殺打中幾下
     #[test]
     #[ignore]
