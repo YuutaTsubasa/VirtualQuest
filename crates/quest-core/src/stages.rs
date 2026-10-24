@@ -5,7 +5,7 @@
 //! 關名、敵人的名字與配色在前端（src/lib/game/stages.js），這裡只管數量與種類。
 
 use crate::ai::Difficulty;
-use crate::game::{ItemKind, Kind, W, Z_BOTTOM, Z_TOP};
+use crate::game::{HazardKind, ItemKind, Kind, W, Z_BOTTOM, Z_TOP};
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 
@@ -36,6 +36,10 @@ pub struct StageDef {
     pub waves: Vec<Wave>,
     /// 可以打破的箱子：(x, z, 掉出來的東西)
     pub props: Vec<(f32, f32, ItemKind)>,
+    /// 油桶（白色都市）：(x, z)
+    pub barrels: Vec<(f32, f32)>,
+    /// 地上的機關（火炎礦坑的噴口、邪惡城堡的尖刺）：(種類, x, z, 一開始的計時（錯開）)
+    pub hazards: Vec<(HazardKind, f32, f32, i32)>,
 }
 
 /// 這一大關出現哪些雜兵（越後面越多種）
@@ -122,5 +126,28 @@ pub fn build_stage(world: usize, sub: usize, players: usize, difficulty: Difficu
         };
         props.push((x, z, item));
     }
-    StageDef { length, waves, props }
+    // 白色都市：路上的油桶，打破會爆炸
+    let mut barrels = Vec::new();
+    if world == 0 {
+        for k in 0..2 + sub.min(1) {
+            let x = 600.0 + (length - 900.0) * (k as f32 + 0.3) / (2 + sub.min(1)) as f32 + rng.gen_range(-60.0..60.0);
+            barrels.push((x, rng.gen_range(Z_TOP + 20.0..Z_BOTTOM - 20.0)));
+        }
+    }
+    // 火炎礦坑的噴口、邪惡城堡的尖刺：沿路幾個，計時錯開
+    let mut hazards = Vec::new();
+    let hazard = match world {
+        4 => Some(HazardKind::Geyser),
+        5 => Some(HazardKind::Spikes),
+        _ => None,
+    };
+    if let Some(kind) = hazard {
+        let n = 4 + sub;
+        for k in 0..n {
+            let x = 520.0 + (length - 800.0) * k as f32 / (n - 1).max(1) as f32 + rng.gen_range(-50.0..50.0);
+            let z = rng.gen_range(Z_TOP + 25.0..Z_BOTTOM - 25.0);
+            hazards.push((kind, x, z, rng.gen_range(0..150)));
+        }
+    }
+    StageDef { length, waves, props, barrels, hazards }
 }

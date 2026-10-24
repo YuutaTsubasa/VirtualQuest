@@ -13,6 +13,7 @@ import { hasAsset } from '../style-assets.js';
 import { loadImage } from '../preload.svelte.js';
 import { drawWeapon, heldPose } from './weapons.js';
 import * as combo from './combo.js';
+import { drawBarrel, drawHazard, hazardDepth } from './hazards.js';
 import { t, displayName } from '../i18n.svelte.js';
 
 // 內部解析度：一般風格 2 倍（1920×1080）比較銳利；像素風格用較低的倍數再放大（見 style-assets.js）
@@ -122,6 +123,22 @@ export function handleEvents(match) {
       case 'quake':
         effect('dust', e.x, e.z - 14, 320, 34, { grow: 0.5 });
         shake = Math.max(shake, 16);
+        break;
+      case 'explode':
+        // 油桶爆炸：火球＋碎片＋畫面一閃
+        effect('burst', e.x, e.z - 50, 300, 30, { grow: 0.6 });
+        burst(e.x, e.z - 50, '#ff8a2e', 22, 9, 30);
+        burst(e.x, e.z - 50, '#ffd23f', 14, 7, 24);
+        shake = Math.max(shake, 18);
+        flashScreen = Math.max(flashScreen, 8);
+        break;
+      case 'hazard':
+        if (e.kind === 'geyser') {
+          burst(e.x, e.z - 60, '#ff8a2e', 12, 7, 26);
+          shake = Math.max(shake, 6);
+        } else if (e.kind === 'spikes') {
+          burst(e.x, e.z - 20, '#d8dce6', 8, 5, 16);
+        }
         break;
       case 'ko':
         effect('burst', e.x, e.z - 60, e.boss ? 320 : 150, e.boss ? 60 : 30, { grow: 0.5 });
@@ -724,6 +741,11 @@ function drawImageProp(g, src, x, y, w, h, { flip = false, shake = 0 } = {}) {
 
 function drawProp(g, match, pr, cam) {
   const x = pr.x - cam;
+  if (pr.barrel) {
+    shadow(g, x, pr.z, 0, 26);
+    drawBarrel(g, x, pr.z, pr.flash);
+    return;
+  }
   const world = WORLDS[match.world].id;
   const [a, b] = PROP_LOOK[world];
   shadow(g, x, pr.z, 0, 30);
@@ -1231,6 +1253,7 @@ export function draw(canvas, match, opts = {}) {
   // 依前後（z）排序：靠後的先畫
   const things = [];
   for (const pr of match.props) things.push([pr.z, () => drawProp(g, match, pr, cam)]);
+  for (const h of match.hazards ?? []) things.push([hazardDepth(h), () => drawHazard(g, h, cam, match.frame)]);
   for (const it of match.items) things.push([it.z - 1, () => drawItem(g, it, cam, match.frame, match.world)]);
   for (const e of match.enemies) things.push([e.z + (e.act === 'held' ? 0.5 : 0), () => drawEnemy(g, match, e, cam)]);
   for (const p of match.players) things.push([p.z, () => drawPlayer(g, match, p, cam)]);

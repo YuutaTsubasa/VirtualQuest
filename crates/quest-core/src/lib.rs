@@ -165,6 +165,37 @@ mod balance {
         }
     }
 
+    /// 關卡機關：每一大關打第一小關，機關觸發幾次、玩家被機關打倒幾次、敵人被機關打倒幾次
+    #[test]
+    #[ignore]
+    fn hazards() {
+        use crate::game::HazardState;
+        for world in 0..6 {
+            let entrants = [Entrant { slot: 0, character: "aming" }, Entrant { slot: 1, character: "leo" }];
+            let mut m = Match::new(&entrants, world, Difficulty::Normal, 3, 3);
+            let mut ais: Vec<Ai> = (0..2).map(|i| Ai::new(i, Difficulty::Hard, i as u64 + 4)).collect();
+            let (mut fired, mut players, mut foes, mut blasts) = (0, 0, 0, 0);
+            for _ in 0..60 * 200 {
+                let inputs: Vec<_> = ais.iter_mut().map(|a| a.think(&m)).collect();
+                let near: Vec<bool> = m.players.iter().map(|p| m.hazards.iter().any(|h| h.state == HazardState::Active && (h.x - p.body.x).abs() < 45.0 && (h.z - p.body.z).abs() < 26.0)).collect();
+                m.step(&inputs);
+                for e in &m.events {
+                    match e {
+                        Event::Hazard { .. } => fired += 1,
+                        Event::Explode { .. } => blasts += 1,
+                        Event::Hurt { slot, .. } if near.get(*slot).copied().unwrap_or(false) => players += 1,
+                        Event::Hit { by: None, .. } => foes += 1,
+                        _ => {}
+                    }
+                }
+                if m.sub > 0 || m.phase == Phase::Over {
+                    break;
+                }
+            }
+            println!("第 {} 大關：機關觸發 {fired}、玩家被機關打 {players}、敵人被機關打 {foes}、油桶爆炸 {blasts}", world + 1);
+        }
+    }
+
     /// 換血程度：打中幾下、被打幾下、在自己出招中被打斷幾次（互打）、連段打滿三下幾次
     #[test]
     #[ignore]

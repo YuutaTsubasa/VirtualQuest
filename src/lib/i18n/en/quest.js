@@ -267,4 +267,6 @@ export default {
   '最高連段': 'Max combo',
   '被打': 'Hits taken',
   '最佳': 'Best',
+  '關卡機關': 'Stage gimmicks',
+  '：油桶會爆炸、滾木要跳過、水裡跳得高、冰上會滑、噴口和尖刺發光時快閃開（也能引敵人過去）。': ': Barrels explode, jump over rolling logs, you float higher underwater, ice is slippery, and dodge geysers and spikes when they glow (lure enemies into them).',
 };

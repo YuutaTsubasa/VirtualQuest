@@ -186,6 +186,11 @@ impl Move {
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Body {
+    /// 這一關的重力（水下世界比較小）、地面是不是冰（滑）；每一格依大關設定
+    #[serde(skip)]
+    grav: f32,
+    #[serde(skip)]
+    ice: bool,
     pub x: f32,
     pub z: f32,
     pub y: f32,
@@ -245,6 +250,8 @@ impl Body {
             hit_list: Vec::new(),
             connected: false,
             hold: None,
+            grav: G,
+            ice: false,
         }
     }
 
@@ -305,7 +312,7 @@ impl Body {
             return false;
         }
         self.y += self.vy;
-        self.vy -= G;
+        self.vy -= self.grav;
         self.x += self.vx;
         self.z += self.vz;
         if self.y <= 0.0 {
@@ -420,6 +427,9 @@ pub struct Player {
     pub score: u32,
     /// 必殺氣（0..=SP_MAX）：普通攻擊打中、被打會集氣，滿了才能放必殺
     pub sp: i32,
+    /// 冰面上的滑行速度
+    #[serde(skip)]
+    slide: (f32, f32),
     /// 手上的武器、還能打中幾次
     pub weapon: Option<ItemKind>,
     pub weapon_uses: i32,
@@ -531,7 +541,57 @@ pub struct Prop {
     pub flash: i32,
     #[serde(skip)]
     drop: ItemKind,
+    /// 油桶（白色都市）：打破會爆炸，炸倒身邊的敵人
+    pub barrel: bool,
+    /// 最後是誰打的（爆炸算他的）
+    #[serde(skip)]
+    by: Option<usize>,
 }
+
+/// 關卡機關
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum HazardKind {
+    /// 火炎礦坑：地上的裂縫定時噴岩漿
+    Geyser,
+    /// 邪惡城堡：地板定時刺出尖刺
+    Spikes,
+    /// 草原森林：滾木從右邊滾過一條路線
+    Log,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum HazardState {
+    Idle,
+    /// 發光預告（看到就快走開／準備跳）
+    Warn,
+    /// 作用中：碰到就被打倒
+    Active,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Hazard {
+    pub id: u32,
+    pub kind: HazardKind,
+    pub x: f32,
+    pub z: f32,
+    pub state: HazardState,
+    pub t: i32,
+    /// 這一次作用已經打到誰（敵人 id、玩家 1000＋座位）
+    #[serde(skip)]
+    hit: Vec<u32>,
+}
+
+/// 噴口／尖刺：平時、預告、作用各幾格
+const HAZARD_IDLE: i32 = 150;
+const HAZARD_WARN: i32 = 50;
+const HAZARD_ACTIVE: i32 = 28;
+/// 滾木：預告幾格、滾多快、多久來一次
+const LOG_WARN: i32 = 60;
+const LOG_SPEED: f32 = 6.5;
+const LOG_EVERY: i32 = 480;
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -600,6 +660,10 @@ pub enum Event {
     Throw { slot: usize },
     /// 武器用完壞掉
     WeaponBreak { x: f32, z: f32 },
+    /// 油桶爆炸
+    Explode { x: f32, z: f32 },
+    /// 噴口／尖刺開始作用、滾木滾出來
+    Hazard { kind: HazardKind, x: f32, z: f32 },
     Land { x: f32, z: f32 },
     /// 跑步的腳步（揚起灰塵）
     Step { x: f32, z: f32 },
@@ -635,6 +699,7 @@ pub struct Match {
     pub players: Vec<Player>,
     pub enemies: Vec<Enemy>,
     pub props: Vec<Prop>,
+    pub hazards: Vec<Hazard>,
     pub items: Vec<Item>,
     pub shots: Vec<Shot>,
     /// 魔王的 id（畫面上方畫血條）
@@ -701,6 +766,7 @@ impl Match {
                     sp: SP_START,
                     weapon: None,
                     weapon_uses: 0,
+                    slide: (0.0, 0.0),
                 }
             })
             .collect();
@@ -718,13 +784,14 @@ impl Match {
             players,
             enemies: Vec::new(),
             props: Vec::new(),
+            hazards: Vec::new(),
             items: Vec::new(),
             shots: Vec::new(),
             boss: None,
             continues: 0,
             frame: 0,
             events: Vec::new(),
-            def: StageDef { length: W, waves: Vec::new(), props: Vec::new() },
+            def: StageDef { length: W, waves: Vec::new(), props: Vec::new(), barrels: Vec::new(), hazards: Vec::new() },
             wave: 0,
             wave_on: false,
             pending: Vec::new(),
@@ -764,9 +831,24 @@ impl Match {
             .map(|(x, z, drop)| {
                 let id = self.next_id;
                 self.next_id += 1;
-                Prop { id, x, z, hp: 2, flash: 0, drop }
+                Prop { id, x, z, hp: 2, flash: 0, drop, barrel: false, by: None }
             })
             .collect();
+        for (x, z) in self.def.barrels.clone() {
+            let id = self.new_id();
+            self.props.push(Prop { id, x, z, hp: 1, flash: 0, drop: ItemKind::Gem, barrel: true, by: None });
+        }
+        self.hazards = self
+            .def
+            .hazards
+            .clone()
+            .into_iter()
+            .map(|(kind, x, z, offset)| Hazard { id: 0, kind, x, z, state: HazardState::Idle, t: offset, hit: Vec::new() })
+            .collect();
+        for h in self.hazards.iter_mut() {
+            self.next_id += 1;
+            h.id = self.next_id;
+        }
         let n = self.players.len();
         for (i, p) in self.players.iter_mut().enumerate() {
             if p.out {
@@ -870,6 +952,125 @@ impl Match {
         }
     }
 
+    /// 這一關的重力：水下世界比較小（跳得高、在空中久）
+    fn grav(&self) -> f32 {
+        if self.world == WORLD_SEA { G * 0.55 } else { G }
+    }
+
+    /// 跳起來的初速：水下世界小一點（不然會飛出畫面）
+    fn jump_v(&self) -> f32 {
+        if self.world == WORLD_SEA { JUMP_V * 0.8 } else { JUMP_V }
+    }
+
+    /// 油桶爆炸：身邊的敵人都被炸倒（算打破的人的），玩家也會被波及一點點
+    fn explode(&mut self, x: f32, z: f32, by: Option<usize>) {
+        self.events.push(Event::Explode { x, z });
+        for e in self.enemies.iter_mut() {
+            let b = &e.body;
+            if !b.vulnerable() || !e.brain.entered || (b.x - x).abs() > 130.0 || (b.z - z).abs() > 44.0 {
+                continue;
+            }
+            let was_alive = e.body.hp > 0;
+            let dir = if e.body.x >= x { 1.0 } else { -1.0 };
+            e.body.take_hit(28, true, dir, false);
+            e.last_by = by;
+            stunned(e);
+            self.events.push(Event::Hit { x: e.body.x, y: e.body.z - 70.0, big: true, by });
+            if was_alive && e.body.hp <= 0 {
+                if let Some(p) = by.and_then(|s| self.players.iter_mut().find(|p| p.slot == s)) {
+                    p.score += e.score();
+                    p.kos += 1;
+                }
+                self.events.push(Event::Ko { x: e.body.x, z: e.body.z, boss: e.kind == Kind::Boss, by });
+            }
+        }
+        for p in self.players.iter_mut() {
+            let b = &p.body;
+            if p.out || !b.vulnerable() || (b.x - x).abs() > 100.0 || (b.z - z).abs() > 36.0 {
+                continue;
+            }
+            let dir = if p.body.x >= x { 1.0 } else { -1.0 };
+            p.body.take_hit(6, true, dir, false);
+            self.events.push(Event::Hurt { slot: p.slot, x: p.body.x, y: p.body.z - 70.0, big: true });
+        }
+        self.hitstop = self.hitstop.max(HITSTOP_BIG);
+    }
+
+    /// 噴口、尖刺、滾木
+    fn update_hazards(&mut self) {
+        let cam = self.camera;
+        // 草原森林：打架的時候（鏡頭鎖住）每隔一陣子從右邊滾來一根木頭
+        if self.world == WORLD_FOREST && self.locked && self.frame % LOG_EVERY as u64 == (LOG_EVERY / 2) as u64 {
+            let lane = self.rng.gen_range(Z_TOP + 20.0..Z_BOTTOM - 20.0);
+            let id = self.new_id();
+            self.hazards.push(Hazard { id, kind: HazardKind::Log, x: cam + W - 30.0, z: lane, state: HazardState::Warn, t: 0, hit: Vec::new() });
+        }
+        let mut events = Vec::new();
+        for h in self.hazards.iter_mut() {
+            h.t += 1;
+            match (h.kind, h.state) {
+                (HazardKind::Log, HazardState::Warn) => {
+                    h.x = cam + W - 30.0;
+                    if h.t >= LOG_WARN {
+                        h.state = HazardState::Active;
+                        h.t = 0;
+                        h.x = cam + W + 60.0;
+                        events.push(Event::Hazard { kind: h.kind, x: h.x, z: h.z });
+                    }
+                }
+                (HazardKind::Log, _) => h.x -= LOG_SPEED,
+                (_, HazardState::Idle) if h.t >= HAZARD_IDLE => {
+                    h.state = HazardState::Warn;
+                    h.t = 0;
+                }
+                (_, HazardState::Warn) if h.t >= HAZARD_WARN => {
+                    h.state = HazardState::Active;
+                    h.t = 0;
+                    h.hit.clear();
+                    events.push(Event::Hazard { kind: h.kind, x: h.x, z: h.z });
+                }
+                (_, HazardState::Active) if h.t >= HAZARD_ACTIVE => {
+                    h.state = HazardState::Idle;
+                    h.t = 0;
+                }
+                _ => {}
+            }
+        }
+        self.hazards.retain(|h| !(h.kind == HazardKind::Log && h.state == HazardState::Active && h.x < cam - 120.0));
+        // 作用中的機關：碰到的人（在地上的）被打倒；敵人也會
+        for h in self.hazards.iter_mut().filter(|h| h.state == HazardState::Active) {
+            let (rx, rz) = if h.kind == HazardKind::Log { (34.0, 20.0) } else { (40.0, 22.0) };
+            for p in self.players.iter_mut() {
+                let b = &p.body;
+                let key = 1000 + p.slot as u32;
+                if p.out || !b.vulnerable() || b.y > 24.0 || h.hit.contains(&key) || (b.x - h.x).abs() > rx || (b.z - h.z).abs() > rz {
+                    continue;
+                }
+                h.hit.push(key);
+                let dir = if h.kind == HazardKind::Log { -1.0 } else if p.body.x >= h.x { 1.0 } else { -1.0 };
+                p.body.hold = None;
+                p.body.take_hit(12, true, dir, false);
+                events.push(Event::Hurt { slot: p.slot, x: p.body.x, y: p.body.z - 70.0, big: true });
+            }
+            for e in self.enemies.iter_mut() {
+                let b = &e.body;
+                if !e.brain.entered || !b.vulnerable() || b.act == Act::Held || b.y > 24.0 || h.hit.contains(&e.id) || (b.x - h.x).abs() > rx || (b.z - h.z).abs() > rz {
+                    continue;
+                }
+                h.hit.push(e.id);
+                let dir = if h.kind == HazardKind::Log { -1.0 } else if e.body.x >= h.x { 1.0 } else { -1.0 };
+                let was_alive = e.body.hp > 0;
+                e.body.take_hit(20, true, dir, false);
+                stunned(e);
+                events.push(Event::Hit { x: e.body.x, y: e.body.z - 70.0, big: true, by: None });
+                if was_alive && e.body.hp <= 0 {
+                    events.push(Event::Ko { x: e.body.x, z: e.body.z, boss: e.kind == Kind::Boss, by: None });
+                }
+            }
+        }
+        self.events.extend(events);
+    }
+
     /// 在地上放一個道具（測試、之後的關卡機關用）
     pub fn spawn_item(&mut self, kind: ItemKind, x: f32, z: f32) {
         let id = self.new_id();
@@ -910,6 +1111,7 @@ impl Match {
                 self.update_shots();
                 self.drop_weapons();
                 self.update_items();
+                self.update_hazards();
                 self.spawn_pending();
                 self.update_camera();
                 self.update_waves();
@@ -960,6 +1162,7 @@ impl Match {
 
     fn update_players(&mut self, inputs: &[Input], can_fight: bool) {
         let (left, right) = (self.camera + 24.0, self.camera + W - 24.0);
+        let (grav, ice, jump_v) = (self.grav(), self.world == WORLD_ICE, self.jump_v());
         // 地上的武器（站在旁邊按攻擊就撿起來）
         let weapons: Vec<(u32, f32, f32, ItemKind, i32)> = self
             .items
@@ -993,6 +1196,8 @@ impl Match {
             let sp = p.special;
             let power = p.stats.power;
             let ready = p.sp >= SP_MAX;
+            p.body.grav = grav;
+            p.body.ice = ice;
             if inp.special_pressed && !ready && matches!(p.body.act, Act::Stand | Act::Walk | Act::Run) {
                 self.events.push(Event::NoSp { slot });
             }
@@ -1025,7 +1230,7 @@ impl Match {
                     } else if inp.jump_pressed {
                         // 跑步跳：跳得比較遠
                         b.set(Act::Jump, 0);
-                        b.vy = JUMP_V;
+                        b.vy = jump_v;
                         b.vx = b.facing * speed * RUN_SPEED;
                         b.vz = inp.dz() * speed * Z_SPEED;
                         self.events.push(Event::Jump { slot });
@@ -1075,7 +1280,7 @@ impl Match {
                         self.events.push(Event::Special { slot });
                     } else if inp.jump_pressed {
                         b.set(Act::Jump, 0);
-                        b.vy = JUMP_V;
+                        b.vy = jump_v;
                         b.vx = inp.dx() * speed * 1.15;
                         b.vz = inp.dz() * speed * Z_SPEED;
                         if inp.dx() != 0.0 {
@@ -1113,10 +1318,18 @@ impl Match {
                         self.events.push(Event::Swing { slot });
                     } else {
                         let (dx, dz) = (inp.dx(), inp.dz());
-                        let moving = dx != 0.0 || dz != 0.0;
                         let diag = if dx != 0.0 && dz != 0.0 { 0.8 } else { 1.0 };
-                        b.x += dx * speed * diag;
-                        b.z += dz * speed * Z_SPEED * diag;
+                        let (tx, tz) = (dx * speed * diag, dz * speed * Z_SPEED * diag);
+                        if ice {
+                            // 冰面：速度慢慢跟上、放開也會滑一段
+                            p.slide.0 += (tx - p.slide.0) * 0.07;
+                            p.slide.1 += (tz - p.slide.1) * 0.07;
+                        } else {
+                            p.slide = (tx, tz);
+                        }
+                        b.x += p.slide.0;
+                        b.z += p.slide.1;
+                        let moving = dx != 0.0 || dz != 0.0 || p.slide.0.abs() > 0.4 || p.slide.1.abs() > 0.3;
                         if dx != 0.0 {
                             b.facing = dx;
                         }
@@ -1223,7 +1436,7 @@ impl Match {
                 }
                 Act::Hurt => {
                     b.x += b.vx;
-                    b.vx *= 0.85;
+                    b.vx *= if b.ice { 0.95 } else { 0.85 };
                     if b.t >= b.dur {
                         b.set(Act::Stand, 0);
                     }
@@ -1418,7 +1631,10 @@ impl Match {
         let world = self.world;
         let mut new_shots = Vec::new();
         let mut summons = 0;
+        let (grav, ice) = (self.grav(), self.world == WORLD_ICE);
         for i in 0..self.enemies.len() {
+            self.enemies[i].body.grav = grav;
+            self.enemies[i].body.ice = ice;
             let target = target_of[i].map(|k| targets[k]);
             let target_k = target_of[i];
             let e = &mut self.enemies[i];
@@ -1657,7 +1873,7 @@ impl Match {
                 }
                 Act::Hurt => {
                     b.x += b.vx;
-                    b.vx *= 0.85;
+                    b.vx *= if b.ice { 0.95 } else { 0.85 };
                     if b.t >= b.dur {
                         b.set(Act::Stand, 0);
                     }
@@ -1887,6 +2103,7 @@ impl Match {
                 }
                 p.body.hit_list.push(pr.id);
                 pr.hp -= 1;
+                pr.by = Some(slot);
                 pr.flash = 6;
                 self.events.push(Event::Hit { x: pr.x, y: pr.z - 40.0, big: false, by: Some(slot) });
             }
@@ -1905,8 +2122,12 @@ impl Match {
         }
         // 打破的箱子掉出道具
         let mut drops = Vec::new();
+        let mut blasts = Vec::new();
         self.props.retain(|pr| {
-            if pr.hp <= 0 {
+            if pr.hp <= 0 && pr.barrel {
+                blasts.push((pr.x, pr.z, pr.by));
+                false
+            } else if pr.hp <= 0 {
                 drops.push((pr.x, pr.z, pr.drop));
                 false
             } else {
@@ -1920,6 +2141,9 @@ impl Match {
             let id = self.new_id();
             self.items.push(Item { id, kind, x, z, y: 30.0, vy: 4.0, uses: kind.uses() });
             self.events.push(Event::Break { x, z });
+        }
+        for (x, z, by) in blasts {
+            self.explode(x, z, by);
         }
     }
 
@@ -2137,6 +2361,11 @@ fn align_z(b: &mut Body, foes: &[(f32, f32)]) {
         b.z += (z - b.z).clamp(-ALIGN_STEP, ALIGN_STEP);
     }
 }
+
+/// 大關的編號（stages.rs 的 WORLDS 順序）
+const WORLD_FOREST: usize = 1;
+const WORLD_SEA: usize = 2;
+const WORLD_ICE: usize = 3;
 
 /// 打中的停頓格數（一般／把人打倒）
 const HITSTOP: i32 = 3;

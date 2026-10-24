@@ -2,7 +2,7 @@
 //! 沒有敵人就跟著往右走（打箱子、跟上「GO →」）。
 //! 輸出跟真人一樣的 `Input`，所以模擬不用分辨誰是電腦。
 
-use crate::game::{Act, ItemKind, Match, Phase, Input, SP_MAX, W};
+use crate::game::{Act, HazardKind, HazardState, ItemKind, Match, Phase, Input, SP_MAX, W};
 use crate::characters::Reach;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -157,6 +157,20 @@ impl Ai {
                 out.attack_pressed = true;
                 out.left = self.fight < 0.0;
                 out.right = self.fight > 0.0;
+            }
+        }
+        // 躲機關：滾木朝自己滾過來就跳；噴口／尖刺發光了就往上下閃開
+        if matches!(b.act, Act::Stand | Act::Walk | Act::Run) {
+            for h in m.hazards.iter().filter(|h| h.state != HazardState::Idle) {
+                if h.kind == HazardKind::Log {
+                    let ahead = h.x - b.x;
+                    if h.state == HazardState::Active && (h.z - b.z).abs() < 24.0 && ahead > -10.0 && ahead < 90.0 {
+                        return Input { jump_pressed: true, ..Input::default() };
+                    }
+                } else if (h.x - b.x).abs() < 52.0 && (h.z - b.z).abs() < 30.0 {
+                    let up = b.z > h.z && b.z < crate::game::Z_BOTTOM - 30.0 || b.z < crate::game::Z_TOP + 30.0;
+                    return Input { down: up, up: !up, left: out.left, right: out.right, ..Input::default() };
+                }
             }
         }
         // 必殺技：看自己的必殺是哪一種（身邊一圈／往前衝／氣波）再決定什麼時候放
