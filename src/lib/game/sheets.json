@@ -646,6 +646,79 @@
       "fix": {
         "attack": 1.069
       }
+    },
+    "castle/brute": {
+      "src": "enemies/castle/brute.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down",
+        "charge"
+      ],
+      "cols": 9,
+      "cell": 400,
+      "fix": {
+        "attack": 1.294,
+        "windup": 1.123,
+        "charge": 1.256
+      },
+      "scale": 1.081
+    },
+    "castle/knife": {
+      "src": "enemies/castle/knife.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "attack": 1.148
+      }
+    },
+    "castle/thrower": {
+      "src": "enemies/castle/thrower.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400
+    },
+    "castle/thug": {
+      "src": "enemies/castle/thug.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "attack": 1.036
+      }
     }
   },
   "bosses": {
@@ -739,9 +812,32 @@
       ],
       "cols": 6,
       "cell": 600
+    },
+    "castle": {
+      "src": "bosses/castle.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "slam",
+        "hurt",
+        "fall",
+        "down",
+        "cast",
+        "vanish"
+      ],
+      "cols": 6,
+      "cell": 600,
+      "fix": {
+        "walk1": 1.101
+      }
     }
   },
   "stages": [
+    "castle-1",
+    "castle-2",
+    "castle-3",
     "city-1",
     "city-2",
     "city-3",
@@ -759,6 +855,7 @@
     "sea-3"
   ],
   "props": [
+    "castle-crate",
     "city-crate",
     "forest-crate",
     "ice-crate",
@@ -775,9 +872,11 @@
     "bomb",
     "bottle",
     "bubble",
+    "dark",
     "fire",
     "ice",
     "ink",
+    "magic",
     "snowball",
     "stone"
   ],

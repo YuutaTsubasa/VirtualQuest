@@ -399,14 +399,16 @@ function drawEnemySprite(g, match, e, x) {
   const vanish = pose === 'vanish' && !sheet.frames.includes('vanish');
   if (vanish && e.t > 6 && e.t < 34) return true;
   const lift = e.act === 'thrown' ? e.t * 0.35 : 0;
+  // 瞬移（40 格，第 20 格換位置）：前半淡出、後半在新位置淡入
+  const alpha = e.act === 'vanish' ? Math.max(0.08, e.t < 20 ? 1 - e.t / 20 : (e.t - 20) / 20) : 1;
   if (e.elite) {
     // 小頭目：外圈杏黃光
     g.save();
     g.filter = 'drop-shadow(0 0 3px #e9b85e) drop-shadow(0 0 3px #e9b85e)';
-    drawFrame(g, sheet, pose, x, e.z - e.y, h, e.facing, { fallback, flash: e.flash, rotate: lift });
+    drawFrame(g, sheet, pose, x, e.z - e.y, h, e.facing, { fallback, flash: e.flash, rotate: lift, alpha });
     g.restore();
   } else {
-    drawFrame(g, sheet, pose, x, e.z - e.y, h, e.facing, { fallback, flash: e.flash, rotate: lift });
+    drawFrame(g, sheet, pose, x, e.z - e.y, h, e.facing, { fallback, flash: e.flash, rotate: lift, alpha });
   }
   if (e.act === 'attack' && pose === 'windup' && (boss || e.kind === 'brute' || e.elite)) {
     outlinedText(g, '!', x, e.z - e.y - h * 0.82, 26, pal.flash);
