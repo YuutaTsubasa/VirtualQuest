@@ -662,6 +662,8 @@ pub enum Event {
     WeaponBreak { x: f32, z: f32 },
     /// 油桶爆炸
     Explode { x: f32, z: f32 },
+    /// 被打飛撞到畫面邊緣彈回來
+    Bounce { x: f32, z: f32, y: f32 },
     /// 噴口／尖刺開始作用、滾木滾出來
     Hazard { kind: HazardKind, x: f32, z: f32 },
     Land { x: f32, z: f32 },
@@ -1611,8 +1613,8 @@ impl Match {
         }
 
         // 正在出手的敵人：每位玩家的左右兩邊各最多一隻在打他（雙截龍式的輪流上，不會一群一起打；
-        // 被前後包夾才會兩邊一起來，所以站位很重要）。簡單只有一隻
-        let per_side = self.difficulty != Difficulty::Easy;
+        // 被前後包夾才會兩邊一起來，所以站位很重要）。困難才兩邊各一隻，簡單、普通同時只有一隻
+        let per_side = self.difficulty == Difficulty::Hard;
         let side_of = |ex: f32, k: usize| usize::from(ex > targets[k].0);
         let mut swinging = vec![[0usize; 2]; targets.len()];
         for (i, e) in self.enemies.iter().enumerate() {
@@ -1744,13 +1746,13 @@ impl Match {
                             continue;
                         }
                     } else if e.brain.retreat > 0 {
-                        want_x = tx + side * 190.0;
+                        want_x = room(tx, side, 190.0, cam);
                         want_z = tz + e.brain.offset;
                     } else if engaged[i] {
-                        want_x = tx + side * reach * 0.75;
+                        want_x = room(tx, side, reach * 0.75, cam);
                         want_z = tz;
                     } else {
-                        want_x = tx + side * 200.0;
+                        want_x = room(tx, side, 200.0, cam);
                         want_z = tz + e.brain.offset;
                     }
                     // 進攻
@@ -1885,6 +1887,20 @@ impl Match {
                 }
                 Act::Fall | Act::Thrown => {
                     let thrown = b.act == Act::Thrown;
+                    // 牆壁反彈：被打飛到畫面邊緣就彈回來（多受一點傷，還能接著打），大家才不會越打越擠到邊邊
+                    let (lo, hi) = (cam + WALL, cam + W - WALL);
+                    if b.y > 0.0 && b.vx.abs() > 1.0 && ((b.x < lo && b.vx < 0.0) || (b.x > hi && b.vx > 0.0)) {
+                        // 彈回來：往上彈一下、速度至少 3，能回到畫面中間一段
+                        let back = if b.vx > 0.0 { -1.0 } else { 1.0 };
+                        b.vx = back * (b.vx.abs() * 0.8).max(3.0);
+                        b.vy = b.vy.max(4.0);
+                        b.x = b.x.clamp(lo, hi);
+                        // 撞牆不會撞死（留 1 滴），但已經被打死的不能救活
+                        if b.hp > 0 {
+                            b.hp = (b.hp - WALL_DMG).max(1);
+                        }
+                        self.events.push(Event::Bounce { x: b.x, z: b.z, y: b.y });
+                    }
                     if b.air() {
                         self.events.push(Event::Land { x: b.x, z: b.z });
                         if thrown {
@@ -2360,6 +2376,24 @@ fn align_z(b: &mut Body, foes: &[(f32, f32)]) {
     if let Some(&(_, z)) = near {
         b.z += (z - b.z).clamp(-ALIGN_STEP, ALIGN_STEP);
     }
+}
+
+/// 牆壁反彈：離畫面邊緣多近就彈回來、撞牆多扣幾點血
+const WALL: f32 = 40.0;
+const WALL_DMG: i32 = 4;
+
+/// 敵人要站到玩家的哪一邊：想站的那一邊太靠畫面邊緣（站不下），就改站另一邊；
+/// 不管哪一邊，都不要站在離畫面邊緣 110px 以內（被打到邊邊的站起來會自己走回來）
+fn room(tx: f32, side: f32, gap: f32, cam: f32) -> f32 {
+    let (lo, hi) = (cam + 110.0, cam + W - 110.0);
+    let want = tx + side * gap;
+    if want < lo || want > hi {
+        let other = tx - side * gap;
+        if other >= lo && other <= hi {
+            return other;
+        }
+    }
+    want.clamp(lo, hi)
 }
 
 /// 大關的編號（stages.rs 的 WORLDS 順序）

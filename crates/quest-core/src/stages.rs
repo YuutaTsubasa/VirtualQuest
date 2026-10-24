@@ -95,7 +95,8 @@ pub fn build_stage(world: usize, sub: usize, players: usize, difficulty: Difficu
                 spawns.push(Spawn {
                     kind,
                     elite: false,
-                    from_right: k % 3 != 1,
+                    // 左右各半進場（以前三分之二從右邊來，大家都被推到右邊打）
+                    from_right: k % 2 == 0,
                     delay: (k as i32) * 45 + rng.gen_range(0..20),
                     z: rng.gen_range(Z_TOP + 10.0..Z_BOTTOM - 10.0),
                 });

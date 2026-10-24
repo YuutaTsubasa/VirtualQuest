@@ -124,6 +124,12 @@ export function handleEvents(match) {
         effect('dust', e.x, e.z - 14, 320, 34, { grow: 0.5 });
         shake = Math.max(shake, 16);
         break;
+      case 'bounce':
+        // 撞到畫面邊緣彈回來
+        effect('spark', e.x, e.z - e.y - 50, 90, 12, { rot: Math.random() * Math.PI });
+        effect('dust', e.x, e.z - e.y - 30, 90, 16, { alpha: 0.6 });
+        shake = Math.max(shake, 5);
+        break;
       case 'explode':
         // 油桶爆炸：火球＋碎片＋畫面一閃
         effect('burst', e.x, e.z - 50, 300, 30, { grow: 0.6 });

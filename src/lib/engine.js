@@ -34,6 +34,7 @@ const EVENT_SOUND = {
   nosp: 'deny',
   weaponbreak: 'crack',
   explode: 'quake',
+  bounce: 'heavy',
   hazard: 'heavy',
 };
 

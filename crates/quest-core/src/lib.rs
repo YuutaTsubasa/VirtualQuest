@@ -165,6 +165,49 @@ mod balance {
         }
     }
 
+    /// 打架時大家是不是都擠在畫面邊緣：鏡頭鎖住、有敵人的每一格，敵人／玩家離畫面左右邊 120px 內的比例
+    #[test]
+    #[ignore]
+    fn edges() {
+        use crate::game::W;
+        let (mut foes, mut foes_edge, mut ppl, mut ppl_edge) = (0u32, 0u32, 0u32, 0u32);
+        let (mut hist_e, mut hist_p) = ([0u32; 8], [0u32; 8]);
+        let mut acts = std::collections::BTreeMap::new();
+        for seed in 0..3u64 {
+            for world in [0usize, 1, 3] {
+                let entrants = [Entrant { slot: 0, character: "aming" }, Entrant { slot: 1, character: "leo" }];
+                let mut m = Match::new(&entrants, world, Difficulty::Normal, 3, seed);
+                let mut ais: Vec<Ai> = (0..2).map(|i| Ai::new(i, Difficulty::Hard, seed * 7 + i as u64)).collect();
+                for _ in 0..60 * 120 {
+                    let inputs: Vec<_> = ais.iter_mut().map(|a| a.think(&m)).collect();
+                    m.step(&inputs);
+                    if !m.locked || m.enemies.is_empty() {
+                        continue;
+                    }
+                    let edge = |x: f32| x - m.camera < 120.0 || x - m.camera > W - 120.0;
+                    for e in m.enemies.iter().filter(|e| e.brain_entered() && e.body.alive()) {
+                        hist_e[(((e.body.x - m.camera) / 120.0).clamp(0.0, 7.0)) as usize] += 1;
+                        acts.entry(format!("{:?}", e.body.act)).and_modify(|n| *n += edge(e.body.x) as u32).or_insert(edge(e.body.x) as u32);
+                        foes += 1;
+                        foes_edge += edge(e.body.x) as u32;
+                    }
+                    for p in m.players.iter().filter(|p| !p.out) {
+                        hist_p[(((p.body.x - m.camera) / 120.0).clamp(0.0, 7.0)) as usize] += 1;
+                        ppl += 1;
+                        ppl_edge += edge(p.body.x) as u32;
+                    }
+                    if m.sub > 0 || m.phase == Phase::Over {
+                        break;
+                    }
+                }
+            }
+        }
+        println!("位置分布（每 120px 一格，左到右）敵人 {hist_e:?}
+玩家 {hist_p:?}
+在邊緣時的動作 {acts:?}");
+        println!("敵人在邊緣 {:.0}%、玩家在邊緣 {:.0}%（兩邊各 120px，畫面 960px，平均分布約 25%）", foes_edge as f32 * 100.0 / foes.max(1) as f32, ppl_edge as f32 * 100.0 / ppl.max(1) as f32);
+    }
+
     /// 關卡機關：每一大關打第一小關，機關觸發幾次、玩家被機關打倒幾次、敵人被機關打倒幾次
     #[test]
     #[ignore]
