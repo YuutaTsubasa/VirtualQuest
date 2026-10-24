@@ -47,9 +47,10 @@ BOSS_FRAMES = ['idle', 'walk1', 'walk2', 'windup', 'slam', 'hurt', 'fall', 'down
 CELL = 400
 # 哪些格子要依實際高度放大回來：目標高度＝這張圖集 idle 的高度 × 比例；最多放大幾倍
 FIX_CHARACTER = {'kick': 0.925}
-FIX_ENEMY = {'attack': 0.9, 'windup': 0.95, 'charge': 0.88, 'walk1': 0.95, 'walk2': 0.95}
+# charge 常常是壓肩低頭的姿勢，只補到站立高度的 80%
+FIX_ENEMY = {'attack': 0.9, 'windup': 0.95, 'charge': 0.8, 'walk1': 0.95, 'walk2': 0.95}
 # 魔王的 slam／cast 常常是故意蹲低的姿勢（例如森林巨熊雙掌觸地），不能照 idle 高度放大，只補 charge
-FIX_BOSS = {'charge': 0.88, 'walk1': 0.95, 'walk2': 0.95}
+FIX_BOSS = {'charge': 0.8, 'walk1': 0.95, 'walk2': 0.95}
 # 整張圖集太小（長吻、大鉗子、披風為了塞進格子而縮小）：站立 idle 應該有的大小
 # 人形用高度比；大隻的（brute）用面積比，免得很寬的大螃蟹被放到比格子還大
 IDLE_HEIGHT = {'character': 400, 'enemy': 380, 'boss': 650}

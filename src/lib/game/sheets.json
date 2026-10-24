@@ -320,8 +320,7 @@
       "cell": 400,
       "fix": {
         "attack": 1.331,
-        "windup": 1.05,
-        "charge": 1.1
+        "windup": 1.05
       }
     },
     "city/knife": {
@@ -503,6 +502,79 @@
       "fix": {
         "attack": 1.036
       }
+    },
+    "ice/brute": {
+      "src": "enemies/ice/brute.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down",
+        "charge"
+      ],
+      "cols": 9,
+      "cell": 400,
+      "fix": {
+        "attack": 1.403,
+        "windup": 1.031,
+        "charge": 1.122
+      },
+      "scale": 1.042
+    },
+    "ice/knife": {
+      "src": "enemies/ice/knife.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "attack": 1.072
+      }
+    },
+    "ice/thrower": {
+      "src": "enemies/ice/thrower.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400
+    },
+    "ice/thug": {
+      "src": "enemies/ice/thug.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "attack",
+        "hurt",
+        "fall",
+        "down"
+      ],
+      "cols": 8,
+      "cell": 400,
+      "fix": {
+        "attack": 1.059
+      }
     }
   },
   "bosses": {
@@ -522,7 +594,7 @@
       "cols": 6,
       "cell": 600,
       "fix": {
-        "charge": 1.126
+        "charge": 1.024
       }
     },
     "forest": {
@@ -561,6 +633,23 @@
         "walk1": 1.09
       },
       "scale": 1.071
+    },
+    "ice": {
+      "src": "bosses/ice.webp",
+      "frames": [
+        "idle",
+        "walk1",
+        "walk2",
+        "windup",
+        "slam",
+        "hurt",
+        "fall",
+        "down",
+        "leap",
+        "cast"
+      ],
+      "cols": 6,
+      "cell": 600
     }
   },
   "stages": [
@@ -570,6 +659,9 @@
     "forest-1",
     "forest-2",
     "forest-3",
+    "ice-1",
+    "ice-2",
+    "ice-3",
     "sea-1",
     "sea-2",
     "sea-3"
@@ -577,6 +669,7 @@
   "props": [
     "city-crate",
     "forest-crate",
+    "ice-crate",
     "sea-crate"
   ],
   "items": [
@@ -588,7 +681,9 @@
   "shots": [
     "bottle",
     "bubble",
+    "ice",
     "ink",
+    "snowball",
     "stone"
   ]
 }
