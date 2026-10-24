@@ -1286,6 +1286,93 @@
           "fix": {
             "down": 1.319
           }
+        },
+        "forest/brute": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.255,
+            "down": 1.423
+          },
+          "scale": 1.043
+        },
+        "forest/knife": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.024,
+            "down": 1.349
+          }
+        },
+        "forest/thrower": {
+          "cell": 256,
+          "fix": {
+            "down": 1.374
+          }
+        },
+        "forest/thug": {
+          "cell": 256,
+          "fix": {
+            "down": 1.263
+          }
+        },
+        "sea/brute": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.266,
+            "walk2": 1.087
+          },
+          "scale": 1.217
+        },
+        "sea/knife": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.266,
+            "down": 1.199
+          },
+          "scale": 1.145
+        },
+        "sea/thrower": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.024,
+            "down": 1.365
+          }
+        },
+        "sea/thug": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.036,
+            "down": 1.319
+          }
+        },
+        "ice/brute": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.399,
+            "windup": 1.031,
+            "charge": 1.122,
+            "down": 1.423
+          },
+          "scale": 1.043
+        },
+        "ice/knife": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.069,
+            "down": 1.305
+          }
+        },
+        "ice/thrower": {
+          "cell": 256,
+          "fix": {
+            "down": 1.342
+          }
+        },
+        "ice/thug": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.056,
+            "down": 1.305
+          }
         }
       },
       "bosses": {
@@ -1294,6 +1381,26 @@
           "fix": {
             "charge": 1.024,
             "down": 1.363
+          }
+        },
+        "forest": {
+          "cell": 384,
+          "fix": {
+            "down": 1.294
+          }
+        },
+        "sea": {
+          "cell": 384,
+          "fix": {
+            "walk1": 1.09,
+            "down": 1.242
+          },
+          "scale": 1.069
+        },
+        "ice": {
+          "cell": 384,
+          "fix": {
+            "down": 1.341
           }
         }
       }

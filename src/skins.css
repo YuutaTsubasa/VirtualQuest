@@ -159,7 +159,7 @@
   --slot: #0f380f !important;
 }
 /* Logo 先用濾鏡壓成綠色（四色版的 Logo 請 Codex 在介面包一起畫） */
-:root[data-style='gameboy'] img.logo {
+:root[data-style='gameboy'] img.logo:not(.own) {
   filter: grayscale(1) sepia(1) hue-rotate(45deg) saturate(2.2) brightness(0.75) contrast(1.4);
 }
 
