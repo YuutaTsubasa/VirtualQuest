@@ -278,7 +278,10 @@
         "hurt",
         "fall",
         "down",
-        "win"
+        "win",
+        "run1",
+        "run2",
+        "dash"
       ],
       "cols": 8,
       "cell": 400,
