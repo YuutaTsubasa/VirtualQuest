@@ -21,7 +21,9 @@
         "win",
         "run1",
         "run2",
-        "dash"
+        "dash",
+        "walk3",
+        "walk4"
       ],
       "cols": 8,
       "cell": 400,
@@ -57,7 +59,9 @@
         "win",
         "run1",
         "run2",
-        "dash"
+        "dash",
+        "walk3",
+        "walk4"
       ],
       "cols": 8,
       "cell": 400,
@@ -91,7 +95,9 @@
         "win",
         "run1",
         "run2",
-        "dash"
+        "dash",
+        "walk3",
+        "walk4"
       ],
       "cols": 8,
       "cell": 400,
@@ -126,7 +132,9 @@
         "win",
         "run1",
         "run2",
-        "dash"
+        "dash",
+        "walk3",
+        "walk4"
       ],
       "cols": 8,
       "cell": 400,
@@ -160,7 +168,9 @@
         "win",
         "run1",
         "run2",
-        "dash"
+        "dash",
+        "walk3",
+        "walk4"
       ],
       "cols": 8,
       "cell": 400,
@@ -195,7 +205,9 @@
         "win",
         "run1",
         "run2",
-        "dash"
+        "dash",
+        "walk3",
+        "walk4"
       ],
       "cols": 8,
       "cell": 400,
@@ -230,7 +242,9 @@
         "win",
         "run1",
         "run2",
-        "dash"
+        "dash",
+        "walk3",
+        "walk4"
       ],
       "cols": 8,
       "cell": 400,
@@ -262,7 +276,9 @@
         "win",
         "run1",
         "run2",
-        "dash"
+        "dash",
+        "walk3",
+        "walk4"
       ],
       "cols": 8,
       "cell": 400,
@@ -299,7 +315,9 @@
         "win",
         "run1",
         "run2",
-        "dash"
+        "dash",
+        "walk3",
+        "walk4"
       ],
       "cols": 8,
       "cell": 400,
@@ -336,7 +354,9 @@
         "win",
         "run1",
         "run2",
-        "dash"
+        "dash",
+        "walk3",
+        "walk4"
       ],
       "cols": 8,
       "cell": 400,
@@ -372,7 +392,9 @@
         "win",
         "run1",
         "run2",
-        "dash"
+        "dash",
+        "walk3",
+        "walk4"
       ],
       "cols": 8,
       "cell": 400,

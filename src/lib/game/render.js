@@ -240,7 +240,7 @@ function walkPose(t, sheet) {
   if (sheet?.frames.includes('walk3') && sheet.frames.includes('walk4')) return WALK4[Math.floor(t / 7) % 4];
   return Math.floor(t / 7) % 2 ? 'walk1' : 'walk2';
 }
-// 走路的上下起伏：跨步時身體低一點、換腳中間高一點（只有兩格圖時，起伏讓步伐看起來比較連續）
+// 走路的上下起伏：跨步時身體低一點、換腳中間高一點（只有兩格圖時用，起伏讓步伐看起來比較連續）
 function walkBob(t) {
   return -Math.abs(Math.sin((t / 14) * Math.PI)) * 3;
 }
@@ -335,7 +335,8 @@ function drawPlayer(g, match, p, cam) {
     const pose = poseOf(p, sheet);
     // 借用走路圖跑步時身體往前傾一點，看起來比較像在跑
     const lean = p.act === 'run' && !sheet.frames.includes('run1') ? 0.12 : 0;
-    const bob = p.act === 'walk' ? walkBob(p.t) : 0;
+    // 四格走路圖本身就有上下起伏（收腳時身體最高），只有兩格時才用程式補
+    const bob = p.act === 'walk' && !sheet.frames.includes('walk3') ? walkBob(p.t) : 0;
     drawFrame(g, sheet, pose, x + lunge * p.facing, p.z - p.y + bob, CELL_H, p.facing, { flash: p.flash, rotate: lean });
     return;
   }
