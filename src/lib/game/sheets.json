@@ -1477,6 +1477,64 @@
           }
         }
       }
+    },
+    "modern-paint": {
+      "characters": {
+        "aming": {
+          "cell": 400,
+          "fix": {
+            "kick": 1.306,
+            "down": 1.309,
+            "jump": 1.087,
+            "hurt": 1.17,
+            "win": 1.069,
+            "run1": 0.947
+          }
+        },
+        "xiaochun": {
+          "cell": 400,
+          "fix": {
+            "kick": 1.066,
+            "down": 1.429,
+            "walk2": 0.947,
+            "punch2": 0.96,
+            "jumpkick": 0.91,
+            "grab": 0.922,
+            "run2": 0.96,
+            "walk4": 0.96
+          }
+        },
+        "xiaocui": {
+          "cell": 400,
+          "fix": {
+            "kick": 1.245,
+            "dash": 1.11,
+            "down": 1.45,
+            "walk2": 0.96,
+            "punch1": 0.899,
+            "jumpkick": 0.96,
+            "special": 0.96,
+            "grab": 0.947,
+            "run1": 0.947,
+            "run2": 0.934,
+            "walk3": 0.947,
+            "walk4": 0.922
+          }
+        },
+        "yuehua": {
+          "cell": 400,
+          "fix": {
+            "kick": 1.124,
+            "down": 1.45,
+            "punch1": 0.947,
+            "jump": 1.051,
+            "special": 1.051,
+            "grab": 0.96,
+            "run1": 0.947,
+            "walk4": 0.96
+          }
+        }
+      }
     }
   }
 }
