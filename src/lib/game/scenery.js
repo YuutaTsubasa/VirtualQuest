@@ -431,10 +431,10 @@ function layer(world, sub, which, scale) {
   return c;
 }
 
-function drawLayer(g, img, offset) {
+function drawLayer(g, img, offset, lift = 0) {
   const x = -(((offset % TILE) + TILE) % TILE);
-  g.drawImage(img, x, 0, TILE, H);
-  g.drawImage(img, x + TILE, 0, TILE, H);
+  g.drawImage(img, x, -lift, TILE, H);
+  g.drawImage(img, x + TILE, -lift, TILE, H);
 }
 
 // 交件的背景（public/stages/<大關>-<小關>/{far,mid,ground}.webp）：三張都載好才用，不然先畫程式版
@@ -447,7 +447,9 @@ function artLayers(world, sub) {
 
 export function drawScenery(g, world, sub, camera, scale) {
   const art = artLayers(world, sub);
-  ['far', 'mid', 'ground'].forEach((which, i) => drawLayer(g, art ? art[i] : layer(world, sub, which, scale), camera * SPEED[which]));
+  // 遠景畫得太低的關（白色都市的天際線在地板線以下，會被地板蓋住）：往上抬（sheets.json 的 farLift，1080 的 px）
+  const lift = art ? (SHEETS.farLift?.[`${WORLDS[world].id}-${sub + 1}`] ?? 0) / 2 : 0;
+  ['far', 'mid', 'ground'].forEach((which, i) => drawLayer(g, art ? art[i] : layer(world, sub, which, scale), camera * SPEED[which], which === 'far' ? lift : 0));
 }
 
 // ---------- 會動的東西 ----------

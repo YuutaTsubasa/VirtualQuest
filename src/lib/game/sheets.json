@@ -685,5 +685,10 @@
     "ink",
     "snowball",
     "stone"
-  ]
+  ],
+  "farLift": {
+    "city-1": 400,
+    "city-2": 400,
+    "city-3": 400
+  }
 }
