@@ -1681,6 +1681,36 @@
           "fix": {
             "down": 1.289
           }
+        },
+        "sea/brute": {
+          "cell": 400,
+          "fix": {
+            "attack": 1.266,
+            "walk2": 1.087
+          },
+          "scale": 1.246
+        },
+        "sea/knife": {
+          "cell": 400,
+          "fix": {
+            "attack": 1.266,
+            "down": 1.26
+          },
+          "scale": 1.145
+        },
+        "sea/thrower": {
+          "cell": 400,
+          "fix": {
+            "attack": 1.027,
+            "down": 1.36
+          }
+        },
+        "sea/thug": {
+          "cell": 400,
+          "fix": {
+            "attack": 1.036,
+            "down": 1.263
+          }
         }
       },
       "bosses": {
@@ -1696,6 +1726,14 @@
           "fix": {
             "down": 1.381
           }
+        },
+        "sea": {
+          "cell": 600,
+          "fix": {
+            "walk1": 1.09,
+            "down": 1.237
+          },
+          "scale": 1.071
         }
       }
     }
