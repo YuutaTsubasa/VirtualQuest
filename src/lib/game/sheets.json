@@ -2015,6 +2015,33 @@
           "fix": {
             "down": 1.317
           }
+        },
+        "forest/brute": {
+          "cell": 400,
+          "fix": {
+            "attack": 1.258,
+            "down": 1.45
+          },
+          "scale": 1.039
+        },
+        "forest/knife": {
+          "cell": 400,
+          "fix": {
+            "attack": 1.024,
+            "down": 1.298
+          }
+        },
+        "forest/thrower": {
+          "cell": 400,
+          "fix": {
+            "down": 1.375
+          }
+        },
+        "forest/thug": {
+          "cell": 400,
+          "fix": {
+            "down": 1.303
+          }
         }
       },
       "bosses": {
@@ -2023,6 +2050,12 @@
           "fix": {
             "charge": 1.024,
             "down": 1.408
+          }
+        },
+        "forest": {
+          "cell": 600,
+          "fix": {
+            "down": 1.375
           }
         }
       }
