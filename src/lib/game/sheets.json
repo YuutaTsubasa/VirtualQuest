@@ -2206,6 +2206,46 @@
           }
         }
       }
+    },
+    "msdos": {
+      "characters": {
+        "aming": {
+          "cell": 256,
+          "fix": {
+            "kick": 1.303,
+            "down": 1.45,
+            "jump": 1.126
+          }
+        },
+        "xiaochun": {
+          "cell": 256,
+          "fix": {
+            "kick": 1.069,
+            "down": 1.45,
+            "jump": 1.069,
+            "grab": 0.934
+          }
+        },
+        "xiaocui": {
+          "cell": 256,
+          "fix": {
+            "kick": 1.242,
+            "dash": 1.104,
+            "down": 1.374,
+            "punch1": 0.96,
+            "walk4": 0.96
+          }
+        },
+        "yuehua": {
+          "cell": 256,
+          "fix": {
+            "kick": 1.121,
+            "down": 1.45,
+            "jump": 1.087,
+            "run1": 0.96
+          }
+        }
+      }
     }
   }
 }

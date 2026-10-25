@@ -452,7 +452,11 @@
         "characters/yuehua/win.webp",
         "effects/hit-spark.webp",
         "effects/sand-puff.webp",
-        "effects/score-burst.webp"
+        "effects/score-burst.webp",
+        "sprites/aming.webp",
+        "sprites/xiaochun.webp",
+        "sprites/xiaocui.webp",
+        "sprites/yuehua.webp"
       ],
       "config": {
         "canvasScale": 2.56
