@@ -2244,6 +2244,47 @@
             "jump": 1.087,
             "run1": 0.96
           }
+        },
+        "cangya": {
+          "cell": 256,
+          "fix": {
+            "kick": 1.321,
+            "down": 1.445,
+            "jump": 1.069
+          }
+        },
+        "jinye": {
+          "cell": 256,
+          "fix": {
+            "kick": 1.402,
+            "down": 1.45,
+            "punch1": 1.051,
+            "jump": 1.106,
+            "jumpkick": 1.051,
+            "special": 1.051,
+            "knee": 1.106,
+            "throw": 1.126,
+            "hurt": 1.069,
+            "run2": 1.087
+          }
+        },
+        "lanjie": {
+          "cell": 256,
+          "fix": {
+            "kick": 1.186,
+            "down": 1.45,
+            "jump": 1.069,
+            "knee": 1.051
+          }
+        },
+        "tangtang": {
+          "cell": 256,
+          "fix": {
+            "kick": 1.171,
+            "dash": 1.104,
+            "down": 1.45,
+            "jump": 1.069
+          }
         }
       }
     }
