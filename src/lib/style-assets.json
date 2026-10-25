@@ -396,6 +396,7 @@
     "msdos": {
       "files": [
         "bosses/city.webp",
+        "bosses/forest.webp",
         "characters/alie/happy.webp",
         "characters/alie/normal.webp",
         "characters/alie/sad.webp",
@@ -458,8 +459,14 @@
         "enemies/city/knife.webp",
         "enemies/city/thrower.webp",
         "enemies/city/thug.webp",
+        "enemies/forest/brute.webp",
+        "enemies/forest/knife.webp",
+        "enemies/forest/thrower.webp",
+        "enemies/forest/thug.webp",
         "props/city-crate.webp",
+        "props/forest-crate.webp",
         "props/shots/bottle.webp",
+        "props/shots/stone.webp",
         "sprites/alie.webp",
         "sprites/aming.webp",
         "sprites/ayi.webp",
@@ -479,7 +486,16 @@
         "stages/city-2/mid.webp",
         "stages/city-3/far.webp",
         "stages/city-3/ground.webp",
-        "stages/city-3/mid.webp"
+        "stages/city-3/mid.webp",
+        "stages/forest-1/far.webp",
+        "stages/forest-1/ground.webp",
+        "stages/forest-1/mid.webp",
+        "stages/forest-2/far.webp",
+        "stages/forest-2/ground.webp",
+        "stages/forest-2/mid.webp",
+        "stages/forest-3/far.webp",
+        "stages/forest-3/ground.webp",
+        "stages/forest-3/mid.webp"
       ],
       "config": {
         "canvasScale": 2.56
