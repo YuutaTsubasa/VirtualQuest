@@ -785,6 +785,7 @@
     },
     "gameboy": {
       "files": [
+        "bosses/city.webp",
         "characters/alie/happy.webp",
         "characters/alie/normal.webp",
         "characters/alie/sad.webp",
@@ -843,6 +844,12 @@
         "effects/hit-spark.webp",
         "effects/sand-puff.webp",
         "effects/score-burst.webp",
+        "enemies/city/brute.webp",
+        "enemies/city/knife.webp",
+        "enemies/city/thrower.webp",
+        "enemies/city/thug.webp",
+        "props/city-crate.webp",
+        "props/shots/bottle.webp",
         "sprites/alie.webp",
         "sprites/aming.webp",
         "sprites/ayi.webp",
@@ -853,7 +860,16 @@
         "sprites/tangtang.webp",
         "sprites/xiaochun.webp",
         "sprites/xiaocui.webp",
-        "sprites/yuehua.webp"
+        "sprites/yuehua.webp",
+        "stages/city-1/far.webp",
+        "stages/city-1/ground.webp",
+        "stages/city-1/mid.webp",
+        "stages/city-2/far.webp",
+        "stages/city-2/ground.webp",
+        "stages/city-2/mid.webp",
+        "stages/city-3/far.webp",
+        "stages/city-3/ground.webp",
+        "stages/city-3/mid.webp"
       ],
       "config": {
         "canvasScale": 2.56
