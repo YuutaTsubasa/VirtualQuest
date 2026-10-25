@@ -2727,6 +2727,36 @@
             "attack": 1.03,
             "down": 1.365
           }
+        },
+        "ice/brute": {
+          "cell": 128,
+          "fix": {
+            "attack": 1.399,
+            "windup": 1.031,
+            "charge": 1.122,
+            "down": 1.45
+          },
+          "scale": 1.059
+        },
+        "ice/knife": {
+          "cell": 128,
+          "fix": {
+            "attack": 1.069,
+            "down": 1.142
+          }
+        },
+        "ice/thrower": {
+          "cell": 128,
+          "fix": {
+            "down": 1.263
+          }
+        },
+        "ice/thug": {
+          "cell": 128,
+          "fix": {
+            "attack": 1.056,
+            "down": 1.414
+          }
         }
       },
       "bosses": {
@@ -2750,6 +2780,12 @@
             "down": 1.348
           },
           "scale": 1.069
+        },
+        "ice": {
+          "cell": 192,
+          "fix": {
+            "down": 1.45
+          }
         }
       }
     }
