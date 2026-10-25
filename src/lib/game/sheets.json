@@ -2671,6 +2671,31 @@
           "fix": {
             "down": 1.305
           }
+        },
+        "forest/brute": {
+          "cell": 128,
+          "fix": {
+            "attack": 1.262,
+            "down": 1.45
+          }
+        },
+        "forest/knife": {
+          "cell": 128,
+          "fix": {
+            "down": 1.397
+          }
+        },
+        "forest/thrower": {
+          "cell": 128,
+          "fix": {
+            "down": 1.45
+          }
+        },
+        "forest/thug": {
+          "cell": 128,
+          "fix": {
+            "down": 1.448
+          }
         }
       },
       "bosses": {
@@ -2679,6 +2704,12 @@
           "fix": {
             "charge": 1.027,
             "down": 1.45
+          }
+        },
+        "forest": {
+          "cell": 192,
+          "fix": {
+            "down": 1.425
           }
         }
       }
