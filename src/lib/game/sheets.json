@@ -2318,6 +2318,45 @@
             "knee": 1.051
           }
         }
+      },
+      "enemies": {
+        "city/brute": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.327,
+            "windup": 1.05,
+            "down": 1.45
+          }
+        },
+        "city/knife": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.096,
+            "down": 1.334
+          }
+        },
+        "city/thrower": {
+          "cell": 256,
+          "fix": {
+            "attack": 1.171,
+            "down": 1.397
+          }
+        },
+        "city/thug": {
+          "cell": 256,
+          "fix": {
+            "down": 1.319
+          }
+        }
+      },
+      "bosses": {
+        "city": {
+          "cell": 384,
+          "fix": {
+            "charge": 1.024,
+            "down": 1.359
+          }
+        }
       }
     }
   }
