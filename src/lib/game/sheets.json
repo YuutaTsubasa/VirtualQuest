@@ -2573,6 +2573,50 @@
             "walk2": 1.051,
             "win": 1.069
           }
+        },
+        "cangya": {
+          "cell": 128,
+          "fix": {
+            "kick": 1.341,
+            "down": 1.42,
+            "walk2": 0.947
+          }
+        },
+        "jinye": {
+          "cell": 128,
+          "fix": {
+            "kick": 1.402,
+            "dash": 1.024,
+            "down": 1.45,
+            "punch1": 1.069,
+            "jump": 1.087,
+            "jumpkick": 1.069,
+            "special": 1.069,
+            "knee": 1.126,
+            "throw": 1.106,
+            "run2": 1.051
+          }
+        },
+        "lanjie": {
+          "cell": 128,
+          "fix": {
+            "kick": 1.186,
+            "down": 1.45,
+            "punch1": 0.934,
+            "punch2": 0.96,
+            "jump": 1.069,
+            "win": 1.051,
+            "walk3": 0.947
+          }
+        },
+        "tangtang": {
+          "cell": 128,
+          "fix": {
+            "kick": 1.171,
+            "dash": 1.104,
+            "down": 1.45,
+            "walk4": 0.96
+          }
         }
       }
     }
