@@ -70,6 +70,8 @@
   --face-hover: #34569e;
   --hud-panel: rgba(16, 24, 40, 0.94);
   --font: 'Cascadia Mono', 'Consolas', 'MingLiU', '細明體', monospace;
+  /* 結算緞帶放字那條的中心（MS-DOS 介面包回報 47.68%） */
+  --ribbon-y: 0.4768;
 }
 /* 灰色立體斜邊：左上亮、右下暗，按下去反過來 */
 :root[data-style='msdos'] :is(.vbtn, .panel, .card, input, select.vsel) {
@@ -199,12 +201,10 @@
   box-shadow: 0 0.6cqh 2cqh var(--shade);
 }
 
-/* 深色介面的畫風：標題主視覺左邊留白是淺色的（Logo 與選單放在上面），標題畫面的字改用深色 */
-/* （字的顏色是從最外層繼承下來的，所以這裡也要直接設 color） */
-:root:is([data-style='pc98'], [data-style='msdos']) .title.scene-on {
-  color: var(--ink);
-}
+/* PC-98 是深色介面，但標題主視覺左邊留白是淺色的（Logo 與選單放在上面）：標題畫面的字改用深色 */
+/* （字的顏色是從最外層繼承下來的，所以這裡也要直接設 color）；MS-DOS 的留白是深藍，不用改 */
 :root[data-style='pc98'] .title.scene-on {
+  color: var(--ink);
   --navy: #24203e;
   --ink: #24203e;
   --edge: #5b4f86;
@@ -215,18 +215,6 @@
   --face-hover: #fff4e2;
   --on-dark: #fae8cd;
   --muted: #5b4f86;
-}
-:root[data-style='msdos'] .title.scene-on {
-  --navy: #101828;
-  --ink: #101828;
-  --edge: #243c7a;
-  --shade: #4a5568;
-  --cream: #f6f1d8;
-  --cream-deep: #e6dfbf;
-  --paper-white: #fffbe8;
-  --face-hover: #fffbe8;
-  --on-dark: #f6f1d8;
-  --muted: #4a5568;
 }
 
 /* ===== 像素風格共用：直角、像素放大不模糊、字不要反鋸齒 ===== */
