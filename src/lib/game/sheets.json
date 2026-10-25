@@ -1741,6 +1741,35 @@
             "attack": 1.059,
             "down": 1.294
           }
+        },
+        "mine/brute": {
+          "cell": 400,
+          "fix": {
+            "attack": 1.45,
+            "windup": 1.021,
+            "charge": 1.082,
+            "walk1": 1.061,
+            "down": 1.381
+          }
+        },
+        "mine/knife": {
+          "cell": 400,
+          "fix": {
+            "down": 1.307
+          }
+        },
+        "mine/thrower": {
+          "cell": 400,
+          "fix": {
+            "down": 1.317
+          }
+        },
+        "mine/thug": {
+          "cell": 400,
+          "fix": {
+            "attack": 1.069,
+            "down": 1.312
+          }
         }
       },
       "bosses": {
@@ -1769,6 +1798,12 @@
           "cell": 600,
           "fix": {
             "down": 1.378
+          }
+        },
+        "mine": {
+          "cell": 600,
+          "fix": {
+            "down": 1.387
           }
         }
       }
