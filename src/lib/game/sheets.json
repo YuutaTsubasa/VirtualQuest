@@ -1892,6 +1892,61 @@
             "punch1": 0.947,
             "grab": 0.947
           }
+        },
+        "cangya": {
+          "cell": 400,
+          "fix": {
+            "kick": 1.318,
+            "down": 1.419,
+            "walk2": 0.947,
+            "punch1": 0.96,
+            "jump": 1.051,
+            "run1": 0.947,
+            "walk3": 0.96
+          }
+        },
+        "jinye": {
+          "cell": 400,
+          "fix": {
+            "kick": 1.402,
+            "dash": 1.021,
+            "down": 1.45,
+            "walk2": 0.96,
+            "punch1": 1.087,
+            "punch2": 1.051,
+            "jump": 1.087,
+            "jumpkick": 1.051,
+            "special": 1.069,
+            "knee": 1.087,
+            "throw": 1.17,
+            "hurt": 1.087,
+            "run2": 1.051
+          }
+        },
+        "lanjie": {
+          "cell": 400,
+          "fix": {
+            "kick": 1.182,
+            "down": 1.45,
+            "walk2": 0.947,
+            "jump": 1.087,
+            "walk3": 0.934,
+            "walk4": 0.947
+          }
+        },
+        "tangtang": {
+          "cell": 400,
+          "fix": {
+            "kick": 1.17,
+            "dash": 1.107,
+            "down": 1.45,
+            "walk2": 0.96,
+            "punch2": 0.96,
+            "jump": 1.069,
+            "jumpkick": 1.069,
+            "walk3": 0.96,
+            "walk4": 0.947
+          }
         }
       }
     }
