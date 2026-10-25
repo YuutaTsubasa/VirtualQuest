@@ -108,6 +108,8 @@
   --hud-panel: rgba(16, 32, 68, 0.92);
   --line: 0.42cqh;
   --font: 'DFKai-SB', '標楷體', 'BiauKai', 'Kaiti TC', 'KaiTi', serif;
+  /* 結算緞帶放字那條的中心（台式印刷介面包回報 54.82%） */
+  --ribbon-y: 0.5482;
 }
 
 /* ===== Game Boy：只有四種綠 ===== */
