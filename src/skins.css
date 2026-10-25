@@ -189,6 +189,8 @@
   --face-hover: #fffdf6;
   --hud-panel: rgba(13, 38, 71, 0.82);
   --line: 0.22cqh;
+  /* 結算緞帶放字那條的中心（動漫電影介面包回報 54.46%） */
+  --ribbon-y: 0.5446;
 }
 /* 陰影改成柔和的光暈 */
 :root[data-style='modern-paint'] :is(.panel, .vbtn, .card) {
