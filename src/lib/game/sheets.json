@@ -1986,6 +1986,45 @@
             "walk4": 0.947
           }
         }
+      },
+      "enemies": {
+        "city/brute": {
+          "cell": 400,
+          "fix": {
+            "attack": 1.331,
+            "windup": 1.05,
+            "down": 1.448
+          }
+        },
+        "city/knife": {
+          "cell": 400,
+          "fix": {
+            "attack": 1.1,
+            "down": 1.361
+          }
+        },
+        "city/thrower": {
+          "cell": 400,
+          "fix": {
+            "attack": 1.171,
+            "down": 1.312
+          }
+        },
+        "city/thug": {
+          "cell": 400,
+          "fix": {
+            "down": 1.317
+          }
+        }
+      },
+      "bosses": {
+        "city": {
+          "cell": 600,
+          "fix": {
+            "charge": 1.024,
+            "down": 1.408
+          }
+        }
       }
     }
   }
