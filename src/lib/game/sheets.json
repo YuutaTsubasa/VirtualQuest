@@ -2538,6 +2538,43 @@
           }
         }
       }
+    },
+    "gameboy": {
+      "characters": {
+        "aming": {
+          "cell": 128,
+          "fix": {
+            "kick": 1.303,
+            "down": 1.45,
+            "win": 1.069
+          }
+        },
+        "xiaochun": {
+          "cell": 128,
+          "fix": {
+            "kick": 1.063,
+            "down": 1.45,
+            "grab": 0.934
+          }
+        },
+        "xiaocui": {
+          "cell": 128,
+          "fix": {
+            "kick": 1.25,
+            "dash": 1.104,
+            "down": 1.45
+          }
+        },
+        "yuehua": {
+          "cell": 128,
+          "fix": {
+            "kick": 1.128,
+            "down": 1.45,
+            "walk2": 1.051,
+            "win": 1.069
+          }
+        }
+      }
     }
   }
 }
