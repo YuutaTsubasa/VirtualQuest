@@ -478,6 +478,11 @@ pub struct Enemy {
     /// 魔王的霸體（被打不會硬直）剩餘影格
     #[serde(skip)]
     armor: i32,
+    /// 魔王一直被打（沒有喘息）累積的格數（到 BOSS_RAGE 就發怒震開大家）、離上一次被打幾格
+    #[serde(skip)]
+    rage: i32,
+    #[serde(skip)]
+    rage_t: i32,
     #[serde(skip)]
     thrown_dmg: i32,
 }
@@ -649,6 +654,8 @@ pub enum Event {
     Throw { slot: usize },
     /// 油桶爆炸
     Explode { x: f32, z: f32 },
+    /// 魔王被圍毆發怒，震開身邊的人
+    Rage { x: f32, z: f32 },
     /// 被打飛撞到畫面邊緣彈回來
     Bounce { x: f32, z: f32, y: f32 },
     /// 噴口／尖刺開始作用、滾木滾出來
@@ -957,6 +964,33 @@ impl Match {
         if self.world == WORLD_SEA { JUMP_V * 0.8 } else { JUMP_V }
     }
 
+    /// 魔王被圍著一直打（BOSS_RAGE 下）：發怒，震開身邊的玩家、站起來、一段時間霸體並馬上反擊
+    fn boss_rage(&mut self) {
+        let Some(i) = self.enemies.iter().position(|e| e.kind == Kind::Boss && e.rage >= BOSS_RAGE && e.body.hp > 0) else { return };
+        let e = &mut self.enemies[i];
+        let (x, z) = (e.body.x, e.body.z);
+        e.rage = 0;
+        e.armor = BOSS_RAGE_ARMOR;
+        e.body.set(Act::Stand, 0);
+        e.body.y = 0.0;
+        e.body.vx = 0.0;
+        e.body.vy = 0.0;
+        e.body.stun = 0;
+        e.brain.cool = 0;
+        self.events.push(Event::Rage { x, z });
+        for p in self.players.iter_mut() {
+            let b = &p.body;
+            if p.out || !b.vulnerable() || (b.x - x).abs() > 150.0 || (b.z - z).abs() > 44.0 {
+                continue;
+            }
+            let dir = if b.x >= x { 1.0 } else { -1.0 };
+            p.body.hold = None;
+            p.body.take_hit(8, true, dir, false);
+            p.body.vx = dir * 5.5;
+            self.events.push(Event::Hurt { slot: p.slot, x: p.body.x, y: p.body.z - 70.0, big: true });
+        }
+    }
+
     /// 油桶爆炸：身邊的敵人都被炸倒（算打破的人的），玩家也會被波及一點點
     fn explode(&mut self, x: f32, z: f32, by: Option<usize>) {
         self.events.push(Event::Explode { x, z });
@@ -1103,6 +1137,7 @@ impl Match {
                 self.fire_powers();
                 self.update_enemies();
                 self.resolve_player_attacks();
+                self.boss_rage();
                 self.resolve_enemy_attacks();
                 self.update_shots();
                 self.enemy_drops();
@@ -1598,6 +1633,14 @@ impl Match {
             b.flash = (b.flash - 1).max(0);
             b.inv = (b.inv - 1).max(0);
             e.armor = (e.armor - 1).max(0);
+            if e.kind == Kind::Boss {
+                e.rage_t += 1;
+                if e.rage_t < BOSS_RAGE_HIT {
+                    e.rage += 1;
+                } else {
+                    e.rage = (e.rage - 2).max(0);
+                }
+            }
             match b.act {
                 Act::Stand | Act::Walk => {
                     e.brain.cool -= 1;
@@ -1954,6 +1997,17 @@ impl Match {
         }
     }
 
+    /// 測試用：在 (x, z) 放一隻已經進場的敵人
+    #[cfg(test)]
+    pub fn spawn_test_enemy(&mut self, kind: Kind, x: f32, z: f32) -> u32 {
+        let mut e = self.make_enemy(&Spawn { kind, elite: false, from_right: true, delay: 0, z });
+        e.body.x = x;
+        e.brain.entered = true;
+        let id = e.id;
+        self.enemies.push(e);
+        id
+    }
+
     fn make_enemy(&mut self, s: &Spawn) -> Enemy {
         let (hp_m, pow_m) = match self.difficulty {
             Difficulty::Easy => (0.8, 0.7),
@@ -1985,6 +2039,8 @@ impl Match {
             power: power * pow_m * world_m.sqrt() * (if s.elite { 1.3 } else { 1.0 }),
             last_by: None,
             armor: 0,
+            rage: 0,
+            rage_t: 0,
             thrown_dmg: 0,
         }
     }
@@ -2415,8 +2471,22 @@ const ENEMY_HURT: i32 = 22;
 /// 敵人被打之後至少等多久才會出手
 const ENEMY_RECOVER: i32 = 40;
 
-/// 敵人被打中：硬直長一點，恢復後也不會立刻反擊
+/// 魔王一直被打（每次被打後 BOSS_RAGE_HIT 格內又被打）累積 BOSS_RAGE 格（三秒）就發怒
+const BOSS_RAGE: i32 = 180;
+const BOSS_RAGE_HIT: i32 = 30;
+/// 發怒後的霸體
+const BOSS_RAGE_ARMOR: i32 = 150;
+
+/// 敵人被打中：硬直長一點，恢復後也不會立刻反擊（魔王恢復得快，被打太多下會發怒）
 fn stunned(e: &mut Enemy) {
+    if e.kind == Kind::Boss {
+        // 霸體中被打不影響出手；沒有霸體只停一下
+        e.rage_t = 0;
+        if e.armor <= 0 {
+            e.brain.cool = e.brain.cool.max(ENEMY_RECOVER / 3);
+        }
+        return;
+    }
     if e.body.act == Act::Hurt {
         e.body.dur = ENEMY_HURT;
     }

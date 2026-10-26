@@ -473,6 +473,52 @@ mod run {
         assert_eq!(m.players[0].power, None, "時間到就沒了");
     }
 
+    /// 魔王被三個人壓著一直打：不會被打到動不了（會出手反擊，或發怒震開大家）
+    #[test]
+    fn boss_not_stunlocked_when_mobbed() {
+        use crate::game::{Event, Kind};
+        let entrants = [
+            Entrant { slot: 0, character: "aming" },
+            Entrant { slot: 1, character: "xiaochun" },
+            Entrant { slot: 2, character: "lanjie" },
+        ];
+        let mut m = Match::new(&entrants, 0, Difficulty::Normal, 3, 1);
+        while m.phase != Phase::Play {
+            m.step(&[Input::default(); 3]);
+        }
+        m.enemies.clear();
+        let (x, z) = (m.players[0].body.x + 60.0, m.players[0].body.z);
+        let id = m.spawn_test_enemy(Kind::Boss, x, z);
+        let atk = Input { attack_pressed: true, ..Input::default() };
+        let (mut starts, mut raged, mut was) = (0, false, false);
+        for f in 0..600 {
+            // 三個人一直貼著魔王打（左右兩邊都有人），血一直補滿
+            let boss = m.enemies.iter_mut().find(|e| e.id == id).unwrap();
+            boss.body.hp = 9999;
+            let (bx, bz) = (boss.body.x, boss.body.z);
+            for (k, p) in m.players.iter_mut().enumerate() {
+                p.body.hp = p.body.max_hp;
+                if matches!(p.body.act, Act::Stand | Act::Walk) {
+                    let side = if k == 1 { 1.0 } else { -1.0 };
+                    p.body.x = bx + side * 55.0;
+                    p.body.z = bz;
+                    p.body.facing = -side;
+                }
+            }
+            let inp = |k: u64| if (f + k * 2) % 6 == 0 { atk } else { Input::default() };
+            m.step(&[inp(0), inp(1), inp(2)]);
+            let boss = m.enemies.iter().find(|e| e.id == id).unwrap();
+            let now = matches!(boss.body.act, Act::Attack | Act::Charge | Act::Leap | Act::Cast | Act::Vanish);
+            if now && !was {
+                starts += 1;
+            }
+            was = now;
+            raged |= m.events.iter().any(|e| matches!(e, Event::Rage { .. }));
+        }
+        println!("魔王十秒內出手 {starts} 次，發怒 {raged}");
+        assert!(starts >= 1 && raged, "被圍毆的魔王要能出手反擊（{starts} 次），被壓太久會發怒（{raged}）");
+    }
+
     /// 必殺要集滿氣才能放，放完氣就歸零（不能一直放）
     #[test]
     fn special_needs_full_gauge() {

@@ -220,6 +220,8 @@ export default {
 
   // UI Concept v1（2026-10-24）的新文字
   '{n}P 選擇角色': '{n}P · Choose a character',
+  '{n}P（電腦）選擇角色': '{n}P (CPU) · Choose a character',
+  '其餘隨機・出發': 'Rest random · Go',
   '可輸入房號、分享連結或區網位址': 'Enter a room code, share link or LAN address',
   '夥伴集合': 'Team Up',
   '已確認': 'Ready',
@@ -261,6 +263,7 @@ export default {
   '能量': 'Power',
   '：撿到紅球十秒內出招會射直線炮彈（貫穿一整排），藍球會射追蹤彈。身上發光快沒了會閃。': ': Grab a red orb and for ten seconds every attack fires a straight shot that pierces a whole row; a blue orb fires homing shots. The glow blinks when it is about to run out.',
   '紅色能量！直線炮彈': 'Red power! Straight shots',
+  '魔王發怒！': 'The boss is enraged!',
   '藍色能量！追蹤彈': 'Blue power! Homing shots',
   '新紀錄！': 'New best!',
   '時間': 'Time',

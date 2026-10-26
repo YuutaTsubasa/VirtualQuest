@@ -49,6 +49,8 @@ function updatePalette() {
   pal.hpLow = pal.accent;
   pal.hp = v('--hud-hp', '#2fbf9a');
   pal.cream = v('--cream', '#f5efdf');
+  // 紙底上的字（對話框）：深色介面的畫風是淺字配深藍紙，跟 --paper-white 一組
+  pal.paperInk = v('--ink', '#202329');
   pal.teal = v('--teal', '#287f78');
 }
 
@@ -122,6 +124,13 @@ export function handleEvents(match) {
       case 'quake':
         effect('dust', e.x, e.z - 14, 320, 34, { grow: 0.5 });
         shake = Math.max(shake, 16);
+        break;
+      case 'rage':
+        // 魔王被圍毆發怒：震波＋紅色爆光
+        effect('dust', e.x, e.z - 14, 360, 34, { grow: 0.6 });
+        burst(e.x, e.z - 90, '#ff4a3a', 26, 9, 36);
+        shake = Math.max(shake, 20);
+        floaters.push({ x: e.x, y: e.z - 230, text: t('魔王發怒！'), life: 70, max: 70, color: '#ff6b5a' });
         break;
       case 'bounce':
         // 撞到畫面邊緣彈回來
@@ -789,6 +798,9 @@ function drawProp(g, match, pr, cam) {
   const x = pr.x - cam;
   if (pr.barrel) {
     shadow(g, x, pr.z, 0, 26);
+    // 有畫好的油桶圖就用圖（256×256，底部中心在 (128, 244)，跟箱子一樣大），沒有就用程式畫的
+    const shake = pr.flash > 0 ? (Math.random() - 0.5) * 4 : 0;
+    if (SHEETS.props?.includes('barrel') && drawImageProp(g, 'props/barrel.webp', x, pr.z + 84 * (12 / 256), 84, 84, { shake })) return;
     drawBarrel(g, x, pr.z, pr.flash);
     return;
   }
@@ -1160,7 +1172,7 @@ function drawChapter(g, match, alpha) {
   const slide = (1 - Math.min(1, alpha)) * -60;
   g.translate(slide, 0);
   brush(g, W / 2 - 250, H / 2 - 74, 500, 74, pal.panel);
-  outlinedText(g, t(w.name), W / 2, H / 2 - 37, 40, pal.cream);
+  outlinedText(g, t(w.name), W / 2, H / 2 - 37, 40, pal.text);
   g.fillStyle = pal.accent;
   g.fillRect(W / 2 - 170, H / 2 + 8, 340, 34);
   g.font = `900 20px ${FONT}`;
@@ -1243,7 +1255,7 @@ function drawBubbles(g, match, cam) {
     const x = Math.max(10, Math.min(W - w - 10, px - w / 2));
     const y = Math.max(100, p.z - p.y - FIG_H - 70);
     g.fillStyle = pal.paper;
-    g.strokeStyle = pal.ink;
+    g.strokeStyle = pal.paperInk;
     g.lineWidth = 3;
     rr(g, x, y, w, h, 12);
     g.fill();
@@ -1254,7 +1266,7 @@ function drawBubbles(g, match, cam) {
     g.lineTo(px + 7, y + h - 1.5);
     g.fill();
     g.stroke();
-    g.fillStyle = pal.ink;
+    g.fillStyle = pal.paperInk;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.fillText(b.text, x + w / 2, y + h / 2 + 1);

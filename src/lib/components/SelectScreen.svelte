@@ -1,6 +1,7 @@
 <script>
   // 單機選角（art-work/ui-concept-v1/02-character-select）：左邊角色名冊、中間目前角色的大頭像、
-  // 右邊能力與闖關設定，底下是同一隊的四個席位。依序選每位真人玩家的角色（電腦隊友隨機）。
+  // 右邊能力與闖關設定，底下是同一隊的四個席位。依序選每個席位的角色：先真人、再電腦隊友
+  // （電腦隊友可以不選，按「其餘隨機・出發」就隨機補上）。
   import { onMount, untrack } from 'svelte';
   import { CHARACTERS, isUnlocked } from '../game/characters.js';
   import { WORLDS } from '../game/stages.js';
@@ -39,14 +40,18 @@
   const maxAllies = $derived(Math.max(start === 'watch' ? 1 : 0, 4 - humans));
   $effect(() => {
     if (allies > maxAllies) allies = maxAllies;
-    if (picks.length > humans) picks.length = humans;
+    if (picks.length > humans + allies) picks.length = humans + allies;
   });
-  // 正在選第幾位真人（全部選完 = humans）
-  const step = $derived(Math.min(picks.length, humans));
-  const done = $derived(step >= humans);
+  // 正在選第幾個席位（全部選完 = 真人＋電腦）；真人都選好了就可以出發
+  const seats = $derived(humans + allies);
+  const step = $derived(Math.min(picks.length, seats));
+  const done = $derived(step >= seats);
+  const ready = $derived(picks.length >= humans);
   const tags = $derived(picks.reduce((all, c, i) => ({ ...all, [c.id]: [...(all[c.id] ?? []), `${i + 1}P`] }), {}));
 
-  const subtitle = $derived(done ? t('調好設定就出發吧！') : humans > 1 ? t('{n}P 選擇角色', { n: step + 1 }) : t('選擇角色'));
+  const subtitle = $derived(
+    done ? t('調好設定就出發吧！') : step >= humans ? t('{n}P（電腦）選擇角色', { n: step + 1 }) : humans > 1 ? t('{n}P 選擇角色', { n: step + 1 }) : t('選擇角色'),
+  );
 
   const STATS = [
     ['速度', 'speed'],
@@ -74,7 +79,7 @@
     if (!isUnlocked(character)) return play('deny');
     play('pick');
     picks.push(character);
-    if (picks.length >= humans) {
+    if (picks.length >= seats) {
       if (ui.input !== 'touch') startButton?.focus({ preventScroll: true });
       return;
     }
@@ -85,7 +90,7 @@
     if (ui.input !== 'touch') grid.focusIndex(next);
   }
 
-  // 電腦隊友：隨機挑沒人用的角色
+  // 沒選的電腦隊友：隨機挑沒人用的角色
   function teammates(n, taken) {
     const pool = CHARACTERS.filter((c) => !c.hidden && !taken.includes(c.id)).map((c) => c.id);
     const out = [];
@@ -95,9 +100,15 @@
 
   function confirm() {
     if (!done) return pick();
+    go();
+  }
+
+  // 出發：還沒選的電腦隊友隨機補上
+  function go() {
+    if (!ready) return;
     play('select');
     const ids = picks.map((c) => c.id);
-    const characters = [...ids, ...teammates(allies, ids)].slice(0, 4);
+    const characters = [...ids, ...teammates(seats - ids.length, ids)].slice(0, 4);
     onstart({ characters, humans, settings: { difficulty, world: Number(world), lives: Number(lives) } });
   }
 
@@ -170,15 +181,15 @@
 
     <div class="slots">
       {#each { length: humans + allies } as _, i (i)}
-        {@const c = i < humans ? picks[i] : null}
+        {@const c = picks[i] ?? null}
         {@const now = i === step && !done}
         <div class="slot" style="--c: {SLOT_COLORS[i]}" class:now>
           <span class="no">{i + 1}P</span>
           <div class="pic">
             {#if c}<img src={c.portraits.normal} alt="" />{:else if now && open}<img class="ghost" src={current.portraits.normal} alt="" />{:else}<span>？</span>{/if}
           </div>
-          <b>{c ? c.name : i < humans ? (now && open ? current.name : '—') : 'CPU'}</b>
-          <em class:ok={c} class:cpu={i >= humans}>{c ? t('已確認') : i >= humans ? t('隨機') : now ? t('選擇中') : t('等待中')}</em>
+          <b>{c ? c.name : now && open ? current.name : i < humans ? '—' : 'CPU'}</b>
+          <em class:ok={c} class:cpu={i >= humans && !now}>{c ? t('已確認') : now ? t('選擇中') : i >= humans ? t('隨機') : t('等待中')}</em>
         </div>
       {/each}
     </div>
@@ -187,9 +198,14 @@
   {#snippet foot()}
     <BackButton onclick={back} />
     <ControlHint extra={ui.input === 'touch' ? t('點一下看資料，再點一下決定') : ''} />
-    <button type="button" class="vbtn primary" bind:this={startButton} disabled={!done && !open} onclick={confirm}>
-      {done ? t('出發！') : t('決定')}
-    </button>
+    <div class="go">
+      {#if ready && !done}
+        <button type="button" class="vbtn" onclick={go}>{t('其餘隨機・出發')}</button>
+      {/if}
+      <button type="button" class="vbtn primary" bind:this={startButton} disabled={!done && !open} onclick={confirm}>
+        {done ? t('出發！') : t('決定')}
+      </button>
+    </div>
   {/snippet}
 </ScreenFrame>
 
@@ -330,6 +346,11 @@
   }
   .random {
     align-self: flex-end;
+  }
+  /* 底部右邊：「其餘隨機・出發」＋「決定／出發！」 */
+  .go {
+    display: flex;
+    gap: 1.2cqw;
   }
 
   .slots {

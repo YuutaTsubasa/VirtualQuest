@@ -33,6 +33,7 @@ const EVENT_SOUND = {
   boss: 'alarm',
   nosp: 'deny',
   explode: 'quake',
+  rage: 'alarm',
   bounce: 'heavy',
   hazard: 'heavy',
 };
