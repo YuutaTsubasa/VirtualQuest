@@ -146,6 +146,8 @@
   --hud-panel: #0f380f;
   --hud-hp: #8bac0f;
   --font: 'MingLiU', '細明體', monospace;
+  /* 結算緞帶放字那條的中心（Game Boy 介面包回報 50.71%） */
+  --ribbon-y: 0.5071;
 }
 /* 四色以外的東西（模糊陰影、半透明網點、濾鏡）拿掉 */
 :root[data-style='gameboy'] :is(.panel, .vbtn, .card, .toast) {
@@ -215,6 +217,21 @@
   --face-hover: #fff4e2;
   --on-dark: #fae8cd;
   --muted: #5b4f86;
+}
+
+/* Game Boy 是淺色介面，但標題主視覺左邊留白是最深的綠：標題畫面的字與選單改用淺綠 */
+:root[data-style='gameboy'] .title.scene-on {
+  color: var(--ink);
+  --navy: #9bbc0f;
+  --ink: #9bbc0f;
+  --edge: #8bac0f;
+  --shade: #306230;
+  --cream: #0f380f;
+  --cream-deep: #306230;
+  --paper-white: #306230;
+  --face-hover: #306230;
+  --on-dark: #9bbc0f;
+  --muted: #8bac0f;
 }
 
 /* ===== 像素風格共用：直角、像素放大不模糊、字不要反鋸齒 ===== */
