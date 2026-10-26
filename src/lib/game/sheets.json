@@ -2787,6 +2787,36 @@
             "attack": 1.069,
             "down": 1.45
           }
+        },
+        "castle/brute": {
+          "cell": 128,
+          "fix": {
+            "attack": 1.294,
+            "windup": 1.126,
+            "charge": 1.26,
+            "down": 1.45
+          },
+          "scale": 1.091
+        },
+        "castle/knife": {
+          "cell": 128,
+          "fix": {
+            "attack": 1.14,
+            "down": 1.164
+          }
+        },
+        "castle/thrower": {
+          "cell": 128,
+          "fix": {
+            "down": 1.237
+          }
+        },
+        "castle/thug": {
+          "cell": 128,
+          "fix": {
+            "attack": 1.03,
+            "down": 1.381
+          }
         }
       },
       "bosses": {
@@ -2821,6 +2851,13 @@
           "cell": 192,
           "fix": {
             "down": 1.396
+          }
+        },
+        "castle": {
+          "cell": 192,
+          "fix": {
+            "walk1": 1.096,
+            "down": 1.372
           }
         }
       }
