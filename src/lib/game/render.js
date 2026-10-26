@@ -11,7 +11,6 @@ import SHEETS from './sheets.json' with { type: 'json' };
 import { asset, currentConfig, artStyle } from '../art-style.svelte.js';
 import { hasAsset } from '../style-assets.js';
 import { loadImage } from '../preload.svelte.js';
-import { drawWeapon, heldPose } from './weapons.js';
 import * as combo from './combo.js';
 import { drawBarrel, drawHazard, hazardDepth } from './hazards.js';
 import { t, displayName } from '../i18n.svelte.js';
@@ -162,15 +161,10 @@ export function handleEvents(match) {
         break;
       case 'pickup': {
         const p = playerOf(match, e.slot);
-        if (p && (e.kind === 'bat' || e.kind === 'blade')) floaters.push({ x: p.x, y: p.z - 150, text: t('拿到武器！'), life: 50, max: 50, color: '#ffd23f' });
+        if (p && (e.kind === 'red' || e.kind === 'blue')) floaters.push({ x: p.x, y: p.z - 150, text: e.kind === 'red' ? t('紅色能量！直線炮彈') : t('藍色能量！追蹤彈'), life: 60, max: 60, color: POWER[e.kind].light });
         else if (p) floaters.push({ x: p.x, y: p.z - 150, text: e.kind === 'gem' ? '+2000' : t('回復！'), life: 50, max: 50, color: e.kind === 'gem' ? '#7ff0ff' : '#7dff8a' });
         break;
       }
-      case 'weaponbreak':
-        // 武器用完：碎片
-        burst(e.x, e.z - 80, '#c9cfd4', 12, 6, 24);
-        floaters.push({ x: e.x, y: e.z - 140, text: t('武器壞了！'), life: 45, max: 45, color: '#c9cfd4' });
-        break;
       case 'special': {
         const p = playerOf(match, e.slot);
         if (p) {
@@ -268,7 +262,7 @@ const ANCHOR = 496 / 512;
 const FIG_H = 160;
 
 /** 從圖集畫一格。frame 沒有就用 fallback（再沒有就第一格）；回傳有沒有畫到 */
-function drawFrame(g, sheet, frame, x, y, h, facing, { fallback = 'idle', flash = 0, rotate = 0, alpha = 1 } = {}) {
+function drawFrame(g, sheet, frame, x, y, h, facing, { fallback = 'idle', flash = 0, rotate = 0, alpha = 1, tint = null } = {}) {
   const img = loadImage(asset(sheet.src));
   if (!ready(img)) return false;
   let i = sheet.frames.indexOf(frame);
@@ -288,9 +282,43 @@ function drawFrame(g, sheet, frame, x, y, h, facing, { fallback = 'idle', flash 
   if (rotate) g.rotate(rotate);
   if (alpha < 1) g.globalAlpha = alpha;
   if (flash > 0) g.filter = 'brightness(2.2)';
-  g.drawImage(img, (i % sheet.cols) * c, Math.floor(i / sheet.cols) * c, c, c, -h / 2, -h * ANCHOR, h, h);
+  const sx = (i % sheet.cols) * c;
+  const sy = Math.floor(i / sheet.cols) * c;
+  if (tint) {
+    // 身上有能量：整個人蓋一層顏色（只蓋在人身上，透明的地方不蓋）
+    g.drawImage(tinted(img, sx, sy, c, tint), -h / 2, -h * ANCHOR, h, h);
+  } else {
+    g.drawImage(img, sx, sy, c, c, -h / 2, -h * ANCHOR, h, h);
+  }
   g.restore();
   return true;
+}
+
+// 上色用的暫存畫布（每次畫一格）
+let tintCanvas = null;
+function tinted(img, sx, sy, c, color) {
+  if (!tintCanvas) tintCanvas = document.createElement('canvas');
+  if (tintCanvas.width !== c) tintCanvas.width = tintCanvas.height = c;
+  const t = tintCanvas.getContext('2d');
+  t.globalCompositeOperation = 'source-over';
+  t.clearRect(0, 0, c, c);
+  t.drawImage(img, sx, sy, c, c, 0, 0, c, c);
+  t.globalCompositeOperation = 'source-atop';
+  t.fillStyle = color;
+  t.fillRect(0, 0, c, c);
+  return tintCanvas;
+}
+
+// 紅色能量（直線炮彈）、藍色能量（追蹤彈）的顏色
+const POWER = {
+  red: { core: '#fff1ec', glow: '#ff3b2f', light: '#ff8a7a', tint: 'rgba(255,40,30,0.38)' },
+  blue: { core: '#eef8ff', glow: '#2f8bff', light: '#8cc8ff', tint: 'rgba(40,130,255,0.40)' },
+};
+// 能量快沒了（最後兩秒）：顏色一閃一閃
+function powerTint(p, frame) {
+  if (!p.power) return null;
+  if (p.powerT < 120 && Math.floor(frame / 6) % 2) return null;
+  return POWER[p.power].tint;
 }
 
 // 清版動作專用圖集（16 格）的動作
@@ -315,7 +343,7 @@ function poseOf(p, sheet) {
       return Math.floor(p.t / 5) % 2 ? 'walk1' : 'walk2';
     case 'attack':
       if (p.mv === 'dashAttack') return sheet?.frames.includes('dash') ? 'dash' : 'kick';
-      return { jab: 'punch1', jab2: 'punch2', kick: 'kick', special: 'special', throw: 'throw', bat: 'punch2', blade: 'punch1' }[p.mv] ?? 'idle';
+      return { jab: 'punch1', jab2: 'punch2', kick: 'kick', special: 'special', throw: 'throw' }[p.mv] ?? 'idle';
     case 'grab':
       return p.mv === 'knee' ? 'knee' : 'grab';
     case 'jump':
@@ -397,8 +425,8 @@ function drawPlayer(g, match, p, cam) {
     const lean = p.act === 'run' && !sheet.frames.includes('run1') ? 0.12 : 0;
     // 四格走路圖本身就有上下起伏（收腳時身體最高），只有兩格時才用程式補
     const bob = p.act === 'walk' && !sheet.frames.includes('walk3') ? walkBob(p.t) : 0;
-    drawFrame(g, sheet, pose, x + lunge * p.facing, p.z - p.y + bob, CELL_H, p.facing, { flash: p.flash, rotate: lean });
-    drawHeld(g, match, p, x + lunge * p.facing, p.z - p.y + bob);
+    drawPowerGlow(g, p, x, match.frame);
+    drawFrame(g, sheet, pose, x + lunge * p.facing, p.z - p.y + bob, CELL_H, p.facing, { flash: p.flash, rotate: lean, tint: powerTint(p, match.frame) });
     return;
   }
   const img = p.character.sprite ? loadImage(p.character.spriteSrc) : null;
@@ -425,29 +453,41 @@ function drawPlayer(g, match, p, cam) {
   g.restore();
 }
 
-// 手上拿的武器（動作圖沒有拿武器的版本，畫在角色前面）；鈍器揮下去時畫一道白色弧線
-function drawHeld(g, match, p, x, y) {
-  if (!p.weapon) return;
-  const pose = heldPose(p);
-  if (!pose) return;
-  const f = p.facing;
-  const hx = x + pose.x * f;
-  const hy = y + pose.y;
-  if (pose.swing) {
-    g.save();
-    g.strokeStyle = 'rgba(255,255,255,0.7)';
-    g.lineWidth = 10;
-    g.lineCap = 'round';
-    g.beginPath();
-    const a0 = -2.3;
-    const a1 = pose.angle;
-    if (f > 0) g.arc(hx, hy, 58, a0, a1);
-    else g.arc(hx, hy, 58, Math.PI - a1, Math.PI - a0);
-    g.stroke();
-    g.restore();
+// 身上有能量：腳下一圈光、身邊冒光點
+function drawPowerGlow(g, p, x, frame) {
+  if (!p.power) return;
+  const c = POWER[p.power];
+  g.save();
+  g.globalAlpha = 0.3 + 0.15 * Math.sin(frame * 0.3);
+  g.fillStyle = c.glow;
+  g.beginPath();
+  g.ellipse(x, p.z, 52, 13, 0, 0, Math.PI * 2);
+  g.fill();
+  g.globalAlpha = 0.8;
+  g.fillStyle = c.light;
+  for (let k = 0; k < 3; k++) {
+    const u = ((frame * 2 + k * 37) % 90) / 90;
+    const px = x + Math.sin(k * 2.1 + frame * 0.05) * 34;
+    g.fillRect(px - 2, p.z - p.y - 20 - u * 130, 4, 4);
   }
-  // 面向左：角度鏡像
-  drawWeapon(g, p.weapon, match.world, hx, hy, f > 0 ? pose.angle : Math.PI - pose.angle, 1);
+  g.restore();
+}
+
+// 能量球（地上的紅／藍）、能量炮彈：發光的球
+function powerOrb(g, x, y, r, kind, frame) {
+  const c = POWER[kind];
+  g.save();
+  const grad = g.createRadialGradient(x, y, 0, x, y, r * 1.8);
+  grad.addColorStop(0, c.core);
+  grad.addColorStop(0.35, c.light);
+  grad.addColorStop(0.6, c.glow);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  g.globalAlpha = 0.9 + 0.1 * Math.sin(frame * 0.4);
+  g.fillStyle = grad;
+  g.beginPath();
+  g.arc(x, y, r * 1.8, 0, Math.PI * 2);
+  g.fill();
+  g.restore();
 }
 
 // 頭上的 1P／2P 標記
@@ -796,9 +836,9 @@ function drawItem(g, it, cam, frame, world) {
   const x = it.x - cam;
   const bob = Math.sin(frame * 0.12 + it.id) * 3;
   shadow(g, x, it.z, it.y, 16);
-  if (it.kind === 'bat' || it.kind === 'blade') {
-    // 武器躺在地上，閃一下提示可以撿
-    drawWeapon(g, it.kind, world, x - 22, it.z - it.y - 6, -0.12, 1);
+  if (it.kind === 'red' || it.kind === 'blue') {
+    // 能量球：浮在地上、外面一圈光，閃一下提示可以撿
+    powerOrb(g, x, it.z - it.y - 26 + bob, 13, it.kind, frame);
     if (Math.floor(frame / 20) % 3 === 0) {
       g.save();
       g.globalAlpha = 0.5;
@@ -858,8 +898,41 @@ function drawShot(g, s, cam, frame, world) {
   const x = s.x - cam;
   const y = s.z - s.y;
   shadow(g, x, s.z, s.y, 12);
-  if (s.kind === 'bat' || s.kind === 'blade') {
-    drawWeapon(g, s.kind, world, x, y, frame * 0.6 * Math.sign(s.vx || 1), 1);
+  if (s.kind === 'beam') {
+    // 紅色直線炮彈：拉長的光彈＋尾巴
+    const c = POWER.red;
+    g.save();
+    g.translate(x, y);
+    if (s.vx < 0) g.scale(-1, 1);
+    g.globalAlpha = 0.45;
+    g.fillStyle = c.glow;
+    g.beginPath();
+    g.ellipse(-22, 0, 40, 11, 0, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = 1;
+    g.fillStyle = c.light;
+    g.beginPath();
+    g.ellipse(-6, 0, 26, 7, 0, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = c.core;
+    g.beginPath();
+    g.ellipse(0, 0, 14, 4, 0, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+    return;
+  }
+  if (s.kind === 'seeker') {
+    // 藍色追蹤彈：光球＋往後的小光點
+    for (let k = 1; k <= 3; k++) {
+      g.save();
+      g.globalAlpha = 0.5 - k * 0.12;
+      g.fillStyle = POWER.blue.light;
+      g.beginPath();
+      g.arc(x - (s.vx || 0) * k * 1.6, y, 9 - k * 2, 0, Math.PI * 2);
+      g.fill();
+      g.restore();
+    }
+    powerOrb(g, x, y, 10, 'blue', frame);
     return;
   }
   const name = s.kind === 'rock' ? THROWN[world] : s.kind;
@@ -972,7 +1045,6 @@ function brush(g, x, y, w, h, color) {
 
 // 頂端的隊員牌：肖像、1P～4P／CPU、名稱、HP、剩餘生命、七位數分數
 const CARD = { w: 228, h: 58, gap: 8, top: 8 };
-let cardWorld = 0; // 隊員牌上的武器用哪一大關的樣子（draw() 每格設）
 let frameNow = 0; // 目前第幾格（連段數用）
 function drawPlayerPanel(g, p, names, cpu, frame) {
   const x = 10 + p.slot * (CARD.w + CARD.gap);
@@ -1031,9 +1103,14 @@ function drawPlayerPanel(g, p, names, cpu, frame) {
   g.font = `800 13px ${FONT}`;
   g.fillStyle = pal.text;
   g.fillText(`♥ ×${Math.max(0, p.lives)}`, tx, y + 49);
-  if (p.weapon) {
-    drawWeapon(g, p.weapon, cardWorld, tx + 52, y + 49, -0.5, 0.42);
-    g.fillText(`×${p.weaponUses}`, tx + 74, y + 49);
+  if (p.power) {
+    // 能量：小球＋剩下的時間條
+    // （愛心數字後面、分數前面）
+    powerOrb(g, tx + 44, y + 45, 5, p.power, frame);
+    g.fillStyle = 'rgba(0,0,0,0.35)';
+    g.fillRect(tx + 53, y + 43, 34, 5);
+    g.fillStyle = POWER[p.power].light;
+    g.fillRect(tx + 53, y + 43, (34 * Math.min(600, Math.max(0, p.powerT))) / 600, 5);
   }
   g.textAlign = 'right';
   g.font = `900 14px ${FONT}`;
@@ -1253,7 +1330,6 @@ export function draw(canvas, match, opts = {}) {
   drawScenery(g, match.world, match.sub, cam, SCALE);
 
   // 真人玩家（連線時只算自己）：對準提示用
-  cardWorld = match.world;
   frameNow = match.frame;
   aimers = match.players.filter((p) => !p.out && (opts.you != null ? p.slot === opts.you : !opts.cpu?.[p.slot]));
   // 依前後（z）排序：靠後的先畫

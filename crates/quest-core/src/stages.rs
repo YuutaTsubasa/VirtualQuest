@@ -110,20 +110,20 @@ pub fn build_stage(world: usize, sub: usize, players: usize, difficulty: Difficu
         waves.push(Wave { at: at.max(0.0), spawns });
     }
 
-    // 路上的箱子：補血食物、寶石或武器
+    // 路上的箱子：補血食物、寶石或能量
     let mut props = Vec::new();
-    let n_props = 2 + rng.gen_range(0..2) + sub.min(1);
+    let n_props = 4 + rng.gen_range(0..2) + sub.min(1);
     for k in 0..n_props {
         let x = 420.0 + (length - 700.0) * (k as f32 + 0.5) / n_props as f32 + rng.gen_range(-80.0..80.0);
         let z = rng.gen_range(Z_TOP + 15.0..Z_BOTTOM - 15.0);
-        // 三成的箱子掉武器（鈍器比較多）
-        let item = match rng.gen_range(0..10) {
-            0..=2 => ItemKind::Apple,
-            3..=4 => ItemKind::Meat,
-            5 => ItemKind::Feast,
-            6 => ItemKind::Gem,
-            7..=8 => ItemKind::Bat,
-            _ => ItemKind::Blade,
+        // 兩成多的箱子是能量（紅、藍各半）
+        let item = match rng.gen_range(0..20) {
+            0..=6 => ItemKind::Apple,
+            7..=10 => ItemKind::Meat,
+            11 => ItemKind::Feast,
+            12..=14 => ItemKind::Gem,
+            15..=17 => ItemKind::Red,
+            _ => ItemKind::Blue,
         };
         props.push((x, z, item));
     }

@@ -43,7 +43,7 @@ export default {
   連段: 'Combo',
   跳踢: 'Jump kick',
   抓摔: 'Grab & throw',
-  '打破路上的箱子會掉出補血的食物或寶石。': 'Break crates along the way for healing food or gems.',
+  '打破路上的箱子、打倒敵人會掉出補血的食物、寶石或能量。': 'Break crates and defeat enemies for healing food, gems or power orbs.',
   '打倒第一大關的魔王，會有隱藏角色加入。': 'Defeat the World 1 boss and a hidden character joins.',
 
   // 大廳、闖關設定
@@ -258,10 +258,10 @@ export default {
   '：拳頭打不停他，用踢、跳踢、衝刺或丟人。': ': Punches won’t stop them — use kicks, jump kicks, dashes or throws.',
   '一個人玩也能用方向鍵＋Z／X／C；手把依序是 1P、2P…': 'Solo players can also use the arrows + Z/X/C; gamepads are 1P, 2P… in order.',
   '必殺氣不夠！': 'Gauge not full!',
-  '武器': 'Weapons',
-  '：站在旁邊按攻擊撿起來，打幾下就會壞；跑步中按攻擊丟出去，被打倒會掉。': ': Press attack next to one to pick it up; it breaks after a few hits. Attack while running to throw it; you drop it when knocked down.',
-  '拿到武器！': 'Got a weapon!',
-  '武器壞了！': 'Weapon broke!',
+  '能量': 'Power',
+  '：撿到紅球十秒內出招會射直線炮彈（貫穿一整排），藍球會射追蹤彈。身上發光快沒了會閃。': ': Grab a red orb and for ten seconds every attack fires a straight shot that pierces a whole row; a blue orb fires homing shots. The glow blinks when it is about to run out.',
+  '紅色能量！直線炮彈': 'Red power! Straight shots',
+  '藍色能量！追蹤彈': 'Blue power! Homing shots',
   '新紀錄！': 'New best!',
   '時間': 'Time',
   '最高連段': 'Max combo',

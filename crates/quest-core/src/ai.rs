@@ -59,8 +59,6 @@ pub struct Ai {
     jump_kick: i32,
     /// 跑步用的連按兩下：還剩幾格（放開、按、放開，之後照常按住就跑起來）
     dash_tap: i32,
-    /// 正走去撿地上的武器（到了就按攻擊撿起來）
-    pickup: bool,
 }
 
 impl Ai {
@@ -76,7 +74,6 @@ impl Ai {
             fight: 0.0,
             jump_kick: 0,
             dash_tap: 0,
-            pickup: false,
         }
     }
 
@@ -140,11 +137,6 @@ impl Ai {
             out.up = dz < 0.0;
             out.down = dz > 0.0;
         }
-        if self.pickup && dx.abs() <= 20.0 && dz.abs() <= 10.0 && matches!(b.act, Act::Stand | Act::Walk) {
-            out = Input { attack_pressed: true, ..Input::default() };
-            self.pickup = false;
-            return out;
-        }
         if self.fight != 0.0 && dx.abs() <= 8.0 && dz.abs() <= 7.0 {
             // 到位了：面向敵人連打
             out.left = false;
@@ -200,9 +192,8 @@ impl Ai {
 
     fn decide(&mut self, m: &Match) {
         let me = &m.players[self.index].body;
-        let armed = m.players[self.index].weapon.is_some();
+        let powered = m.players[self.index].power.is_some();
         self.fight = 0.0;
-        self.pickup = false;
         // 血少：去撿補血（只有食物；武器要按攻擊才撿）
         if me.hp < me.max_hp / 2 {
             if let Some(it) = m
@@ -215,18 +206,17 @@ impl Ai {
                 return;
             }
         }
-        // 撿武器：手上沒有、身邊沒有敵人逼近、武器在畫面裡不遠
-        if !armed {
+        // 撿能量：身上沒有、身邊沒有敵人逼近、能量在畫面裡不遠（走過去就撿到）
+        if !powered {
             let threat = m.enemies.iter().any(|e| e.body.alive() && (e.body.x - me.x).abs() < 110.0 && (e.body.z - me.z).abs() < 30.0);
             if !threat {
                 if let Some(it) = m
                     .items
                     .iter()
-                    .filter(|it| it.kind.is_weapon() && it.y <= 0.0 && it.x > m.camera + 20.0 && it.x < m.camera + W - 20.0 && (it.x - me.x).abs() < 260.0)
+                    .filter(|it| it.kind.is_power() && it.y <= 0.0 && it.x > m.camera + 20.0 && it.x < m.camera + W - 20.0 && (it.x - me.x).abs() < 260.0)
                     .min_by(|a, b| (a.x - me.x).abs().total_cmp(&(b.x - me.x).abs()))
                 {
                     self.goal = Some((it.x, it.z));
-                    self.pickup = true;
                     return;
                 }
             }
@@ -272,8 +262,8 @@ impl Ai {
             }
             return;
         }
-        // 箱子
-        if let Some(pr) = m.props.iter().find(|p| p.x > m.camera + 20.0 && p.x < m.camera + W - 20.0) {
+        // 箱子（油桶／炸彈不打：會炸到自己，留給玩家拿來炸敵人）
+        if let Some(pr) = m.props.iter().find(|p| !p.barrel && p.x > m.camera + 20.0 && p.x < m.camera + W - 20.0) {
             let side = if me.x < pr.x { -1.0 } else { 1.0 };
             self.goal = Some((pr.x + side * 44.0, pr.z));
             self.fight = -side;

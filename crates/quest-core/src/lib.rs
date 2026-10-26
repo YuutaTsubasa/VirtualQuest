@@ -429,52 +429,48 @@ mod run {
         assert_eq!((m.world, m.sub, m.phase), (0, 0, Phase::Intro));
     }
 
-    /// 武器：站在旁邊按攻擊撿起來、揮了用武器打、被打倒會掉在地上、跑步中按攻擊丟出去
+    /// 能量：走過去撿到；出招時射出炮彈（紅：直線、藍：追蹤）；時間到就消失
     #[test]
-    fn weapons_pick_swing_drop_throw() {
-        use crate::game::ItemKind;
+    fn power_pickup_fire_expire() {
+        use crate::game::{ItemKind, ShotKind, POWER_TIME};
         let entrants = [Entrant { slot: 0, character: "aming" }];
         let mut m = Match::new(&entrants, 0, Difficulty::Easy, 3, 1);
         while m.phase != Phase::Play {
             m.step(&[Input::default()]);
         }
+        m.enemies.clear();
         let (x, z) = (m.players[0].body.x, m.players[0].body.z);
-        m.spawn_item(ItemKind::Bat, x + 20.0, z);
+        m.spawn_item(ItemKind::Red, x + 10.0, z);
+        m.step(&[Input::default()]);
+        assert_eq!(m.players[0].power, Some(ItemKind::Red), "走過去就撿到");
+        assert!(!m.items.iter().any(|it| it.kind == ItemKind::Red), "地上的拿掉了");
         let atk = Input { attack_pressed: true, ..Input::default() };
         m.step(&[atk]);
-        assert_eq!(m.players[0].weapon, Some(ItemKind::Bat), "撿起來");
-        assert!(!m.items.iter().any(|it| it.kind == ItemKind::Bat), "地上的拿掉了");
+        for _ in 0..3 {
+            m.step(&[Input::default()]);
+        }
+        assert_eq!(m.shots.iter().filter(|s| s.kind == ShotKind::Beam && s.owner == Some(0)).count(), 1, "出一招射一發");
+        // 換成藍色：時間重算（收招站好才撿得到）
+        for _ in 0..16 {
+            m.step(&[Input::default()]);
+        }
+        m.players[0].power_t = 30;
+        let (x, z) = (m.players[0].body.x, m.players[0].body.z);
+        m.spawn_item(ItemKind::Blue, x, z);
+        m.step(&[Input::default()]);
+        assert_eq!((m.players[0].power, m.players[0].power_t), (Some(ItemKind::Blue), POWER_TIME));
         for _ in 0..12 {
             m.step(&[Input::default()]);
         }
         m.step(&[atk]);
-        assert_eq!(m.players[0].body.mv, Move::Bat, "拿著武器按攻擊是用武器打");
-        // 被打倒：武器掉在地上
-        for _ in 0..30 {
+        for _ in 0..3 {
             m.step(&[Input::default()]);
         }
-        // （遊戲裡是在「玩家移動之後」被打倒；這裡在移動之前設，所以 t 從 -1 開始，移動時會加到 0）
-        m.players[0].body.act = Act::Fall;
-        m.players[0].body.t = -1;
-        m.players[0].body.y = 1.0;
-        m.players[0].body.vy = 5.0;
-        m.step(&[Input::default()]);
-        assert_eq!(m.players[0].weapon, None);
-        assert!(m.items.iter().any(|it| it.kind == ItemKind::Bat), "掉在地上");
-        // 跑步中按攻擊：丟出去
-        let mut m = Match::new(&entrants, 0, Difficulty::Easy, 3, 1);
-        while m.phase != Phase::Play {
+        assert!(m.shots.iter().any(|s| s.kind == ShotKind::Seeker), "藍色射追蹤彈");
+        for _ in 0..POWER_TIME {
             m.step(&[Input::default()]);
         }
-        m.players[0].weapon = Some(ItemKind::Blade);
-        m.players[0].weapon_uses = 5;
-        m.step(&[press(true, false, false)]);
-        m.step(&[Input::default()]);
-        m.step(&[press(true, false, false)]);
-        assert_eq!(m.players[0].body.act, Act::Run);
-        m.step(&[press(true, true, false)]);
-        assert_eq!(m.players[0].weapon, None);
-        assert_eq!(m.shots.len(), 1, "丟出去變成飛行道具");
+        assert_eq!(m.players[0].power, None, "時間到就沒了");
     }
 
     /// 必殺要集滿氣才能放，放完氣就歸零（不能一直放）

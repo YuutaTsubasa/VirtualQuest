@@ -32,7 +32,6 @@ const EVENT_SOUND = {
   go: 'go',
   boss: 'alarm',
   nosp: 'deny',
-  weaponbreak: 'crack',
   explode: 'quake',
   bounce: 'heavy',
   hazard: 'heavy',
