@@ -87,15 +87,16 @@ cargo test --manifest-path crates/quest-core/Cargo.toml --release balance -- --i
 
 ### 配對服務（Cloudflare Workers）
 
-程式在 `workers/signal/`，名字是 `virtual-quest-signal`。**還沒部署**：部署要用你的 Cloudflare 帳號登入（第一次 `npx wrangler login`）：
+程式在 [VirtualCore](https://github.com/YuutaTsubasa/VirtualCore) 的 `workers/signal/`（Virtual 系列五款共用），本作部署的名字是 `virtual-quest-signal`。部署要用你的 Cloudflare 帳號登入（第一次 `npx wrangler login`）：
 
 ```bash
-npm --prefix workers/signal run deploy
+# 在 VirtualCore 的資料夾
+npm --prefix workers/signal run deploy:quest
 ```
 
-部署後網址應該是 `https://virtual-quest-signal.taiwan-mahjong-signal.workers.dev`（`src/lib/site.js` 的預設值；打開 `/health` 會看到 `ok`）。配對服務連不上時，介面會自動藏起線上房間。
+已部署在 `https://virtual-quest-signal.taiwan-mahjong-signal.workers.dev`（`src/lib/site.js` 的預設值；打開 `/health` 會看到 `ok`）。配對服務連不上時，介面會自動藏起線上房間。
 
-本機測試：`npm --prefix workers/signal run dev`（http://localhost:8787），在 `.env.development.local` 寫 `VITE_SIGNAL_SERVER=http://localhost:8787`。
+本機測試（VirtualCore clone 在旁邊的 `../VirtualCore`）：`npm --prefix ../VirtualCore/workers/signal run dev`（http://localhost:8787），在 `.env.development.local` 寫 `VITE_SIGNAL_SERVER=http://localhost:8787`。
 
 區網房間預設通訊埠 **7799**（台麻 7777、排球 7788，可以同時開）。
 
@@ -110,7 +111,6 @@ crates/quest-core/       遊戲引擎（Rust）
   src/protocol.rs          連線訊息（區網伺服器與線上房間共用）
 crates/quest-wasm/       WebAssembly：單機（LocalMatch）與線上房主（HostRoom）
 src-tauri/               Tauri v2 App＋區網伺服器（axum，/ws）
-workers/signal/          線上房間的配對服務
 src/
   App.svelte               畫面切換（標題→模式→選角→闖關→過關／全軍覆沒／破關）
   lib/engine.js            主迴圈
@@ -120,6 +120,17 @@ src/
   lib/game/input.js        鍵盤＋手把＋觸控
   lib/game/characters.js   角色名字、台詞、圖
 ```
+
+### 跟 VirtualCore 共用的部分
+
+[VirtualCore](https://github.com/YuutaTsubasa/VirtualCore) 是 Virtual 系列五款共用的程式，`package.json` 用 git tag 引用（`virtual-core`）：
+
+- `virtual-core/audio/synth.js`、`audio/music.js`：PC-98 FM 音源與曲子播放器（曲目是本作的 `src/lib/audio/songs.js`）
+- `virtual-core/net/p2p.js`、`net/site.js`：線上房間的 WebRTC 傳輸、房號與分享連結（本作的網址在 `src/lib/site.js`）
+- `workers/signal/`：配對服務
+- `.github/workflows/build-apps.yml`、`pages.yml`：這個 repo 的兩個 workflow 只是呼叫它們
+
+本機要同時改 VirtualCore 時：`npm install ../VirtualCore` 暫時換成本機版本（不要 commit 這個改動）。
 
 ## 美術
 
