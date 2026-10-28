@@ -2,6 +2,8 @@
 // （選單的操作在 src/lib/components/Controls.svelte）
 
 // 1P、2P 各一組；一個人玩時三組都能用（方向鍵＋Z X C 是很多人習慣的配置）
+import { padDpad } from 'virtual-core/input/controls.js';
+
 const KEYMAPS = [
   // 1P：WASD 移動，J 攻擊、K 跳、L 必殺
   { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], attack: ['KeyJ'], jump: ['KeyK'], special: ['KeyL'] },
@@ -51,21 +53,23 @@ function standardPads() {
   } catch {
     // 某些瀏覽器在非安全環境會擋
   }
-  return [...pads].filter((p) => p?.connected && (!p.mapping || p.mapping === 'standard'));
+  // 沒有標準配置的手把也收（十字鍵另外處理，見 padDpad）
+  return [...pads].filter((p) => p?.connected);
 }
 
 function readPad(pad) {
   const ax = pad.axes[0] ?? 0;
   const ay = pad.axes[1] ?? 0;
   const btn = (i) => !!pad.buttons[i]?.pressed;
+  const dpad = padDpad(pad);
   const now = { attack: btn(2) || btn(5), jump: btn(0) || btn(4), special: btn(1) || btn(3) || btn(7) };
   const prev = padPrev.get(pad.index) ?? {};
   padPrev.set(pad.index, now);
   return {
-    left: ax < -0.4 || btn(14),
-    right: ax > 0.4 || btn(15),
-    up: ay < -0.5 || btn(12),
-    down: ay > 0.5 || btn(13),
+    left: ax < -0.4 || dpad.left,
+    right: ax > 0.4 || dpad.right,
+    up: ay < -0.5 || dpad.up,
+    down: ay > 0.5 || dpad.down,
     attack: now.attack,
     attackPressed: now.attack && !prev.attack,
     jumpPressed: now.jump && !prev.jump,
