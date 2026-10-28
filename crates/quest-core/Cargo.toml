@@ -6,6 +6,8 @@ edition = "2021"
 rust-version = "1.89"
 
 [dependencies]
+# 座位、房主、聊天、連線訊息（Virtual 系列共用）
+virtual-room = { git = "https://github.com/YuutaTsubasa/VirtualCore", tag = "v0.5.0" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rand = { version = "0.8", features = ["small_rng"] }

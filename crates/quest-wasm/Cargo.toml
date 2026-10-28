@@ -10,6 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 quest-core = { path = "../quest-core" }
+virtual-room = { git = "https://github.com/YuutaTsubasa/VirtualCore", tag = "v0.5.0" }
 serde_json = "1"
 wasm-bindgen = "0.2"
 

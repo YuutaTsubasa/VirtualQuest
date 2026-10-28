@@ -18,6 +18,7 @@ mod tests {
     use crate::ai::{Ai, Difficulty};
     use crate::game::{Entrant, Event, Match, Phase};
     use crate::room::{Room, Settings};
+    use virtual_room::RoomGame;
 
     /// 全部交給電腦打，回傳打到哪一關、結束時的狀態
     fn run(chars: &[&str], world: usize, d: Difficulty, frames: usize, seed: u64) -> (Match, Vec<(usize, usize)>) {
