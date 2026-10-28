@@ -246,7 +246,7 @@ checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
 [[package]]
 name = "virtual-room"
 version = "0.5.0"
-source = "git+https://github.com/YuutaTsubasa/VirtualCore?branch=claude%2Frust-room#50efd5c55a79d791efe845e430c11a60bff37a49"
+source = "git+https://github.com/YuutaTsubasa/VirtualCore?tag=v0.5.0#d63f5a44887303be6afcdade54766c969573632b"
 dependencies = [
  "getrandom",
  "rand",

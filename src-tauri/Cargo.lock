@@ -3985,7 +3985,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "virtual-lan"
 version = "0.5.0"
-source = "git+https://github.com/YuutaTsubasa/VirtualCore?branch=claude%2Frust-room#50efd5c55a79d791efe845e430c11a60bff37a49"
+source = "git+https://github.com/YuutaTsubasa/VirtualCore?tag=v0.5.0#d63f5a44887303be6afcdade54766c969573632b"
 dependencies = [
  "axum",
  "futures-util",
@@ -4012,7 +4012,7 @@ dependencies = [
 [[package]]
 name = "virtual-room"
 version = "0.5.0"
-source = "git+https://github.com/YuutaTsubasa/VirtualCore?branch=claude%2Frust-room#50efd5c55a79d791efe845e430c11a60bff37a49"
+source = "git+https://github.com/YuutaTsubasa/VirtualCore?tag=v0.5.0#d63f5a44887303be6afcdade54766c969573632b"
 dependencies = [
  "getrandom 0.2.17",
  "rand 0.8.8",
