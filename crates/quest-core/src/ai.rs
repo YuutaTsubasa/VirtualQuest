@@ -6,16 +6,9 @@ use crate::game::{Act, HazardKind, HazardState, ItemKind, Match, Phase, Input, S
 use crate::characters::Reach;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
-use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Difficulty {
-    Easy,
-    #[default]
-    Normal,
-    Hard,
-}
+/// 電腦的強度：Virtual 系列共用（virtual-room），各款自己決定每種強度的參數（見 cfg）
+pub use virtual_room::Difficulty;
 
 struct Cfg {
     /// 每隔幾格才重新判斷一次（越大越遲鈍）
@@ -26,21 +19,11 @@ struct Cfg {
     special: f64,
 }
 
-impl Difficulty {
-    fn cfg(self) -> Cfg {
-        match self {
-            Difficulty::Easy => Cfg { reaction: 14, attack_gap: 20, special: 0.2 },
-            Difficulty::Normal => Cfg { reaction: 7, attack_gap: 11, special: 0.5 },
-            Difficulty::Hard => Cfg { reaction: 3, attack_gap: 7, special: 0.85 },
-        }
-    }
-
-    pub fn label(self) -> &'static str {
-        match self {
-            Difficulty::Easy => "簡單",
-            Difficulty::Normal => "普通",
-            Difficulty::Hard => "困難",
-        }
+fn cfg(difficulty: Difficulty) -> Cfg {
+    match difficulty {
+        Difficulty::Easy => Cfg { reaction: 14, attack_gap: 20, special: 0.2 },
+        Difficulty::Normal => Cfg { reaction: 7, attack_gap: 11, special: 0.5 },
+        Difficulty::Hard => Cfg { reaction: 3, attack_gap: 7, special: 0.85 },
     }
 }
 
@@ -84,7 +67,7 @@ impl Ai {
             return out;
         }
         let b = &me.body;
-        let cfg = self.difficulty.cfg();
+        let cfg = cfg(self.difficulty);
         self.last_attack += 1;
         self.special_cool = (self.special_cool - 1).max(0);
 
