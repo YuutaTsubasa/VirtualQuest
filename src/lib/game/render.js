@@ -52,6 +52,10 @@ function updatePalette() {
   // 紙底上的字（對話框）：深色介面的畫風是淺字配深藍紙，跟 --paper-white 一組
   pal.paperInk = v('--ink', '#202329');
   pal.teal = v('--teal', '#287f78');
+  pal.muted = v('--muted', '#6b6a66');
+  // 血條、必殺氣、魔王條的底；低血量閃的那一下（也是 GAME OVER 的字）
+  pal.track = v('--hud-track', '#3a3e46');
+  pal.accentHi = v('--hud-alert', '#ff8b7e');
 }
 
 const ready = (img) => img && img.complete && img.naturalWidth > 0;
@@ -1008,24 +1012,27 @@ function drawShot(g, s, cam, frame, world) {
 // ---------- HUD ----------
 
 function hpBar(g, x, y, w, h, hp, max, frame = 0) {
-  g.fillStyle = '#3a3e46';
+  g.fillStyle = pal.track;
   g.fillRect(x, y, w, h);
   const r = Math.max(0, hp / max);
   const low = r < 0.3;
   // 低血量：朱紅＋短暫閃一下（不是只靠閃爍提示）
-  g.fillStyle = low ? (Math.floor(frame / 12) % 4 === 0 ? '#ff8b7e' : pal.hpLow) : pal.hp;
+  g.fillStyle = low ? (Math.floor(frame / 12) % 4 === 0 ? pal.accentHi : pal.hpLow) : pal.hp;
   g.fillRect(x, y, w * r, h);
   g.fillStyle = 'rgba(255,255,255,0.28)';
   g.fillRect(x, y, w * r, h / 3);
-  g.strokeStyle = 'rgba(245,239,223,0.5)';
+  g.save();
+  g.strokeStyle = pal.text;
+  g.globalAlpha *= 0.5;
   g.lineWidth = 1;
   g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  g.restore();
 }
 
 // 必殺氣：杏黃，集滿了換成角色的必殺顏色並閃一下（滿了才能放必殺）
 const SP_MAX = 100;
 function spBar(g, x, y, w, h, sp, color, frame) {
-  g.fillStyle = '#3a3e46';
+  g.fillStyle = pal.track;
   g.fillRect(x, y, w, h);
   const full = sp >= SP_MAX;
   g.fillStyle = full ? (Math.floor(frame / 8) % 2 ? '#ffffff' : color) : pal.flash;
@@ -1098,7 +1105,7 @@ function drawPlayerPanel(g, p, names, cpu, frame) {
   g.font = `900 13px ${FONT}`;
   g.textAlign = 'left';
   g.textBaseline = 'middle';
-  g.fillStyle = '#fff';
+  g.fillStyle = pal.text;
   g.fillText(`${p.slot + 1}P`, tx + 4, y + 14.5);
   const name = cpu ? `CPU ${p.character.name}` : names?.[p.slot] ? displayName(names[p.slot]) : p.character.name;
   g.font = `800 14px ${FONT}`;
@@ -1107,7 +1114,7 @@ function drawPlayerPanel(g, p, names, cpu, frame) {
   while (g.measureText(shown).width > CARD.w - 104 && shown.length > 1) shown = shown.slice(0, -1);
   g.fillText(shown === name ? name : `${shown}…`, tx + 36, y + 14.5);
   if (p.out) {
-    outlinedText(g, 'GAME OVER', x + 140, y + 40, 15, '#ff8b7e');
+    outlinedText(g, 'GAME OVER', x + 140, y + 40, 15, pal.accentHi);
     return;
   }
   hpBar(g, tx, y + 25, CARD.w - 70, 9, p.hp, p.maxHp, frame);
@@ -1149,7 +1156,7 @@ function drawBossBar(g, match) {
   const w = 440;
   const x = (W - w) / 2;
   const y = H - 30;
-  g.fillStyle = 'rgba(32,35,41,0.88)';
+  g.fillStyle = pal.panel;
   g.fillRect(x - 12, y - 22, w + 24, 38);
   g.fillStyle = pal.accent;
   g.fillRect(x - 12, y - 22, 4, 38);
@@ -1158,7 +1165,7 @@ function drawBossBar(g, match) {
   g.textBaseline = 'middle';
   g.fillStyle = pal.text;
   g.fillText(`BOSS  ${t(WORLDS[match.world].boss.name)}`, x, y - 10);
-  g.fillStyle = '#3a3e46';
+  g.fillStyle = pal.track;
   g.fillRect(x, y + 1, w, 9);
   g.fillStyle = pal.accent;
   g.fillRect(x, y + 1, w * Math.max(0, boss.hp / boss.maxHp), 9);
@@ -1178,7 +1185,7 @@ function drawChapter(g, match, alpha) {
   g.font = `900 20px ${FONT}`;
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillStyle = '#fff';
+  g.fillStyle = pal.text;
   g.fillText(`STAGE ${stageLabel(match.world, match.sub)}  ${t(w.subs[match.sub])}`, W / 2, H / 2 + 25.5);
   g.restore();
 }
@@ -1191,8 +1198,10 @@ function drawStamp(g, text, sub, alpha, scale = 1) {
   g.scale(scale, scale);
   g.strokeStyle = pal.accent;
   g.lineWidth = 6;
-  g.fillStyle = 'rgba(245,239,223,0.92)';
+  g.fillStyle = pal.cream;
+  g.globalAlpha = alpha * 0.92;
   g.fillRect(-190, -62, 380, 124);
+  g.globalAlpha = alpha;
   g.strokeRect(-182, -54, 364, 108);
   g.font = `900 64px ${FONT}`;
   g.textAlign = 'center';
@@ -1208,15 +1217,16 @@ function drawStamp(g, text, sub, alpha, scale = 1) {
 }
 
 // 小關評價：大大的 S／A／B／C 章，下面一行時間、最高連段、被打次數
-const RANK_COLORS = { S: '#e9b85e', A: '#d94b3d', B: '#287f78', C: '#6b6a66' };
+// （跟介面同一組色票：金、朱紅、青綠、灰）
+const rankColor = (rank) => ({ S: pal.flash, A: pal.accent, B: pal.teal, C: pal.muted })[rank];
 function drawRank(g, r, alpha, scale) {
   g.save();
   g.globalAlpha = alpha;
   g.translate(W / 2 + 250, H / 2 - 20);
   g.rotate(0.12);
   g.scale(scale, scale);
-  const color = RANK_COLORS[r.rank];
-  g.fillStyle = 'rgba(245,239,223,0.94)';
+  const color = rankColor(r.rank);
+  g.fillStyle = pal.cream;
   g.strokeStyle = color;
   g.lineWidth = 6;
   g.beginPath();
@@ -1292,7 +1302,7 @@ function drawHud(g, match, opts) {
     g.font = `900 30px ${FONT}`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillStyle = '#fff';
+    g.fillStyle = pal.text;
     g.fillText('GO →', 0, 1);
     g.restore();
   }
@@ -1329,7 +1339,7 @@ export function draw(canvas, match, opts = {}) {
   g.imageSmoothingEnabled = !cfg.pixelated;
   g.setTransform(SCALE, 0, 0, SCALE, 0, 0);
   if (!match) {
-    g.fillStyle = '#0c1d4b';
+    g.fillStyle = pal.ink;
     g.fillRect(0, 0, W, H);
     return;
   }

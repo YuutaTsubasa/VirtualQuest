@@ -7,8 +7,21 @@
      --ink 字  --edge 框線  --shade 右下的實色陰影  --ink-fill 墨色色塊（標題條、分頁）  --on-dark 色塊上的字
      --accent 主要按鈕（朱紅）  --teal 次要（青綠）  --teal-soft 淡青綠底  --gold 選取、提示  --muted 次要文字
      --dots 紙上的網點  --scrim 蓋在遊戲畫面上的遮罩  --face-hover 按鈕滑過  --navy-soft 鎖住、灰掉的格子
+     --teal-hover／--accent-hover 青綠、朱紅按鈕滑過  --note-ink 說明框的字  --portrait-bg 結算半身像的底
    遊戲畫面（canvas）上的 HUD 也讀這些色票（src/lib/game/render.js 的 pal）。
    色票來自各畫風交件留言與 retro-anime-game-kit 的風格表。 */
+
+/* 其他畫風：滑過、說明框、結算半身像底都從自己的色票推出來（90 年代版的固定色寫在 app.css） */
+:root[data-style]:not([data-style='anime90']) {
+  --teal-hover: color-mix(in srgb, var(--teal) 85%, var(--paper-white));
+  --accent-hover: color-mix(in srgb, var(--accent) 85%, var(--paper-white));
+  --note-ink: var(--ink);
+  --portrait-bg: var(--cream-deep);
+  /* 遊戲畫面上血條、必殺氣的底（render.js 的 pal.track；90 年代版沒設就用程式裡的深灰） */
+  --hud-track: var(--navy-soft);
+  /* 低血量閃的那一下、GAME OVER 的字 */
+  --hud-alert: var(--accent-hover);
+}
 
 /* ===== PC-98：深靛紫的面板、米色字、薰衣草雙線框、玫瑰色主按鈕 ===== */
 :root[data-style='pc98'] {
@@ -150,7 +163,7 @@
   --ribbon-y: 0.5071;
 }
 /* 四色以外的東西（模糊陰影、半透明網點、濾鏡）拿掉 */
-:root[data-style='gameboy'] :is(.panel, .vbtn, .card, .toast) {
+:root[data-style='gameboy'] :is(.panel, .vbtn, .card, .toast, .mini-logo) {
   filter: none;
 }
 /* 1P～4P 的顏色也只能用四色（元件用 inline style 給 --c／--slot，所以要 !important）；遊戲畫面讀 --p1～--p4 */
@@ -165,6 +178,19 @@
 }
 :root[data-style='gameboy'] .tag {
   --slot: #0f380f !important;
+}
+/* 隱藏角色的剪影：不用半透明黑，直接壓成最深的綠 */
+:root[data-style='gameboy'] .card.locked img {
+  filter: brightness(0) url(#gb-tones);
+}
+/* 畫布（遊戲畫面、選單背景的關卡）照亮度分到四色：程式畫的特效、能量光、血條也不會跑出四色以外（濾鏡在 App.svelte） */
+/* 四色以外的滑過色：改成深一階 */
+:root[data-style='gameboy'] {
+  --teal-hover: #0f380f;
+  --accent-hover: #0f380f;
+}
+:root[data-style='gameboy'] canvas {
+  filter: url(#gb-tones);
 }
 /* Logo 先用濾鏡壓成綠色（四色版的 Logo 請 Codex 在介面包一起畫） */
 :root[data-style='gameboy'] img.logo:not(.own) {

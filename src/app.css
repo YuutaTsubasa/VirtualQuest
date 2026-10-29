@@ -40,6 +40,11 @@
   --text: var(--ink);
   --panel-solid: var(--cream);
   --muted: #6b6a66;
+  /* 青綠、朱紅按鈕滑過時的顏色；說明框的字；結算半身像的底（各畫風在 skins.css 換掉） */
+  --teal-hover: #2f938b;
+  --accent-hover: #e65a4b;
+  --note-ink: #1d5d58;
+  --portrait-bg: linear-gradient(#ffe9a8, #ffb3c8);
   --red: var(--accent);
   font-family: var(--font);
 }
@@ -172,7 +177,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   --fg: var(--on-dark);
 }
 .vbtn.gold:hover:not(:disabled),
-.vbtn.active:hover:not(:disabled) { --face: #2f938b; }
+.vbtn.active:hover:not(:disabled) { --face: var(--teal-hover); }
 .vbtn.small { min-height: 5.2cqh; padding: 0.5cqh 2.4cqh; font-size: 2.3cqh; letter-spacing: 0.1em; text-indent: 0.1em; box-shadow: 0.4cqh 0.4cqh 0 var(--shade); }
 .vbtn.small:active:not(:disabled) { transform: translate(0.4cqh, 0.4cqh); }
 /* 選單：目前選到的那顆前面有 ▶ */
@@ -201,7 +206,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   border-width: 0.45cqh;
   filter: drop-shadow(var(--drop) var(--drop) 0 var(--shade));
 }
-.vbtn.primary:hover:not(:disabled) { --face: #e65a4b; }
+.vbtn.primary:hover:not(:disabled) { --face: var(--accent-hover); }
 .vbtn.primary:active:not(:disabled) { filter: none; }
 
 /* 左下角的返回 */
@@ -290,13 +295,13 @@ input, select.vsel {
   padding: 0.7cqh 1.4cqh;
 }
 select.vsel { padding-right: 3cqh; }
-input::placeholder { color: #a7a196; }
+input::placeholder { color: var(--muted); }
 
 /* 說明框：淡青綠底 */
 .note {
   background: var(--teal-soft);
   border: 0.25cqh solid color-mix(in srgb, var(--teal) 45%, transparent);
-  color: #1d5d58;
+  color: var(--note-ink);
   font-weight: 800;
   font-size: 2.1cqh;
   text-align: center;
@@ -417,7 +422,7 @@ input::placeholder { color: #a7a196; }
   content: '';
   width: 3.4cqh;
   height: 3.4cqh;
-  border: 0.7cqh solid rgba(245, 239, 223, 0.35);
+  border: 0.7cqh solid color-mix(in srgb, var(--on-dark) 35%, transparent);
   border-top-color: var(--on-dark);
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
