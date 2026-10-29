@@ -153,8 +153,8 @@
     width: 26cqh;
     height: 26cqh;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.22);
-    border: 0.5cqh solid rgba(43, 34, 51, 0.45);
+    background: color-mix(in srgb, var(--paper-white) 22%, transparent);
+    border: 0.5cqh solid color-mix(in srgb, var(--ink) 45%, transparent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -163,7 +163,7 @@
     width: 11cqh;
     height: 11cqh;
     border-radius: 50%;
-    background: rgba(255, 250, 240, 0.85);
+    background: color-mix(in srgb, var(--paper-white) 85%, transparent);
     border: 0.5cqh solid var(--ink);
     pointer-events: none;
   }
@@ -172,7 +172,7 @@
     top: -3.6cqh;
     color: var(--on-dark);
     font-weight: 900;
-    text-shadow: 0 0 0.6cqh #000;
+    text-shadow: 0 0 0.6cqh var(--navy-deep);
   }
   .buttons {
     right: 3cqw;

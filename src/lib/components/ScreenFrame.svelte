@@ -130,6 +130,6 @@
   }
   .mini-logo {
     width: 15cqh;
-    filter: drop-shadow(0 0 1cqh rgba(245, 239, 223, 0.8));
+    filter: drop-shadow(0 0 1cqh color-mix(in srgb, var(--paper-white) 80%, transparent));
   }
 </style>

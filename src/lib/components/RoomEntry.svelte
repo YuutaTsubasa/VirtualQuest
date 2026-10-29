@@ -251,8 +251,8 @@
     display: grid;
     place-items: center;
     background:
-      radial-gradient(rgba(0, 0, 0, 0.25) 22%, transparent 26%) 0 0 / 1.3cqh 1.3cqh,
-      rgba(32, 35, 41, 0.78);
+      radial-gradient(var(--dots) 22%, transparent 26%) 0 0 / 1.3cqh 1.3cqh,
+      var(--scrim);
   }
   .state-card {
     min-width: 40cqw;
