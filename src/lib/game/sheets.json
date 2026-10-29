@@ -1097,6 +1097,7 @@
     "sea-3"
   ],
   "props": [
+    "barrel",
     "castle-crate",
     "city-crate",
     "forest-crate",
