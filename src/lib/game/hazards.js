@@ -1,8 +1,32 @@
-// 關卡機關的樣子（程式畫的；之後可以請美術畫成圖）。
+// 關卡機關的樣子：有畫好的圖（public/props/hazards/、各畫風的 styles/<畫風>/props/hazards/）就用圖，沒有就用程式畫的。
 // 機關的規則在 crates/quest-core（HazardKind：geyser 噴口、spikes 尖刺、log 滾木；Prop.barrel 油桶）。
 // 狀態：idle 平時、warn 發光預告、active 作用中。座標是遊戲座標（x 已經減過鏡頭）。
+// 圖的規格見 art-inbox/requests/2026-10-29-1200-style-gaps.md。
+
+import { asset, artStyle } from '../art-style.svelte.js';
+import { hasAsset } from '../style-assets.js';
+import { loadImage } from '../preload.svelte.js';
 
 const INK = '#202329';
+
+/** 這個畫風（或 90 年代版）有這張機關圖、而且載好了，就回傳圖 */
+function art(name) {
+  const path = `props/hazards/${name}.webp`;
+  if (!hasAsset(artStyle.id, path) && !hasAsset('anime90', path)) return null;
+  const img = loadImage(asset(path));
+  return img && img.complete && img.naturalWidth > 0 ? img : null;
+}
+
+/**
+ * 把圖畫上去：圖上 (ax, ay) 那一點對齊遊戲座標 (x, z)，scale 是「遊戲單位／圖的像素」。w 是一格在規格裡的寬（像素畫風的圖是邏輯解析度、比較小，用它換算回規格座標）。
+ * clipTop：只畫圖的 y ≥ clipTop 那一段（岩漿柱、尖刺從下往上長出來用）
+ */
+function drawArt(g, img, x, z, { w, ax, ay, scale, frames = 1, frame = 0, clipTop = 0 }) {
+  const k = img.naturalWidth / frames / w; // 像素畫風的圖是邏輯解析度（比較小）
+  const fw = img.naturalWidth / frames;
+  const sy = clipTop * k;
+  g.drawImage(img, frame * fw, sy, fw, img.naturalHeight - sy, x - ax * scale, z - (ay - clipTop) * scale, w * scale, (img.naturalHeight / k - clipTop) * scale);
+}
 
 /** 白色都市的油桶：紅色鐵桶＋黃黑警示條；快破了會抖 */
 export function drawBarrel(g, x, z, flash) {
@@ -45,6 +69,24 @@ export function drawBarrel(g, x, z, flash) {
 
 /** 噴口：平時是地上的裂縫，預告時發光冒煙，作用時噴出岩漿柱 */
 function drawGeyser(g, h, x, frame) {
+  // 圖：洞口寬 210 px＝68 單位；平時／預告 256×128、洞口中心 (128, 100)；噴發 256×640、洞口中心 (128, 612)
+  const scale = 68 / 210;
+  if (h.state === 'active') {
+    const img = art('geyser-active');
+    if (img) {
+      const k = h.t < 6 ? h.t / 6 : h.t > 20 ? Math.max(0, (28 - h.t) / 8) : 1;
+      // 柱子從洞口往上長：只畫洞口以上 k 比例的那一段（洞口本身一直都在）
+      drawArt(g, img, x, h.z, { w: 256, ax: 128, ay: 612, scale, clipTop: 582 - 552 * k });
+      return;
+    }
+  } else {
+    const warnOn = h.state === 'warn' && Math.floor(frame / 4) % 2;
+    const img = art(warnOn ? 'geyser-warn' : 'geyser-idle');
+    if (img) {
+      drawArt(g, img, x, h.z, { w: 256, ax: 128, ay: 100, scale });
+      return;
+    }
+  }
   const glow = h.state === 'warn' ? 0.45 + 0.35 * Math.sin(frame * 0.5) : h.state === 'active' ? 1 : 0.15;
   g.save();
   g.translate(x, h.z);
@@ -89,6 +131,16 @@ function drawGeyser(g, h, x, frame) {
 
 /** 尖刺：平時是有洞的鐵板，預告時閃紅，作用時刺出來 */
 function drawSpikes(g, h, x, frame) {
+  // 圖：256×256，鐵板中心 (128, 220)、寬 230 px＝76 單位；尖刺最高到 y≈80
+  const up = h.state === 'active' ? (h.t < 4 ? h.t / 4 : h.t > 22 ? Math.max(0, (28 - h.t) / 6) : 1) : 0;
+  const scale = 76 / 230;
+  const plate = art(h.state === 'warn' && Math.floor(frame / 5) % 2 ? 'spikes-warn' : 'spikes-idle');
+  const spikes = up > 0 ? art('spikes-active') : null;
+  if (plate && (up === 0 || spikes)) {
+    if (up > 0) drawArt(g, spikes, x, h.z, { w: 256, ax: 128, ay: 220, scale, clipTop: 200 - 120 * up });
+    else drawArt(g, plate, x, h.z, { w: 256, ax: 128, ay: 220, scale });
+    return;
+  }
   g.save();
   g.translate(x, h.z);
   g.fillStyle = h.state === 'warn' && Math.floor(frame / 5) % 2 ? '#7a2a3a' : '#4a4458';
@@ -98,7 +150,6 @@ function drawSpikes(g, h, x, frame) {
   g.ellipse(0, 0, 38, 11, 0, 0, Math.PI * 2);
   g.fill();
   g.stroke();
-  const up = h.state === 'active' ? (h.t < 4 ? h.t / 4 : h.t > 22 ? Math.max(0, (28 - h.t) / 6) : 1) : 0;
   for (let k = -2; k <= 2; k++) {
     const sx = k * 13;
     const sz = (k % 2) * 4;
@@ -156,6 +207,13 @@ function drawLog(g, h, x, frame) {
   g.beginPath();
   g.ellipse(0, 2, 60, 9, 0, 0, Math.PI * 2);
   g.fill();
+  // 圖：1536×160 四格（每格 384×160），圓木中心 (192, 80)、長 340 px＝112 單位；格子跟著滾動換
+  const img = art('log');
+  if (img) {
+    g.restore();
+    drawArt(g, img, x, h.z - 24, { w: 384, ax: 192, ay: 80, scale: 112 / 340, frames: 4, frame: Math.floor(frame / 3) % 4 });
+    return;
+  }
   g.translate(0, -24);
   g.strokeStyle = INK;
   g.lineWidth = 2.5;
