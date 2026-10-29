@@ -1,6 +1,6 @@
 [package]
 name = "quest-core"
-version = "0.1.0"
+version = "0.1.1"
 description = "虛擬闖天下的遊戲引擎：清版動作的規則、敵人、電腦隊友與房間狀態"
 edition = "2021"
 rust-version = "1.89"
