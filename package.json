@@ -1,7 +1,7 @@
 {
   "name": "virtual-quest",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "build:wasm": "wasm-pack build crates/quest-wasm --target web --release --out-dir ../../src/lib/local/pkg --no-pack",

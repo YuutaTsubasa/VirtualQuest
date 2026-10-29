@@ -1,6 +1,6 @@
 [package]
 name = "quest-wasm"
-version = "0.1.0"
+version = "0.1.1"
 description = "虛擬闖天下單機版：把比賽引擎包成 WebAssembly，在瀏覽器裡跑"
 edition = "2021"
 rust-version = "1.89"
